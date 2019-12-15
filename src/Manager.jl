@@ -1,6 +1,8 @@
 
+using JuMP, GLPK
+
 """An 'economically rational' crop farm manager."""
-struct Manager <: AgComponent
+mutable struct Manager <: AgComponent
     # function __init__(m::Manager)
     #     m.opt_model = Model(name="Farm Decision model")
     # end
@@ -15,6 +17,7 @@ function optimize_irrigated_area(m::Manager, zone::FarmZone)::Dict
     ----------
     * zone : FarmZone object, representing a farm or a farming zone.
     """
+    model = Model(with_optimizer(GLPK.Optimizer))
     calc = []
     areas = []
     constraints = []
@@ -36,9 +39,10 @@ function optimize_irrigated_area(m::Manager, zone::FarmZone)::Dict
         pos_field_area = min(sum(pos_field_area), area_to_consider)
         
         field_areas[f.name] = Dict(
-            ws_name => Variable("$(did)$(ws_name)",
-                                lb=0,
-                                ub=min(w.allocation / naive_req_water, area_to_consider))
+            ws_name => @variable(model, 
+                                 base_name="$(did)$(ws_name)", 
+                                 lower_bound=0, 
+                                 upper_bound=min(w.allocation / naive_req_water, area_to_consider))
             for (ws_name, w) in zone_ws
         )
 
@@ -54,26 +58,26 @@ function optimize_irrigated_area(m::Manager, zone::FarmZone)::Dict
 
         # Total irrigated area cannot be greater than field area
         # or area possible with available water
-        constraints += [
-            Constraint(sum(curr_field_areas), lb=0.0, ub=pos_field_area)
-        ]
+        append!(constraints, @constraint(model, 0.0 <= sum(curr_field_areas) <= pos_field_area))
     end
 
-    constraints += [Constraint(sum(areas),
-                                lb=0.0,
-                                ub=zone.total_area_ha)]
+    append!(constraints, @constraint(model, 0.0 <= sum(areas) <= zone.total_area_ha))
 
     # Generate appropriate OptLang model
-    model = Model.clone(m.opt_model)
-    model.objective = Objective(sum(calc), direction="max")
-    model.add(constraints)
-    model.optimize()
+    # model = Model.clone(m.opt_model)
+    @objective(model, Max, sum(calc))
+    
+    # JuMP.optimize!(model)
+    status = JuMP.solve(model)
 
-    if model.status != "optimal"
+    if status != :Optimal
         error("Could not optimize!")
     end
 
-    return model.primal_values
+    opt_vals = Dict(v => JuMP.value(v) for v in JuMP.all_variables(model))
+    opt_vals["optimal_result"] = JuMP.objective_value(model)
+
+    return opt_vals
 end
 
 function optimize_irrigation(m::Manager, zone::FarmZone, dt::DateTime)::Tuple
@@ -111,7 +115,7 @@ function optimize_irrigation(m::Manager, zone::FarmZone, dt::DateTime)::Tuple
                                         values are hectare area
                 Float : \$/ML cost of applying water
     """
-    model = m.opt_model
+    model = Model(with_optimizer(GLPK.Optimizer))
     areas = []
     profit = []
     app_cost = OrderedDict()
@@ -128,7 +132,10 @@ function optimize_irrigation(m::Manager, zone::FarmZone, dt::DateTime)::Tuple
         did = replace("$(f_name)__", " " => "_")
         
         if f.irrigation.name == "dryland"
-            append!(areas, [Variable("$(did)$(ws_name)", lb=0, ub=0) 
+            append!(areas, [@variable(model, 
+                                      base_name="$(did)$(ws_name)",
+                                      lower_bound=0,
+                                      upper_bound=0)
                            for ws_name in zone_ws])
             continue
         end
@@ -145,18 +152,20 @@ function optimize_irrigation(m::Manager, zone::FarmZone, dt::DateTime)::Tuple
 
         if req_water_ML_ha == 0.0ML/ha
             field_area[f_name] = Dict(
-                ws_name => Variable("$(did)$(ws_name)",
-                                    lb=0.0,
-                                    ub=0.0)
+                ws_name => @variable(model,
+                                     base_name="$(did)$(ws_name)",
+                                     lower_bound=0,
+                                     upper_bound=0)
                 for ws_name in zone_ws
             )
         else
             max_ws_area = possible_area_by_allocation(zone, f)
 
             field_area[f_name] = Dict(
-                ws_name => Variable("$(did)$(ws_name)",
-                                    lb=0, 
-                                    ub=max_ws_area[ws_name])
+                ws_name => @variable(model,
+                                     base_name="$(did)$(ws_name)",
+                                     lower_bound=0,
+                                     upper_bound=max_ws_area[ws_name])
                 for ws_name in zone_ws
             )
         end
@@ -180,10 +189,8 @@ function optimize_irrigation(m::Manager, zone::FarmZone, dt::DateTime)::Tuple
     end
 
     # Total irrigation area cannot be more than available area
-    append!(constraints, [Constraint(sum(areas),
-                        lb=0.0,
-                        ub=min(total_irrigated_area, zone.total_area_ha))
-                    ]
+    decision_area = min(total_irrigated_area, zone.total_area_ha)
+    append!(constraints, [@constraint(model, 0.0 <= sum(areas) <= decision_area)]
     )
 
     # 0 <= field1*sw + field2*sw + field_n*sw <= possible area to be irrigated by sw
@@ -196,19 +203,23 @@ function optimize_irrigation(m::Manager, zone::FarmZone, dt::DateTime)::Tuple
         #     append!(f_ws_var, [field_area[f.name][ws_name]])
         # end
 
-        tmp_l = [Constraint(sum(f_ws_var),
-                 lb=0.0,
-                 ub=pos_area)]
+        tmp_l = [@constraint(model, 0.0 <= sum(f_ws_var) <= pos_area)]
         append!(constraints, tmp_l)
     end
 
     # Generate appropriate OptLang model
-    model = Model.clone(m.opt_model)
-    model.objective = Objective(sum(profit), direction="max")
-    model.add(constraints)
-    model.optimize()
+    # model = Model.clone(m.opt_model)
+    @objective(model, Max, sum(profit))
+    status = JuMP.solve(model)
 
-    return model.primal_values, app_cost
+    if status != :Optimal
+        error("Could not optimize!")
+    end
+
+    opt_vals = Dict(v => JuMP.value(v) for v in JuMP.all_variables(model))
+    opt_vals["optimal_result"] = JuMP.objective_value(model)
+
+    return opt_vals, app_cost
 end
 
 # function possible_area(m::Manager, field::FarmField, allocation::Quantity{ML})::Quantity{ha}

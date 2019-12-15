@@ -11,7 +11,7 @@ If `verbose = true`, print the model and the solution.
 """
 function example_basic(; verbose = true)
 
-    for i = 1:13000
+    for i = 1:2
 
         model = Model(with_optimizer(GLPK.Optimizer))
 
@@ -30,17 +30,23 @@ function example_basic(; verbose = true)
         obj_value = JuMP.objective_value(model)
         x_value = JuMP.value(x)
         y_value = JuMP.value(y)
+
+        if verbose
+            println("Objective value: ", obj_value)
+            println("direct x = ", x_value)
+            println("direct y = ", y_value)
+            for v in JuMP.all_variables(model)
+                y = JuMP.value(v)
+                println("$v = $y")
+            end
+        end
     end
 
-    if verbose
-        println("Objective value: ", obj_value)
-        println("x = ", x_value)
-        println("y = ", y_value)
-    end
+    # println("Objective value: ", obj_value)
 
     # @test obj_value ≈ 10.6
     # @test x_value ≈ 2
     # @test y_value ≈ 0.2
 end
 
-example_basic(verbose = false)
+example_basic(verbose = true)
