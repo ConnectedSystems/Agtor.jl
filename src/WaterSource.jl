@@ -7,13 +7,13 @@
 
 import Unitful: Quantity, ML, ha, m
 
-mutable struct WaterSource{Component}
+@with_kw mutable struct WaterSource <: AgComponent
     name::String
     cost_per_ML::Float64
     cost_per_ha::Float64
     yearly_cost::Float64
-    pump::Any  # Change to Pump type when available
-    head::Quantity{m}
+    pump::Pump
+    head::Quantity
 end
 
 function pump_cost_per_ML(ws::WaterSource, flow_rate_Lps::Float64)
@@ -27,5 +27,5 @@ end
 function total_costs(ws::WaterSource, area::Quantity{ha}, water_used_ML::Quantity{ML})
     usage_fee = usage_costs(ws, water_used_ML)
     area_fee = ws.cost_per_ha * area
-    return ws.yearly_costs + usage_fee + area_fee
+    return ws.yearly_cost + usage_fee + area_fee
 end

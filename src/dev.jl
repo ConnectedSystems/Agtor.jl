@@ -2,6 +2,7 @@ include("Agtor.jl")
 
 using CSV
 using .Agtor
+import Unitful: ML, ha, m, mm
 
 
 function setup_zone(data_dir::String="../test/data/")
@@ -12,13 +13,14 @@ function setup_zone(data_dir::String="../test/data/")
 
     crop_dir = "$(data_dir)crops/"
     crop_data = load_yaml(crop_dir)
-    crop_rotation = [Crop.create(data) for data in crop_data.values()]
+    crop_rotation = [create(Crop, data) for data in values(crop_data)]
 
     irrig_dir = "$(data_dir)irrigations/"
     irrig_specs = load_yaml(irrig_dir)
-    for v in irrig_specs.values()
-        # implemented can be set at the field or zone level...
-        irrig = Irrigation.create(v)
+    irrig = Nothing
+    for v in values(irrig_specs)
+        # `implemented` can be set at the field or zone level...
+        irrig = create(Irrigation, v)
     end
 
     water_spec_dir = "$(data_dir)water_sources/"
@@ -37,21 +39,45 @@ function setup_zone(data_dir::String="../test/data/")
             ini_head = 0.0
         end
 
-        pump = Pump.create(pump_specs[pump_name])
-        ws = WaterSource.create(v)
-        ws.pump = pump
-        ws.head = ini_head
-        w_specs.append(ws)
+        v["pump"] = create(Pump, pump_specs[pump_name])
+        v["head"] = ini_head*m  # convert to metre type
+        ws = create(WaterSource, v)
+        push!(w_specs, ws)
     end
 
-    field1 = CropField("field1", 100.0, irrig, crop_rotation, 100.0, 20.0, 100.0)
-    field2 = CropField("field2", 90.0, irrig, crop_rotation, 100.0, 30.0, 90.0)
+    # name::String
+    # total_area_ha::Quantity{ha}
+    # irrigation::Irrigation
+    # crop::Crop
+    # crop_choices::Array{Crop}
+    # crop_rotation::Array{Crop}
+    # soil_TAW::Float64
+    # soil_SWD::Float64
+    f1_spec = Dict(
+        :name => "field1",
+        :total_area_ha => 100.0ha,
+        :irrigation => irrig,
+        :crop => crop_rotation[1],
+        :crop_choices => crop_rotation,
+        :crop_rotation => crop_rotation,
+        :soil_TAW => 100.0,
+        :soil_SWD => 20.0
+    )
+    f2_spec = copy(f1_spec)
+    f2_spec[:name] = "field2"
+    f2_spec[:total_area_ha] = 90.0ha
+    field1 = CropField(; f1_spec...)
+    field2 = CropField(; f2_spec...)
 
-    z1 = FarmZone("Zone_1", 
-                  climate=climate_data,
-                  fields=[field1, field2],
-                  water_sources=w_specs,
-                  allocation=Dict("surface_water" => 225.0, "groundwater" => 50.0))
+    zone_spec = Dict(
+        :name => "Zone_1",
+        :climate => climate_data,
+        :fields => [field1, field2],
+        :water_sources => w_specs,
+        :allocation => Dict("surface_water" => 225.0, "groundwater" => 50.0)
+    )
+
+    z1 = FarmZone(; zone_spec...)
     return z1, w_specs
 end
 
@@ -59,13 +85,11 @@ function test_short_run()
     z1, (deeplead, channel_water) = setup_zone()
 
     farmer = Manager()
-    zone = FarmZone("test_farm")
 
-    for dt_i in time_sequence[1:(365*5)]
-        run_timestep(farmer, zone, dt_i)
+    time_sequence = z1.climate.time_steps
+    for dt_i in time_sequence  # [1:(365*5)]
+        run_timestep(farmer, z1, dt_i)
     end
-
-    # time_sequence = z1.climate.time_steps
 
     # start = timer()
     # result_set = {f.name: {} for f in z1.fields}
@@ -97,4 +121,4 @@ function test_short_run()
     # print("Finished in:", timedelta(seconds=end-start))
 end
 
-test_short_run()
+@time test_short_run()

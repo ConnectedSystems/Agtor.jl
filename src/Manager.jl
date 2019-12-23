@@ -58,10 +58,10 @@ function optimize_irrigated_area(m::Manager, zone::FarmZone)::Dict
 
         # Total irrigated area cannot be greater than field area
         # or area possible with available water
-        append!(constraints, @constraint(model, 0.0 <= sum(curr_field_areas) <= pos_field_area))
+        push!(constraints, @constraint(model, 0.0 <= sum(curr_field_areas) <= pos_field_area))
     end
 
-    append!(constraints, @constraint(model, 0.0 <= sum(areas) <= zone.total_area_ha))
+    push!(constraints, @constraint(model, 0.0 <= sum(areas) <= zone.total_area_ha))
 
     # Generate appropriate OptLang model
     # model = Model.clone(m.opt_model)
@@ -190,8 +190,7 @@ function optimize_irrigation(m::Manager, zone::FarmZone, dt::DateTime)::Tuple
 
     # Total irrigation area cannot be more than available area
     decision_area = min(total_irrigated_area, zone.total_area_ha)
-    append!(constraints, [@constraint(model, 0.0 <= sum(areas) <= decision_area)]
-    )
+    push!(constraints, @constraint(model, 0.0 <= sum(areas) <= decision_area))
 
     # 0 <= field1*sw + field2*sw + field_n*sw <= possible area to be irrigated by sw
     for (ws_name, w) in zone_ws
@@ -203,8 +202,8 @@ function optimize_irrigation(m::Manager, zone::FarmZone, dt::DateTime)::Tuple
         #     append!(f_ws_var, [field_area[f.name][ws_name]])
         # end
 
-        tmp_l = [@constraint(model, 0.0 <= sum(f_ws_var) <= pos_area)]
-        append!(constraints, tmp_l)
+        tmp_l = @constraint(model, 0.0 <= sum(f_ws_var) <= pos_area)
+        push!(constraints, tmp_l)
     end
 
     # Generate appropriate OptLang model
@@ -343,8 +342,8 @@ function calc_potential_crop_yield(m::Manager, ssm_mm::Quantity{mm},
     return max(0.0, ((ssm_mm + gsr_mm - evap_coef_mm) * wue_coef_mm) / 1000.0)
 end
 
-function run_timestep(farmer::Manager, zone::FarmZone, dt::DateTime)
-    seasonal_ts = zone.yearly_timestep
+function run_timestep(farmer::Manager, zone::FarmZone, dt::Date)
+    # seasonal_ts = zone.yearly_timestep
     apply_rainfall(zone, dt)
 
     for f in zone.fields
@@ -357,12 +356,11 @@ function run_timestep(farmer::Manager, zone::FarmZone, dt::DateTime)
             is_season_day = (day(dt) == day(s_start))
             if is_season_month && is_season_day
                 s_start = DateTime(year(dt), month(s_start), day(s_start))
-                f.harvest_date = s_start + day(f.crop.harvest_offset)
                 s_end = f.harvest_date
             end
         end
 
-        if !s_end
+        if s_end == Nothing
             continue
         end
 

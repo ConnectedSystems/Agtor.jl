@@ -5,11 +5,11 @@ using Printf
 using Formatting
 
 
-mutable struct FarmZone <: AgComponent
+@with_kw mutable struct FarmZone <: AgComponent
     name::String
     climate::Any
     fields::Array{FarmField}
-    crops::Array{Crop}
+    # crops::Array{Crop}
 
     water_sources::Array{WaterSource}
     allocation::Dict
@@ -135,15 +135,17 @@ function apply_irrigation(zone::FarmZone, field::CropField,
     field.irrigated_volume = (ws_name, vol_ML)
 end
 
-function apply_rainfall(zone::FarmZone, dt::DateTime)
+function apply_rainfall(zone::FarmZone, dt::Date)
     for f in zone.fields
         # get rainfall and et for datetime
         f_name = f.name
-        rain_col = "$(f_name)_rainfall"
-        et_col = "$(f_name)_ET"
+        rain_col = Symbol("$(f_name)_rainfall")
+        et_col = Symbol("$(f_name)_ET")
 
-        subset = zone.climate[:, [:rain_col, :et_col]]
-        rainfall, et = subset[:, :rain_col], subset[:, :et_col]
+        data = zone.climate.data
+        subset = filter(r -> r.Date == dt, data)
+        subset = subset[!, [rain_col, et_col]]
+        rainfall, et = subset[:, rain_col][1], subset[:, et_col][1]
 
         update_SWD(f, rainfall, et)
     end

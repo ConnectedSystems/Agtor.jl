@@ -2,7 +2,7 @@ using Mixers
 
 abstract type AgParameter end
 
-mutable struct ConstantParameter <: AgParameter
+@with_kw mutable struct ConstantParameter <: AgParameter
     name::String
     default_val::Any
     value::Any
@@ -10,15 +10,17 @@ mutable struct ConstantParameter <: AgParameter
     ConstantParameter(name, default_val) = new(name, default_val, default_val)
 end
 
-mutable struct RealParameter <: AgParameter
+@with_kw mutable struct RealParameter <: AgParameter
     name::String
     min_val::Real
     max_val::Real
     default_val::Real
     value::Real
+
+    RealParameter(name, min_val, max_val, value) = new(name, min_val, max_val, value, value)
 end
 
-mutable struct CategoricalParameter <: AgParameter
+@with_kw mutable struct CategoricalParameter <: AgParameter
     name::String
     cat_val::Array{Any}
     default_val::Any

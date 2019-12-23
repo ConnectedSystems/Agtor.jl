@@ -45,7 +45,7 @@ properties:
   # access_service_point,50
   # bore_operation_licence,282.8
   # licence_renewal,136.2
-  yearly_costs: 659
+  yearly_cost: 659
 
   # No charge based on area
   cost_per_ha: 0.0

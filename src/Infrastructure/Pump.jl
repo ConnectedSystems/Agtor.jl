@@ -1,5 +1,5 @@
 
-mutable struct Pump{Infrastructure}
+@with_kw mutable struct Pump <: Infrastructure
     """An on-farm pump"""
 
     @infrastructure_fields

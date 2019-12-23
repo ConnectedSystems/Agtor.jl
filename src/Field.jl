@@ -2,13 +2,14 @@ abstract type FarmField end
 
 @with_kw mutable struct CropField <: FarmField
     name::String
-    total_area_ha::Quantity{ha}
-    crop::Crop
-    crop_choices::Array{Crop}
+    total_area_ha::Quantity
+    irrigation::Irrigation
+    crop::Crop  # Initial value can just be the first item in crop_rotation
+    crop_choices::Array{Crop}  # This can be the unique values in crop_rotation
     crop_rotation::Array{Crop}
     soil_TAW::Float64
     soil_SWD::Float64
-    ssm::Quantity{mm} = 0.0
+    ssm::Quantity = 0.0mm
     _irrigated_volume::Dict = Dict{String, Float64}()
     _num_irrigation_events::Int64 = 0
 
@@ -34,7 +35,10 @@ function Base.getproperty(f::FarmField, v::Symbol)
 
     elseif v == :dryland_area
         return f.total_area_ha - f.irrigated_area
-
+    elseif v == :plant_date
+        return f.crop.plant_date
+    elseif v == :harvest_date
+        return f.crop.harvest_date
     else
         return getfield(f, v)
     end
@@ -58,7 +62,8 @@ function Base.setproperty!(f::FarmField, v::Symbol, value)
         f._irrigated_volume[key] += val
 
     else
-        setproperty!(f, v, value)
+        setfield!(f, Symbol(v), value)
+        # setproperty!(f, v, value)
     end
 end
 
@@ -70,6 +75,7 @@ function volume_used_by_source(f::FarmField, ws_name::String)
     
     return 0.0
 end
+
 
 """Log the cost of irrigation."""
 function log_irrigation_cost(f::FarmField, costs::Float64)
@@ -169,12 +175,7 @@ end
 
 function set_next_crop(f::FarmField)
     f.crop = next(f.crop_rotation)
-    ini_state(f)
-end
-
-function ini_state(f::FarmField)
     reset_state(f)
-    f.plant_date = f.crop.plant_date
 end
 
 function reset_state(f::FarmField)

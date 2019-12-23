@@ -3,23 +3,15 @@ using CSV, DataFrames, Dates
 """Serves as an interface to climate data"""
 mutable struct Climate <: AgComponent
 
-    """
-    Parameters
-    ----------
-    * data: pd.DataFrame, climate data
-
-    Additional keyword arguments supplied will be added as object 
-    attributes.
-    """
-
     data::Any
     time_steps::Array
     description::Any
+    annual_rainfall::DataFrame
 
     function Climate(data)
         c = new()
         c.data = data
-        c.time_steps = data[!, :Date] # nrow(data)
+        c.time_steps = data[!, :Date]
         data[:, :Year] = Dates.year.(data[!, :Date])
 
         gdf = groupby(data[:, filter(x -> x != :Date, names(data))], :Year)
@@ -27,19 +19,21 @@ mutable struct Climate <: AgComponent
         yearly = aggregate(gdf, sum)
 
         rain_cols = filter(x -> occursin("rainfall", x), map(string, names(yearly)))
-        append!(rain_cols, "Year")
+        append!(rain_cols, ["Year"])
 
         c.annual_rainfall = yearly[:, map(Symbol, rain_cols)]
 
         stats = [:mean, :std, :min, :q25, :median, :q75, :max, :eltype, :nunique, :nmissing]
         not_year_col = filter(x -> x != :Year, names(yearly))
         c.description = describe(yearly[:, not_year_col], stats...)
+
+        return c
     end
 end
 
-# function __getattr__(c::Climate, attr)
-#     return getattr(c.data, attr)
-# end
+function Base.getindex(c::Climate, args...)
+    return c.data[args...]
+end
 
 # function __getitem__(c::Climate, item)
 #     return c.data[item]
@@ -78,18 +72,18 @@ end
 #     return yearly_rainfall['rainfall']
 # end
 
-function get_season_range(c::Climate, p_start::DateTime, p_end::DateTime)
-    """Gets climate data for season range.
+"""Gets climate data for season range.
 
-    Parameters
-    ----------
-    * start : datetime, start of range in Y-m-d format, inclusive.
-    * end : datetime, end of range in Y-m-d format, inclusive.
-    """
+Parameters
+----------
+* p_start : datetime, start of range in Y-m-d format, inclusive.
+* p_end : datetime, end of range in Y-m-d format, inclusive.
+"""
+function get_season_range(c::Climate, p_start::DateTime, p_end::DateTime)
     data = c.data
     mask = (data.index >= p_start) && (data.index <= p_end)
 
-    return c.data[mask]
+    return c.data[mask, :]
 end
 
 function ensure_datetime(c::Climate, p_start::String, p_end::String)
@@ -122,10 +116,10 @@ function get_seasonal_rainfall(c::Climate, season_range::Array{DateTime}, partia
     --------
     numeric, representing seasonal rainfall
     """
-    s, e = ensure_datetime(season_range...)
+    s, e = ensure_datetime(c, season_range...)
     rain_cols = [c for c in c.data.dtype.names if ("rainfall" in c) && (partial_name in c)]
 
-    subset = c.get_season_range(s, e)[rain_cols]
+    subset = get_season_range(c, s, e)[rain_cols]
     return sum(subset)
 end
 
@@ -141,8 +135,8 @@ function get_seasonal_et(c::Climate, season_range::Array{DateTime}, partial_name
     --------
     numeric of seasonal rainfall
     """
-    s, e = c._ensure_datetime(season_range...)
+    s, e = ensure_datetime(c, season_range...)
     et_cols = [c for c in names(c.data) if ("ET" in c) && (partial_name in c)]
 
-    return c.get_season_range(s, e).loc[:, et_cols].sum()[0]
+    return get_season_range(c, s, e).loc[:, et_cols].sum()[0]
 end
