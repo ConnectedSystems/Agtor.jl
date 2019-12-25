@@ -21,7 +21,7 @@ function Base.getproperty(f::FarmField, v::Symbol)
         return sum(values(f._irrigated_volume))
 
     elseif v == :irrigation_from_source
-        return copy(f._irrigated_volume)
+        return f._irrigated_volume
 
     elseif v == :irrigated_vol_mm
         if f.irrigated_area == 0.0

@@ -1,5 +1,7 @@
 include("Agtor.jl")
 
+using Profile
+
 using CSV
 using .Agtor
 import Unitful: ML, ha, m, mm
@@ -122,3 +124,6 @@ function test_short_run()
 end
 
 @time test_short_run()
+
+# @profile test_short_run()
+# Profile.print(format=:flat, sortedby=:count)

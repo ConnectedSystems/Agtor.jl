@@ -37,22 +37,22 @@ function Base.:^(x::AgParameter, y::AgParameter) x.value^y.value end
 
 """Returns min/max values"""
 function value_range(p::AgParameter)
-    if !hasproperty(p, :min_val)
+    if hasproperty(p, :min_val) == false
         return p.value, p.value
     end
     return p.min, p.max
 end
 
-"""Returns max - min, or 0.0 if no min/max values defined"""
+"""Returns max - min, or 0.0 if no min value defined"""
 function value_dist(p::AgParameter)
-    if !hasproperty(p, :min_val)
+    if hasproperty(p, :min_val) == false
         return 0.0
     end
     return p.max - p.min
 end
 
 function is_const(p::AgParameter)
-    if value_dist(p::AgParameter) == 0.0
+    if value_dist(p) == 0.0
         return true
     end
     return false

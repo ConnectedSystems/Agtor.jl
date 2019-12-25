@@ -1,5 +1,3 @@
-include("./Parameter.jl")
-
 
 function generate_params(prefix::String, dataset::Dict, override::Any=Nothing)
     """Generate AgParameter definitions.

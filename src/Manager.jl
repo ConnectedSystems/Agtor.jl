@@ -1,5 +1,6 @@
 
 using JuMP, GLPK
+import Base.Threads
 
 """An 'economically rational' crop farm manager."""
 mutable struct Manager <: AgComponent
@@ -26,7 +27,7 @@ function optimize_irrigated_area(m::Manager, zone::FarmZone)::Dict
     total_avail_water = zone.avail_allocation
 
     field_areas = Dict()
-    for f in zone.fields
+    Threads.@threads for f in zone.fields
         area_to_consider = f.total_area_ha
         did = replace("$(f.name)__", " " => "_")
 

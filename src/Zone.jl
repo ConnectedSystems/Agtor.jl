@@ -1,5 +1,6 @@
 using Dates
 
+using Base.Threads
 import Unitful: ML
 using Printf
 using Formatting
@@ -136,15 +137,15 @@ function apply_irrigation(zone::FarmZone, field::CropField,
 end
 
 function apply_rainfall(zone::FarmZone, dt::Date)
-    for f in zone.fields
+    Threads.@threads for f in zone.fields
         # get rainfall and et for datetime
         f_name = f.name
         rain_col = Symbol("$(f_name)_rainfall")
         et_col = Symbol("$(f_name)_ET")
 
         data = zone.climate.data
-        subset = filter(r -> r.Date == dt, data)
-        subset = subset[!, [rain_col, et_col]]
+        idx = data[:, :Date] .== dt
+        subset = data[findall(idx), [rain_col, et_col]]
         rainfall, et = subset[:, rain_col][1], subset[:, et_col][1]
 
         update_SWD(f, rainfall, et)
