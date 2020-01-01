@@ -1,12 +1,11 @@
 module Agtor
 
-using Unitful
-import Unitful: ML, ha, m, mm
 using Parameters
 using CSV, DataFrames, Dates, YAML
 
 import DataStructures: OrderedDict
 
+include("AgBase/Units.jl")
 include("AgBase/file_loader.jl")
 include("AgBase/Parameter.jl")
 include("AgBase/properties.jl")
@@ -22,7 +21,7 @@ include("Manager.jl")
 include("Climate.jl")
 
 export AgComponent, Infrastructure, Irrigation, Pump
-export WaterSource, Crop, Field, CropField, FarmZone, Manager, Climate
-export load_yaml, generate_params, create, run_timestep
+export WaterSource, Crop, FarmField, CropField, FarmZone, Manager, Climate
+export load_yaml, generate_params, create, run_timestep, subtotal_costs, total_costs, set_start_date!
 
 end # module

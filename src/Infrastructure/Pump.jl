@@ -1,6 +1,6 @@
 
+"""An on-farm pump"""
 @with_kw mutable struct Pump <: Infrastructure
-    """An on-farm pump"""
 
     @infrastructure_fields
 
@@ -16,8 +16,8 @@ function cost_per_ha(p::Pump, year_step::Int64, area::Float64)::Float64
     return maintenance_cost(p, year_step) / area
 end
 
-function total_costs(p::Pump, year_step::Int64)::Float64
-    return cost_per_ha(p, year_step, 1)
+function subtotal_costs(p::Pump, year_step::Int64)::Float64
+    return cost_per_ha(p, year_step, 1.0)
 end
 
 
@@ -65,10 +65,14 @@ function pumping_costs_per_ML(p::Pump, flow_rate_Lps::Float64,
     constant = 102.0
     pe = p.pump_efficiency
     dr = p.derating
-    energy_required_kW = (head_pressure * flow_rate_Lps) / ((constant * pe) * dr)u"kW"
+    energy_required_kW = (head_pressure * flow_rate_Lps) / ((constant * pe) * dr)
 
     # Litres / minutes in hour / seconds in minute
     hours_per_ML = (1e6 / flow_rate_Lps) / 60.0^2
+
+    # Strip unit metadata
+    energy_required_kW = energy_required_kW
+    hours_per_ML = hours_per_ML
 
     cost_per_hour = p.cost_per_kW * energy_required_kW
     cost_per_ML = (cost_per_hour * hours_per_ML)

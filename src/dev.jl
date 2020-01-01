@@ -3,8 +3,8 @@ include("Agtor.jl")
 using Profile
 
 using CSV
+using Dates
 using .Agtor
-import Unitful: ML, ha, m, mm
 
 
 function setup_zone(data_dir::String="../test/data/")
@@ -35,29 +35,25 @@ function setup_zone(data_dir::String="../test/data/")
             # pump = Pump('groundwater', 2000.0, 1, 5, 0.05, 0.2, True, 0.7, 0.28, 0.75)
             pump_name = "groundwater"
             ini_head = 25.0
+            allocation = 50.0
         else
             # pump = Pump('surface_water', 2000.0, 1, 5, 0.05, 0.2, True, 0.7, 0.28, 0.75)
             pump_name = "surface_water"
             ini_head = 0.0
+            allocation = 225.0
         end
 
         v["pump"] = create(Pump, pump_specs[pump_name])
-        v["head"] = ini_head*m  # convert to metre type
+        v["head"] = ini_head  # convert to metre type
+        v["allocation"] = allocation
+        
         ws = create(WaterSource, v)
         push!(w_specs, ws)
     end
 
-    # name::String
-    # total_area_ha::Quantity{ha}
-    # irrigation::Irrigation
-    # crop::Crop
-    # crop_choices::Array{Crop}
-    # crop_rotation::Array{Crop}
-    # soil_TAW::Float64
-    # soil_SWD::Float64
     f1_spec = Dict(
         :name => "field1",
-        :total_area_ha => 100.0ha,
+        :total_area_ha => 100.0,
         :irrigation => irrig,
         :crop => crop_rotation[1],
         :crop_choices => crop_rotation,
@@ -67,7 +63,7 @@ function setup_zone(data_dir::String="../test/data/")
     )
     f2_spec = copy(f1_spec)
     f2_spec[:name] = "field2"
-    f2_spec[:total_area_ha] = 90.0ha
+    f2_spec[:total_area_ha] = 90.0
     field1 = CropField(; f1_spec...)
     field2 = CropField(; f2_spec...)
 
@@ -75,23 +71,42 @@ function setup_zone(data_dir::String="../test/data/")
         :name => "Zone_1",
         :climate => climate_data,
         :fields => [field1, field2],
-        :water_sources => w_specs,
-        :allocation => Dict("surface_water" => 225.0, "groundwater" => 50.0)
+        :water_sources => w_specs
     )
 
     z1 = FarmZone(; zone_spec...)
+
     return z1, w_specs
 end
 
-function test_short_run()
-    z1, (deeplead, channel_water) = setup_zone()
+function test_short_run(data_dir::String="../test/data/")
+    z1, (deeplead, channel_water) = setup_zone(data_dir)
 
     farmer = Manager()
-
     time_sequence = z1.climate.time_steps
-    for dt_i in time_sequence  # [1:(365*5)]
+    for dt_i in time_sequence
         run_timestep(farmer, z1, dt_i)
+
+        if yearmonth(dt_i) == (5, 15)
+            for ws in z1.water_sources
+                if ws.name == "surface_water"
+                    ws.allocation = 100.0
+                elseif ws.name == "groundwater"
+                    ws.allocation = 40.0
+                end
+            end
+        end
     end
+
+    # result_set = {f.name: {} for f in z1.fields}
+    # scenario_result = Dict()
+    # for f in z1.fields
+    #     DataFrame(;[Symbol(k)=>v for (k,v) in x]...)
+    #     scenario_result[f.name] = pd.DataFrame.from_dict(result_set[f.name], 
+    #                                                      orient='index')
+    # end
+
+    # println(scenario_result)
 
     # start = timer()
     # result_set = {f.name: {} for f in z1.fields}
@@ -123,7 +138,10 @@ function test_short_run()
     # print("Finished in:", timedelta(seconds=end-start))
 end
 
+# Run twice to get compiled performance
 @time test_short_run()
+# @time test_short_run()
+
 
 # @profile test_short_run()
 # Profile.print(format=:flat, sortedby=:count)

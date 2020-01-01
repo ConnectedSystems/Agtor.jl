@@ -39,7 +39,7 @@ end
 #     return c.data[item]
 # end
 
-# function annual_rainfall(c::Climate, timestep::DateTime)
+# function annual_rainfall(c::Climate, timestep::Date)
 #     """
 #     Calculate the total amount of rainfall that occured in a year, given in the timestep
 
@@ -79,25 +79,24 @@ Parameters
 * p_start : datetime, start of range in Y-m-d format, inclusive.
 * p_end : datetime, end of range in Y-m-d format, inclusive.
 """
-function get_season_range(c::Climate, p_start::DateTime, p_end::DateTime)
-    data = c.data
-    mask = (data.index >= p_start) && (data.index <= p_end)
-
+function get_season_range(c::Climate, p_start::Date, p_end::Date)
+    dates = c.data[!, :Date]
+    mask = (p_start .<= dates .<= p_end)
     return c.data[mask, :]
 end
 
-function ensure_datetime(c::Climate, p_start::String, p_end::String)
+function ensure_date(c::Climate, p_start::String, p_end::String)
     """Converts strings to datetime."""
 
-    s = DateTime(p_start)
-    e = DateTime(p_end)
+    s = Date(p_start)
+    e = Date(p_end)
 
     @assert e > s "Season end date cannot be earlier than start date ($(p_start) < $(p_end) ?)"
 
     return s, e
 end
 
-function get_seasonal_rainfall(c::Climate, season_range::Array{DateTime}, partial_name::String)
+function get_seasonal_rainfall(c::Climate, season_range::Array{Date}, partial_name::String)
     """Retrieve seasonal rainfall by matching column name. 
     Columns names are expected to have 'rainfall' with some identifier.
 
@@ -110,20 +109,22 @@ function get_seasonal_rainfall(c::Climate, season_range::Array{DateTime}, partia
     ----------
     Where column names are: 'rainfall_field1', 'rainfall_field2', ...
 
-    `get_seasonal_rainfall(['1981-01-01', '1982-06-01'], 'field1')`
+    `get_seasonal_rainfall(c, ['1981-01-01', '1982-06-01'], 'field1')`
 
     Returns
     --------
     numeric, representing seasonal rainfall
     """
-    s, e = ensure_datetime(c, season_range...)
-    rain_cols = [c for c in c.data.dtype.names if ("rainfall" in c) && (partial_name in c)]
+    s, e = season_range
+    rain_cols = [rc for rc in names(c.data) 
+                 if occursin("rainfall", String(rc)) && occursin(partial_name, String(rc))
+                ]
 
-    subset = get_season_range(c, s, e)[rain_cols]
-    return sum(subset)
+    subset = get_season_range(c, s, e)[!, rain_cols]
+    return sum.(eachcol(subset))[1]
 end
 
-function get_seasonal_et(c::Climate, season_range::Array{DateTime}, partial_name::String)
+function get_seasonal_et(c::Climate, season_range::Array{Date}, partial_name::String)
     """Retrieve seasonal rainfall.
 
     Parameters
@@ -135,8 +136,10 @@ function get_seasonal_et(c::Climate, season_range::Array{DateTime}, partial_name
     --------
     numeric of seasonal rainfall
     """
-    s, e = ensure_datetime(c, season_range...)
-    et_cols = [c for c in names(c.data) if ("ET" in c) && (partial_name in c)]
+    s, e = season_range
+    et_cols = [ec for ec in names(c.data) 
+               if occursin("ET", String(ec)) && occursin(partial_name, String(ec))]
 
-    return get_season_range(c, s, e).loc[:, et_cols].sum()[0]
+    subset = get_season_range(c, s, e)[!, et_cols]
+    return sum.(eachcol(subset))[1]
 end

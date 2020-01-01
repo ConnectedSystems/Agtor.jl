@@ -25,20 +25,20 @@ end
     major_maintenance_rate::Float64
 end
 
-function Base.getproperty(a::Infrastructure, v::Symbol)
-    if v == :minor_maintenance_cost
-        return a.capital_cost * a.minor_maintenance_rate
-    elseif v == :major_maintenance_cost
-        return a.capital_cost * a.minor_maintenance_rate
-    elseif v == :maintenance_year
-        maintenance_year = Dict(
-            "minor" => a.minor_maintenance_schedule,
-            "major" => a.major_maintenance_schedule
-        )
-        return maintenance_year
-    else
-        return getfield(a, v)
-    end
+function minor_maintenance_cost(a::Infrastructure)
+    return a.capital_cost * a.minor_maintenance_rate
+end
+
+function major_maintenance_cost(a::Infrastructure)
+    return a.capital_cost * a.major_maintenance_rate
+end
+
+function maintenance_year(infra::Infrastructure)
+    maintenance_year = Dict(
+        "minor" => infra.minor_maintenance_schedule,
+        "major" => infra.major_maintenance_schedule
+    )
+    return maintenance_year
 end
 
 """Calculate maintenance costs.
@@ -46,13 +46,13 @@ end
 Warning: This can be on a per ha basis or given as a total.
 """
 function maintenance_cost(infra::Infrastructure, year_step::Int64)::Float64
-    mr = infra.maintenance_year
+    mr = maintenance_year(infra)
 
     maintenance_cost = 0.0
     if year_step % mr["major"] == 0
-        maintenance_cost = infra.major_maintenance_cost
+        maintenance_cost = major_maintenance_cost(infra)
     elseif year_step % mr["minor"] == 0
-        maintenance_cost = infra.minor_maintenance_cost
+        maintenance_cost = minor_maintenance_cost(infra)
     end
 
     return maintenance_cost
