@@ -89,19 +89,19 @@ function update_stages(c::Crop, dt::Date)
     end
 end
 
-function get_stage_coefs(c::Crop, dt::Date)
+function get_stage_coefs(c::Crop, dt::Date)::Dict
 
     for (k, v) in c.growth_stages
         s, e = v["start"], v["end"]
         in_season = false
         s_month, s_day = monthday(s)
-        e_month, e_day = monthday(e)
         c_month, c_day = monthday(dt)
         same_month = s_month == c_month
         if same_month == true
             in_day = s_day >= c_day
             in_season = same_month && in_day
         elseif (s_month <= c_month)
+            e_month, e_day = monthday(e)
             if (c_month <= e_month)
                 in_season = c_day <= e_day
             end
@@ -118,12 +118,12 @@ end
 
 function estimate_income_per_ha(c::Crop)::Float64
     """Naive estimation of net income."""
-    income = (c.price_per_yield * c.yield_per_ha) 
-                - c.variable_cost_per_ha
+    income::Float64 = (c.price_per_yield * c.yield_per_ha) 
+                        - c.variable_cost_per_ha
     return income
 end
 
-function subtotal_costs(c::Crop, year::Int64)
+function subtotal_costs(c::Crop, year::Int64)::Float64
     # cost of production is handled by factoring in
     # water application costs and other maintenance costs.
     # The variable_cost_per_ha is only used to inform estimates.
@@ -151,7 +151,7 @@ end
 # # End collate_data()
 
 
-function create(cls::Type{Crop}, data::Dict{Any, Any}, override=Nothing)
+function create(cls::Type{Crop}, data::Dict{Any, Any}, override=Nothing)::Crop
     tmp = copy(data)
     name = pop!(tmp, "name")
     prop = pop!(tmp, "properties")

@@ -16,6 +16,8 @@ abstract type FarmField end
     _num_irrigation_events::Int64 = 0
     _irrigation_cost::Float64 = 0.0
     _next_crop_idx = 2  # next crop will be 2nd item in crop_rotation
+    _seasonal_income::Dict = Dict{Date, Float64}()
+    _seasonal_irrigation_vol::Dict = Dict{Date, Float64}()
 end
 
 """Getter for Field"""
@@ -83,6 +85,18 @@ function log_irrigation_cost(f::FarmField, costs::Float64)
     f._irrigation_cost += costs
 end
 
+
+"""Log the seasonal income for a field."""
+function log_seasonal_income(f::FarmField, income::Float64, dt::Date)
+    f._seasonal_income[dt] = income
+end
+
+"""Log irrigations used"""
+function log_seasonal_irrigation(f::FarmField, irrig_vol::Float64, dt::Date)
+    f._seasonal_irrigation_vol[dt] = irrig_vol
+end
+
+
 """Calculate soil water deficit.
 
 Water deficit is represented as positive values.
@@ -125,12 +139,12 @@ Returns
 * float : net irrigation depth as negative value
 """
 function nid(f::FarmField, dt::Date)::Float64
-    crop = f.crop
-    coefs = get_stage_coefs(crop, dt)
+    crop::Crop = f.crop
+    coefs::Dict = get_stage_coefs(crop, dt)
 
-    e_rootzone_m = crop.root_depth_m * crop.effective_root_zone
-    depl_frac = coefs[:depletion_fraction]
-    soil_RAW = f.soil_TAW * depl_frac
+    e_rootzone_m::Float64 = crop.root_depth_m * crop.effective_root_zone
+    depl_frac::Float64 = coefs[:depletion_fraction]
+    soil_RAW::Float64 = f.soil_TAW * depl_frac
 
     return (e_rootzone_m * soil_RAW)
 end
@@ -141,12 +155,12 @@ Factors in irrigation efficiency.
 Values are given in mm.
 """
 function calc_required_water(f::FarmField, dt::Date)::Float64
-    to_nid = f.soil_SWD - nid(f, dt)
+    to_nid::Float64 = f.soil_SWD - nid(f, dt)
     if to_nid < 0.0
         return 0.0
     end
     
-    tmp = f.soil_SWD / f.irrigation.efficiency
+    tmp::Float64 = f.soil_SWD / f.irrigation.efficiency
     return round(tmp, digits=4)
 end
 
@@ -157,7 +171,7 @@ function possible_irrigation_area(f::FarmField, vol_ML::Float64, req_ML::Float64
         return 0.0
     end
 
-    area = isnothing(f.irrigated_area) ? f.total_area_ha : f.irrigated_area
+    area::Float64 = isnothing(f.irrigated_area) ? f.total_area_ha : f.irrigated_area
     if area == 0.0
         return 0.0
     end
@@ -166,8 +180,8 @@ function possible_irrigation_area(f::FarmField, vol_ML::Float64, req_ML::Float64
         return area
     end
     
-    ML_per_ha = req_ML
-    perc_area = vol_ML / (ML_per_ha * area)
+    ML_per_ha::Float64 = req_ML
+    perc_area::Float64 = vol_ML / (ML_per_ha * area)
 
     # println("In possible irrigation area:")
     # println("f.irrigated_area: ", f.irrigated_area)
@@ -181,7 +195,7 @@ function possible_irrigation_area(f::FarmField, vol_ML::Float64, req_ML::Float64
     return min(perc_area * area, area)
 end
 
-function set_next_crop(f::FarmField, dt::Date)
+function set_next_crop!(f::FarmField, dt::Date)
     state = iterate(f.crop_rotation, f._next_crop_idx)
     if isnothing(state)
         state = iterate(f.crop_rotation, 1)
@@ -189,10 +203,10 @@ function set_next_crop(f::FarmField, dt::Date)
 
     f.crop, f._next_crop_idx = state
 
-    reset_state(f)
+    reset_state!(f)
 end
 
-function reset_state(f::FarmField)
+function reset_state!(f::FarmField)
     f.sowed = false
 
     if f.irrigation.name != "dryland"
@@ -204,8 +218,6 @@ function reset_state(f::FarmField)
     f._irrigation_cost = 0.0
     f._num_irrigation_events = 0
     f.soil_SWD = 0.0
-
-    
 end
 
 """Calculate net income considering crop yield and costs incurred.
@@ -225,17 +237,17 @@ Returns
 function total_income(f::FarmField, yield_func::Function, 
                       ssm::Float64, gsr::Float64, 
                       irrig::Float64, comps)::Float64
-    inc = gross_income(f, yield_func, ssm, gsr, irrig)
+    inc::Float64 = gross_income(f, yield_func, ssm, gsr, irrig)
     return inc - total_costs(f, comps...)
 end
 
 function gross_income(f::FarmField, yield_func::Function, ssm::Float64, 
                       gsr::Float64, irrig::Float64)::Float64
-    crop = f.crop
-    irrigated_yield = yield_func(ssm, gsr+irrig, crop)
-    dryland_yield = yield_func(ssm, gsr, crop)
+    crop::Crop = f.crop
+    irrigated_yield::Float64 = yield_func(ssm, gsr+irrig, crop)
+    dryland_yield::Float64 = yield_func(ssm, gsr, crop)
 
-    inc = irrigated_yield * f.irrigated_area * crop.price_per_yield
+    inc::Float64 = irrigated_yield * f.irrigated_area * crop.price_per_yield
     inc += dryland_yield * f.dryland_area * crop.price_per_yield
 
     return inc
@@ -248,21 +260,19 @@ Maintenance costs can be spread out across a number of fields if desired.
 """
 function total_costs(f::FarmField, dt::Date, water_sources::Array, num_fields::Int64=1)::Float64
     
-    irrig_area = f.irrigated_area
-
-    h20_usage_cost = 0.0
-    maint_cost = 0.0
+    irrig_area::Float64 = f.irrigated_area
+    h20_usage_cost::Float64 = 0.0
+    maint_cost::Float64 = 0.0
     for w in water_sources
-        water_used = volume_used_by_source(f, w.name)
-        ws_cost = subtotal_costs(w, irrig_area, water_used)
+        water_used::Float64 = volume_used_by_source(f, w.name)
+        ws_cost::Float64 = subtotal_costs(w, irrig_area, water_used)
         h20_usage_cost = h20_usage_cost + ws_cost
 
-        pump_cost = subtotal_costs(w.pump, year(dt)) / num_fields
+        pump_cost::Float64 = subtotal_costs(w.pump, year(dt)) / num_fields
         maint_cost = maint_cost + pump_cost
-
     end
 
-    irrig_app_cost = f._irrigation_cost
+    irrig_app_cost::Float64 = f._irrigation_cost
 
     if irrig_app_cost > 0.0
         @assert f.irrigated_volume > 0.0 "Irrigation had to occur for costs to be incurred!"
@@ -271,10 +281,11 @@ function total_costs(f::FarmField, dt::Date, water_sources::Array, num_fields::I
     end
 
     h20_usage_cost = h20_usage_cost + irrig_app_cost
-    maint_cost = maint_cost + subtotal_costs(f.irrigation, year(dt))
+    year_val::Int64 = year(dt)
+    maint_cost = maint_cost + subtotal_costs(f.irrigation, year_val)
 
-    crop_costs = subtotal_costs(f.crop, year(dt))
-    total_costs = h20_usage_cost + maint_cost + crop_costs
+    crop_costs::Float64 = subtotal_costs(f.crop, year_val)
+    total_costs::Float64 = h20_usage_cost + maint_cost + crop_costs
 
     return total_costs
 end

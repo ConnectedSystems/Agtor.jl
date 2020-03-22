@@ -22,7 +22,7 @@ function example_basic(; verbose = true)
         @constraint(model, 1x + 5y <= 3.0)
 
         if verbose
-            print(model)
+            println(model)
         end
 
         JuMP.optimize!(model)

@@ -3,6 +3,7 @@ using Dates
 using Base.Threads
 using Printf
 using Formatting
+using DataStructures
 
 
 @with_kw mutable struct FarmZone <: AgComponent
@@ -14,52 +15,22 @@ using Formatting
     opt_field_area = Nothing
 end
 
-
-"""
-Use a volume of water from either groundwater or surface water.
-If water source name does not specify 'groundwater' then use
-water from Low Reliability shares first, then High Reliability.
-Expected volume unit is megaliters (ML).
-"""
-# function use_allocation!(zone::FarmZone, ws_name::String, value::Float64)
-#     if occursin("groundwater", lowercase(ws_name))
-#         vol = zone.gw_allocation
-#         zone.gw_allocation = vol - value
-#         return
-#     end
-
-#     lr_tmp = (zone.lr_allocation - value)
-
-#     if lr_tmp > 0.0
-#         zone.lr_allocation = lr_tmp
-#         return
-#     end
-
-#     left_over = abs(lr_tmp)
-#     zone.lr_allocation =  0.0
-
-#     sub = zone.hr_allocation - left_over
-#     zone.hr_allocation = sub
-
-#     new_hr = zone.hr_allocation
-#     if zone.hr_allocation < 0.0
-#         throw("HR Allocation cannot be below 0 ML! Currently: $(new_hr)")
-#     end
-# end
-
-
 """Use allocation volume from a particular water source.
 
-If surface water, uses Low Reliability first, then
-High Reliability allocations.
+Volumes in ML.
 """
-function use_allocation!(z::FarmZone, ws::WaterSource, value::Float64)
-    ws.allocation -= value
-    ws_name = ws.name
+function use_allocation!(z::FarmZone, ws::WaterSource, vol_ML::Float64)
+    ws.allocation -= vol_ML
 
     if ws.allocation < 0.0
-        msg = "Allocation cannot be below 0 ML! Currently: $(ws.allocation)\n"
-        msg *= "Tried to use: $value\n"
+        if isapprox(0.0, ws.allocation, atol=1e-8)
+            ws.allocation = 0.0
+            return
+        end
+
+        ws_name = ws.name
+        msg = "Allocation cannot be below 0 ML! Currently: $(ws.allocation)ML\n"
+        msg *= "Tried to use: $(vol_ML)ML\n"
         msg *= "From: $ws_name\n"
         error(msg)
     end
@@ -93,10 +64,10 @@ end
 
 
 """Determine the possible irrigation area using water from each water source."""
-function possible_area_by_allocation(zone::FarmZone, field::FarmField, req_water_ML::Float64)
+function possible_area_by_allocation(zone::FarmZone, field::FarmField, req_water_ML::Float64)::Dict
     @assert in(field.name, [f.name for f in zone.fields]) "Field must be in zone"
 
-    tmp = Dict()
+    tmp::Dict = Dict{String, Float64}()
     for ws in zone.water_sources
         ws_name = ws.name
         tmp[ws_name] = possible_irrigation_area(field, ws.allocation, req_water_ML)
@@ -106,7 +77,7 @@ function possible_area_by_allocation(zone::FarmZone, field::FarmField, req_water
 end
 
 """The total area marked for irrigation."""
-function irrigated_area(zone::FarmZone)
+function irrigated_area(zone::FarmZone)::Float64
     fields = zone.fields
     return sum([f.irrigated_area for f in fields])
 end
@@ -114,10 +85,10 @@ end
 
 """Calculate ML per ha to apply."""
 function calc_irrigation_water(zone::FarmZone, field::FarmField)::Float64
-    req_water_ML = required_water(field)
+    req_water_ML::Float64 = required_water(field)
 
     # Can only apply water that is available
-    ML_per_ha = zone.avail_allocation / field.irrigated_area
+    ML_per_ha::Float64 = zone.avail_allocation / field.irrigated_area
     if req_water_ML < ML_per_ha
         irrig_water = req_water_ML
     else
@@ -130,8 +101,8 @@ end
 function apply_irrigation!(zone::FarmZone, field::CropField, 
                           ws::WaterSource, water_to_apply_mm::Float64,
                           area_to_apply::Float64)
-    vol_ML_ha = water_to_apply_mm / mm_to_ML
-    vol_ML = vol_ML_ha * area_to_apply
+    vol_ML_ha::Float64 = water_to_apply_mm / mm_to_ML
+    vol_ML::Float64 = vol_ML_ha * area_to_apply
     use_allocation!(zone, ws, vol_ML)
 
     field.soil_SWD -= max(0.0, (water_to_apply_mm * field.irrigation.efficiency))
