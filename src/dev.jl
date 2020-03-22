@@ -4,13 +4,24 @@ using Profile
 
 using CSV
 using Dates
+using DataStructures
 using .Agtor
 
+# Start with the environment variable set for multi-threading
+# $ JULIA_NUM_THREADS=4 ./julia
+
+# Windows:
+# $ set JULIA_NUM_THREADS=4 && julia dev.jl
+
+# Start month/day of growing season
+const gs_start = (5, 15)
 
 function setup_zone(data_dir::String="../test/data/")
     climate_dir = "$(data_dir)climate/"  
     tgt = climate_dir * "farm_climate_data.csv"
-    data = CSV.read(tgt, threaded=true, dateformat="dd-mm-YYYY")
+
+    use_threads = Threads.nthreads() > 1
+    data = CSV.read(tgt, threaded=use_threads, dateformat="dd-mm-YYYY")
     climate_data = Climate(data)
 
     crop_dir = "$(data_dir)crops/"
@@ -87,7 +98,8 @@ function test_short_run(data_dir::String="../test/data/")
     for dt_i in time_sequence
         run_timestep(farmer, z1, dt_i)
 
-        if yearmonth(dt_i) == (5, 15)
+        # Resetting allocations for test run
+        if monthday(dt_i) == gs_start
             for ws in z1.water_sources
                 if ws.name == "surface_water"
                     ws.allocation = 100.0
@@ -98,50 +110,15 @@ function test_short_run(data_dir::String="../test/data/")
         end
     end
 
-    # result_set = {f.name: {} for f in z1.fields}
-    # scenario_result = Dict()
-    # for f in z1.fields
-    #     DataFrame(;[Symbol(k)=>v for (k,v) in x]...)
-    #     scenario_result[f.name] = pd.DataFrame.from_dict(result_set[f.name], 
-    #                                                      orient='index')
-    # end
-
-    # println(scenario_result)
-
-    # start = timer()
-    # result_set = {f.name: {} for f in z1.fields}
-    # for dt_i in time_sequence[0:(365*5)]:
-    #     if (dt_i.month == 5) and (dt_i.day == 15):
-    #         # reset allocation for test
-    #         z1.water_sources['groundwater'].allocation = 50.0
-    #         z1.water_sources['surface_water'].allocation = 125.0
-    #     end
-
-    #     res = z1.run_timestep(farmer, dt_i)
-
-    #     if res is not None:
-    #         for f in z1.fields:
-    #             result_set[f.name].update(res[f.name])
-    #         end
-    #     end
-    # end
-    # t_end = timer()
-
-    # scenario_result = {}
-    # for f in z1.fields:
-    #     scenario_result[f.name] = pd.DataFrame.from_dict(result_set[f.name], 
-    #                                                      orient='index')
-    # end
-
-    # print(scenario_result)
-
-    # print("Finished in:", timedelta(seconds=end-start))
+    incomes::OrderedDict = collate_log(z1, :_seasonal_income)
+    irrigations::OrderedDict = collate_log(z1, :_seasonal_irrigation_vol)
+    println(incomes)
+    println(irrigations)
 end
 
 # Run twice to get compiled performance
+test_short_run()
 @time test_short_run()
-# @time test_short_run()
-
 
 # @profile test_short_run()
 # Profile.print(format=:flat, sortedby=:count)

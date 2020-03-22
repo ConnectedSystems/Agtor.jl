@@ -124,3 +124,13 @@ function apply_rainfall!(zone::FarmZone, dt::Date)
         update_SWD!(f, rainfall, et)
     end
 end
+
+"""Collate logged values, summing on identical datetimes"""
+function collate_log(zone::FarmZone, sym::Symbol)::OrderedDict
+    target_log = Dict{Date, Float64}()
+    for f in zone.fields
+        target_log = merge(+, target_log, getfield(f, sym))
+    end
+
+    return OrderedDict(sort(collect(target_log)))
+end
