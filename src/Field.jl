@@ -15,9 +15,9 @@ abstract type FarmField end
     _irrigated_volume::Dict = Dict{String, Float64}()
     _num_irrigation_events::Int64 = 0
     _irrigation_cost::Float64 = 0.0
-    _next_crop_idx = 2  # next crop will be 2nd item in crop_rotation
-    _seasonal_income::Dict = Dict{Date, Float64}()
-    _seasonal_irrigation_vol::Dict = Dict{Date, Float64}()
+    _next_crop_idx::Int64 = 1  # next crop will be 2nd item in crop_rotation
+    _seasonal_income::Dict = OrderedDict{Date, Float64}()
+    _seasonal_irrigation_vol::Dict = OrderedDict{Date, Float64}()
 end
 
 """Getter for Field"""
@@ -195,7 +195,7 @@ function possible_irrigation_area(f::FarmField, vol_ML::Float64, req_ML::Float64
     return min(perc_area * area, area)
 end
 
-function set_next_crop!(f::FarmField, dt::Date)
+function set_next_crop!(f::FarmField)
     state = iterate(f.crop_rotation, f._next_crop_idx)
     if isnothing(state)
         state = iterate(f.crop_rotation, 1)
@@ -259,7 +259,7 @@ end
 Maintenance costs can be spread out across a number of fields if desired.
 """
 function total_costs(f::FarmField, dt::Date, water_sources::Array, num_fields::Int64=1)::Float64
-    
+    year_val::Int64 = year(dt)
     irrig_area::Float64 = f.irrigated_area
     h20_usage_cost::Float64 = 0.0
     maint_cost::Float64 = 0.0
@@ -268,7 +268,7 @@ function total_costs(f::FarmField, dt::Date, water_sources::Array, num_fields::I
         ws_cost::Float64 = subtotal_costs(w, irrig_area, water_used)
         h20_usage_cost = h20_usage_cost + ws_cost
 
-        pump_cost::Float64 = subtotal_costs(w.pump, year(dt)) / num_fields
+        pump_cost::Float64 = subtotal_costs(w.pump, year_val) / num_fields
         maint_cost = maint_cost + pump_cost
     end
 
@@ -281,9 +281,8 @@ function total_costs(f::FarmField, dt::Date, water_sources::Array, num_fields::I
     end
 
     h20_usage_cost = h20_usage_cost + irrig_app_cost
-    year_val::Int64 = year(dt)
+    
     maint_cost = maint_cost + subtotal_costs(f.irrigation, year_val)
-
     crop_costs::Float64 = subtotal_costs(f.crop, year_val)
     total_costs::Float64 = h20_usage_cost + maint_cost + crop_costs
 
@@ -293,37 +292,3 @@ end
 function create(cls::AgComponent, data)
     Nothing
 end
-
-#     @classmethod
-#     function create(cls, data, override=None):
-#         cls_name = cls.__class__.__name__
-
-#         tmp = data.copy()
-#         name = tmp['name']
-#         prop = tmp.pop('properties')
-
-#         # crop_rot = prop.pop('crop_rotation')
-
-#         prefix = f"{cls_name}___{name}"
-#         props = generate_params(prefix, prop, override)
-
-#         # TODO: 
-#         # Need to generate irrigation object and crop rotation
-#         # as given in specification
-
-#         return cls(**tmp, **props)
-#     # End create()
-
-# # End FarmField()
-
-
-# if __name__ == '__main__':
-#     from agtor.Irrigation import Irrigation
-#     from agtor.Crop import Crop
-
-#     irrig = Irrigation('Gravity', 2000.0, 1, 5, 0.05, 0.2, efficiency=0.5, flow_ML_day=12, head_pressure=12)
-#     crop_rotation = [Crop('Wheat', crop_type='irrigated', plant_date='05-15'), 
-#                      Crop('Barley', crop_type='irrigated', plant_date='05-15'), 
-#                      Crop('Canola', crop_type='irrigated', plant_date='05-15')]
-
-#     Field = CropField(100.0, irrig, crop_rotation)

@@ -50,18 +50,6 @@ function Base.getproperty(z::FarmZone, v::Symbol)
     return getfield(z, v)
 end
 
-# function Base.setproperty!(z::FarmZone, v::Symbol, value)
-#     if v == :hr_allocation
-#         z._allocation["HR"] = value
-#     elseif v == :lr_allocation
-#         z._allocation["LR"] = value
-#     elseif v == :gw_allocation
-#         z._allocation["GW"] = value
-#     else
-#         setfield!(z, v, value)
-#     end
-# end
-
 
 """Determine the possible irrigation area using water from each water source."""
 function possible_area_by_allocation(zone::FarmZone, field::FarmField, req_water_ML::Float64)::Dict
@@ -125,12 +113,26 @@ function apply_rainfall!(zone::FarmZone, dt::Date)
     end
 end
 
+
 """Collate logged values, summing on identical datetimes"""
-function collate_log(zone::FarmZone, sym::Symbol)::OrderedDict
-    target_log = Dict{Date, Float64}()
+function collate_log(zone::FarmZone, sym::Symbol; last=false)::OrderedDict
+    target_log::Dict = Dict{Date, Float64}()
     for f in zone.fields
-        target_log = merge(+, target_log, getfield(f, sym))
+        tmp = getfield(f, sym)
+        if last
+            tmp = Dict(sort(collect(tmp))[end])
+        end
+
+        target_log = merge(+, target_log, tmp)
     end
 
     return OrderedDict(sort(collect(target_log)))
+end
+
+
+"""Collect model run results for a FarmZone"""
+function collect_results(zone::FarmZone; last=false)
+    incomes::OrderedDict = collate_log(zone, :_seasonal_income; last=last)
+    irrigations::OrderedDict = collate_log(zone, :_seasonal_irrigation_vol; last=last)
+    return incomes, irrigations
 end

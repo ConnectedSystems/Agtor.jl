@@ -157,7 +157,7 @@ function optimize_irrigation(m::Manager, zone::FarmZone, dt::Date)::Tuple
                 for ws in zone_ws
             )
 
-            tmp_l::Array = [
+            tmp_l::Array = Float64[
                 crop_income_per_ha * f.irrigated_area
                 for ws in zone_ws
             ]
@@ -443,7 +443,7 @@ function run_timestep(farmer::Manager, zone::FarmZone, dt::Date)
             # println("Est. Total Income: ", f._seasonal_income[dt])
             # println("------------------")
 
-            set_next_crop!(f, dt)
+            set_next_crop!(f)
         end
     end
 
