@@ -2,7 +2,7 @@
 abstract type AgComponent end
 
 function create(cls::Type{T}, data::Dict{Any, Any},
-                override=Nothing) where T <: AgComponent
+                override=nothing) where T <: AgComponent
     cls_name = typeof(cls)
     tmp = copy(data)
     name = tmp["name"]

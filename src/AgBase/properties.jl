@@ -1,5 +1,5 @@
 
-function generate_params(prefix::String, dataset::Dict, override::Any=Nothing)
+function generate_params(prefix::String, dataset::Dict, override::Union{Dict, Nothing}=nothing)
     """Generate AgParameter definitions.
 
     Parameters
@@ -14,7 +14,7 @@ function generate_params(prefix::String, dataset::Dict, override::Any=Nothing)
     * Dict matching structure of dataset
     """
     prefix *= "__"
-    if override == Nothing
+    if isnothing(override)
         override = Dict()
     end
 

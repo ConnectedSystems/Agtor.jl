@@ -1,6 +1,7 @@
 abstract type FarmField end
 
 @with_kw mutable struct CropField <: FarmField
+
     name::String
     total_area_ha::Float64
     irrigation::Irrigation
@@ -10,14 +11,14 @@ abstract type FarmField end
     soil_TAW::Float64
     soil_SWD::Float64
     ssm::Float64 = 0.0
-    irrigated_area = Nothing
-    sowed = false
+    irrigated_area::Union{Nothing, Float64} = nothing
+    sowed::Bool = false
     _irrigated_volume::Dict = Dict{String, Float64}()
     _num_irrigation_events::Int64 = 0
     _irrigation_cost::Float64 = 0.0
     _next_crop_idx::Int64 = 1  # next crop will be 2nd item in crop_rotation
-    _seasonal_income::Dict = OrderedDict{Date, Float64}()
-    _seasonal_irrigation_vol::Dict = OrderedDict{Date, Float64}()
+    _seasonal_income::OrderedDict{Date, Float64} = OrderedDict{Date, Float64}()
+    _seasonal_irrigation_vol::OrderedDict{Date, Float64} = OrderedDict{Date, Float64}()
 end
 
 """Getter for Field"""
@@ -56,7 +57,7 @@ end
 """Setter for Field"""
 function Base.setproperty!(f::FarmField, v::Symbol, value)
     if v == :irrigated_volume
-        if value == Nothing || length(value) == 1
+        if value == nothing || length(value) == 1
             for (k, _v) in f._irrigated_volume
                 f._irrigated_volume[k] = value
             end
@@ -71,7 +72,7 @@ function Base.setproperty!(f::FarmField, v::Symbol, value)
 end
 
 """Volume used from a water source in ML"""
-function volume_used_by_source(f::FarmField, ws_name::String)
+function volume_used_by_source(f::FarmField, ws_name::String)::Float64
     if haskey(f._irrigated_volume, ws_name)
         return f._irrigated_volume[ws_name] / mm_to_ML
     end
@@ -159,6 +160,8 @@ function calc_required_water(f::FarmField, dt::Date)::Float64
     if to_nid < 0.0
         return 0.0
     end
+
+    # @info("$(f.name), $(to_nid)")
     
     tmp::Float64 = f.soil_SWD / f.irrigation.efficiency
     return round(tmp, digits=4)
@@ -290,5 +293,5 @@ function total_costs(f::FarmField, dt::Date, water_sources::Array, num_fields::I
 end
 
 function create(cls::AgComponent, data)
-    Nothing
+    nothing
 end
