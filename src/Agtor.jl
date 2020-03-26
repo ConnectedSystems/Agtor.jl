@@ -23,6 +23,6 @@ include("Climate.jl")
 export AgComponent, Infrastructure, Irrigation, Pump
 export WaterSource, Crop, FarmField, CropField, FarmZone, Manager, Climate
 export load_yaml, generate_params, create, run_timestep, subtotal_costs, total_costs, set_start_date!
-export collate_log
+export collect_results
 
 end # module

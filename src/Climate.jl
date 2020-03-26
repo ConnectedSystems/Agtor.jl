@@ -12,7 +12,7 @@ mutable struct Climate <: AgComponent
         c = new()
         c.data = data
         c.time_steps = data[!, :Date]
-        data[:, :Year] = Dates.year.(data[!, :Date])
+        data[:, :Year] = Dates.year.(c.time_steps)
 
         gdf = groupby(data[:, filter(x -> x != :Date, names(data))], :Year)
         not_year_col = filter(x -> x != :Year, names(gdf))
@@ -31,7 +31,7 @@ mutable struct Climate <: AgComponent
     end
 end
 
-function Base.getindex(c::Climate, args...)
+function Base.getindex(c::Climate, args...)::DataFrame
     return c.data[args...]
 end
 
@@ -79,24 +79,24 @@ Parameters
 * p_start : datetime, start of range in Y-m-d format, inclusive.
 * p_end : datetime, end of range in Y-m-d format, inclusive.
 """
-function get_season_range(c::Climate, p_start::Date, p_end::Date)
-    dates = c.data[!, :Date]
+function get_season_range(c::Climate, p_start::Date, p_end::Date)::DataFrame
+    dates::Array{Date,1} = c.time_steps
     mask = (p_start .<= dates .<= p_end)
     return c.data[mask, :]
 end
 
-function ensure_date(c::Climate, p_start::String, p_end::String)
+function ensure_date(c::Climate, p_start::String, p_end::String)::Tuple
     """Converts strings to datetime."""
 
-    s = Date(p_start)
-    e = Date(p_end)
+    s::Date = Date(p_start)
+    e::Date = Date(p_end)
 
     @assert e > s "Season end date cannot be earlier than start date ($(p_start) < $(p_end) ?)"
 
     return s, e
 end
 
-function get_seasonal_rainfall(c::Climate, season_range::Array{Date}, partial_name::String)
+function get_seasonal_rainfall(c::Climate, season_range::Array{Date}, partial_name::String)::Float64
     """Retrieve seasonal rainfall by matching column name. 
     Columns names are expected to have 'rainfall' with some identifier.
 
@@ -115,17 +115,17 @@ function get_seasonal_rainfall(c::Climate, season_range::Array{Date}, partial_na
     --------
     numeric, representing seasonal rainfall
     """
-    s, e = season_range
+    s::Date, e::Date = season_range
     rain_cols = [rc for rc in names(c.data) 
                  if occursin("rainfall", String(rc)) && occursin(partial_name, String(rc))
                 ]
 
-    subset = get_season_range(c, s, e)[!, rain_cols]
+    subset::DataFrame = get_season_range(c, s, e)[!, rain_cols]
     return sum.(eachcol(subset))[1]
 end
 
-function get_seasonal_et(c::Climate, season_range::Array{Date}, partial_name::String)
-    """Retrieve seasonal rainfall.
+function get_seasonal_et(c::Climate, season_range::Array{Date}, partial_name::String)::DataFrame
+    """Retrieve seasonal evapotranspiration.
 
     Parameters
     ----------
@@ -136,10 +136,10 @@ function get_seasonal_et(c::Climate, season_range::Array{Date}, partial_name::St
     --------
     numeric of seasonal rainfall
     """
-    s, e = season_range
+    s::Date, e::Date = season_range
     et_cols = [ec for ec in names(c.data) 
                if occursin("ET", String(ec)) && occursin(partial_name, String(ec))]
 
-    subset = get_season_range(c, s, e)[!, et_cols]
+    subset::DataFrame = get_season_range(c, s, e)[!, et_cols]
     return sum.(eachcol(subset))[1]
 end

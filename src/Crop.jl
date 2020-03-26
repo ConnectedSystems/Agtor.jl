@@ -70,12 +70,12 @@ using Dates
     end
 end
 
-function update_stages(c::Crop, dt::Date)
+function update_stages!(c::Crop, dt::Date)
     # This function marked for possible removal
     stages = c.growth_stages
 
-    new_date = yearmonthday(dt)
-    start_date = Date(new_date...)
+    new_date::Tuple = yearmonthday(dt)
+    start_date::Date = Date(new_date...)
 
     for (k, v) in c.growth_stages
         offset = v[:stage_length]
@@ -118,9 +118,7 @@ end
 
 function estimate_income_per_ha(c::Crop)::Float64
     """Naive estimation of net income."""
-    income::Float64 = (c.price_per_yield * c.yield_per_ha) 
-                        - c.variable_cost_per_ha
-    return income
+    return (c.price_per_yield * c.yield_per_ha) - c.variable_cost_per_ha
 end
 
 function subtotal_costs(c::Crop, year::Int64)::Float64
@@ -151,12 +149,11 @@ end
 # # End collate_data()
 
 
-function create(cls::Type{Crop}, data::Dict{Any, Any}, override=Nothing)::Crop
-    tmp = copy(data)
-    name = pop!(tmp, "name")
-    prop = pop!(tmp, "properties")
-    crop_type = pop!(tmp, "crop_type")
-    growth_stages = pop!(tmp, "growth_stages")
+function create(cls::Type{Crop}, data::Dict{Any, Any}, override=nothing)::Crop
+    name = data["name"]
+    prop = data["properties"]
+    crop_type = data["crop_type"]
+    growth_stages = data["growth_stages"]
 
     prefix = "Crop___$(name)__"
     props = generate_params(prefix * "properties", prop, override)

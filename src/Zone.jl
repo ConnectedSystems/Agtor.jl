@@ -12,7 +12,7 @@ using DataStructures
     fields::Array{FarmField}
 
     water_sources::Array{WaterSource}
-    opt_field_area = Nothing
+    opt_field_area::Union{Dict, Nothing} = nothing
 end
 
 """Use allocation volume from a particular water source.
@@ -66,7 +66,7 @@ end
 
 """The total area marked for irrigation."""
 function irrigated_area(zone::FarmZone)::Float64
-    fields = zone.fields
+    fields::Array = zone.fields
     return sum([f.irrigated_area for f in fields])
 end
 
@@ -98,16 +98,17 @@ function apply_irrigation!(zone::FarmZone, field::CropField,
 end
 
 function apply_rainfall!(zone::FarmZone, dt::Date)
+    data::DataFrame = zone.climate.data
+    idx = zone.climate.time_steps .== dt
+    subset::DataFrame = data[findall(idx), :]
+    rainfall::Float64, et::Float64 = 0.0, 0.0
+
     Threads.@threads for f in zone.fields
         # get rainfall and et for datetime
         f_name = f.name
         rain_col = Symbol("$(f_name)_rainfall")
         et_col = Symbol("$(f_name)_ET")
-
-        data = zone.climate.data
-        idx = data[:, :Date] .== dt
-        subset = data[findall(idx), [rain_col, et_col]]
-        rainfall, et = subset[:, rain_col][1], subset[:, et_col][1]
+        rainfall, et = subset[1, rain_col], subset[1, et_col]
 
         update_SWD!(f, rainfall, et)
     end
@@ -131,7 +132,7 @@ end
 
 
 """Collect model run results for a FarmZone"""
-function collect_results(zone::FarmZone; last=false)
+function collect_results(zone::FarmZone; last=false)::Tuple
     incomes::OrderedDict = collate_log(zone, :_seasonal_income; last=last)
     irrigations::OrderedDict = collate_log(zone, :_seasonal_irrigation_vol; last=last)
     return incomes, irrigations
