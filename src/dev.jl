@@ -30,7 +30,7 @@ function setup_zone(data_dir::String="../test/data/")
 
     irrig_dir = "$(data_dir)irrigations/"
     irrig_specs = load_yaml(irrig_dir)
-    irrig = Nothing
+    irrig = nothing
     for v in values(irrig_specs)
         # `implemented` can be set at the field or zone level...
         irrig = create(Irrigation, v)
@@ -110,15 +110,74 @@ function test_short_run(data_dir::String="../test/data/")
         end
     end
 
-    incomes::OrderedDict = collate_log(z1, :_seasonal_income)
-    irrigations::OrderedDict = collate_log(z1, :_seasonal_irrigation_vol)
-    println(incomes)
-    println(irrigations)
+    incomes::OrderedDict, irrigations::OrderedDict = collect_results(z1)
+
+    # println(collect_results(z1; last=true))
+
+    # println(incomes)
+    # println(irrigations)
+    return incomes, irrigations
 end
 
-# Run twice to get compiled performance
-test_short_run()
-@time test_short_run()
+expected_income = OrderedDict(Date("1981-09-08") => 244313.98386267252,Date("1982-09-08") => -11559.59643529012,Date("1983-09-13") => 92551.26805889815,Date("1984-12-27") => 63808.03614607529,Date("1985-09-08") => 42891.25808561602,Date("1986-09-13") => 42253.431939398,Date("1987-12-27") => 89334.9343651311,Date("1988-09-08") => 143959.55745592792,Date("1989-09-13") => 59088.939975231166,Date("1990-12-27") => 63651.484236312834,Date("1991-09-08") => 78292.45108649295,Date("1992-09-13") => 43015.00489135986,Date("1993-12-27") => 153073.4176533377,Date("1994-09-08") => -9426.0,Date("1995-09-13") => 36746.97385739302,Date("1996-12-27") => 130187.89452390373,Date("1997-09-08") => 75731.22454594003,Date("1998-09-13") => 8311.450494144456,Date("1999-12-27") => 99047.47775346626,Date("2000-09-08") => 67664.07867661327,Date("2001-09-13") => 16699.254527614954,Date("2002-12-27") => -10575.742340466755,Date("2003-09-08") => 91908.97796981408,Date("2004-09-13") => 19268.445972084148,Date("2005-12-27") => 87647.3240923745,Date("2006-09-08") => -9426.0,Date("2007-09-13") => 13406.167553121915,Date("2008-12-27") => 62812.717770092786,Date("2009-09-08") => 48258.298524112804,Date("2010-09-13") => 60415.07118181099,Date("2011-12-27") => 95337.84548624678,Date("2012-09-08") => 43248.923464677544,Date("2013-09-13") => 32359.549025852994,Date("2014-12-27") => 73688.79360696144,Date("2015-09-08") => 274.4833330613601,Date("2016-09-13") => 61266.286087214576)
+expected_irrigations = OrderedDict(Date("1981-09-08") => 70.46271999999999,Date("1982-09-08") => 33.991533969407996,Date("1983-09-13") => 43.42294326801344,Date("1984-12-27") => 78.35036066266281,Date("1985-09-08") => 0.0,Date("1986-09-13") => 88.38022,Date("1987-12-27") => 1.1603262350945443e-15,Date("1988-09-08") => 39.477536,Date("1989-09-13") => 79.970965835936,Date("1990-12-27") => 77.02590665560061,Date("1991-09-08") => 0.0,Date("1992-09-13") => 92.23339999999999,Date("1993-12-27") => 24.289034307948416,Date("1994-09-08") => 0.0,Date("1995-09-13") => 92.22252,Date("1996-12-27") => 0.0,Date("1997-09-08") => 44.636144,Date("1998-09-13") => 100.698236069296,Date("1999-12-27") => 14.292297464335594,Date("2000-09-08") => 0.0,Date("2001-09-13") => 128.5565365354881,Date("2002-12-27") => 23.136858980352,Date("2003-09-08") => 0.0,Date("2004-09-13") => 93.47604,Date("2005-12-27") => 32.217683196703994,Date("2006-09-08") => 0.0,Date("2007-09-13") => 91.30356,Date("2008-12-27") => 0.0,Date("2009-09-08") => 79.80636799999999,Date("2010-09-13") => 70.26552617683201,Date("2011-12-27") => 82.51460326800809,Date("2012-09-08") => 0.0,Date("2013-09-13") => 133.7348535919069,Date("2014-12-27") => 0.0,Date("2015-09-08") => 69.63687999999999,Date("2016-09-13") => 0.0)
 
+# Run twice to get compiled performance
+income, irrigations = test_short_run()
+
+# println(income)
+# println(irrigations)
+
+try
+    @assert income == expected_income
+    @assert irrigations == expected_irrigations
+catch e
+    println("$e")
+end
+
+
+using Logging
+
+io = open("log.txt", "w+")  # Open a textfile for writing
+logger = SimpleLogger(io)  # Create a simple logger
+
+global_logger(logger)  # Set the global logger to logger
+
+test_short_run()
+
+flush(io)  # write out any buffered messages
+close(io)
+
+
+@time comp_income, comp_irrigations = test_short_run()
+
+try
+    @assert comp_income == expected_income
+    @assert comp_irrigations == expected_irrigations
+catch e
+    println("$e")
+end
+
+# println(comp_income, comp_irrigations)
+
+# using ProfileView
+
+# Profile.clear_malloc_data()  # Ignore this one - forces compilation of target function
+# @profile test_short_run()
+
+# Profile.clear_malloc_data()
 # @profile test_short_run()
 # Profile.print(format=:flat, sortedby=:count)
+# @profview test_short_run()  # Ignore this one - only to invoke pre-compilation
+# @profview test_short_run()
+
+# using DataFrames
+# col_income = collect(values(comp_income))
+# col_irrigations = collect(values(comp_irrigations))
+
+# res = DataFrame(Dict("Index"=>collect(keys(comp_income)),
+#                "Income" => col_income, 
+#                "Irrigation" => col_irrigations)
+# )
+
+# CSV.write("dev_result.csv", res)
