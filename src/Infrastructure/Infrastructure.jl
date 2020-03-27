@@ -25,15 +25,15 @@ end
     major_maintenance_rate::Float64
 end
 
-function minor_maintenance_cost(a::Infrastructure)
+function minor_maintenance_cost(a::Infrastructure)::Float64
     return a.capital_cost * a.minor_maintenance_rate
 end
 
-function major_maintenance_cost(a::Infrastructure)
+function major_maintenance_cost(a::Infrastructure)::Float64
     return a.capital_cost * a.major_maintenance_rate
 end
 
-function maintenance_year(infra::Infrastructure)
+function maintenance_year(infra::Infrastructure)::Dict{String, Float64}
     maintenance_year = Dict(
         "minor" => infra.minor_maintenance_schedule,
         "major" => infra.major_maintenance_schedule
@@ -46,9 +46,9 @@ end
 Warning: This can be on a per ha basis or given as a total.
 """
 function maintenance_cost(infra::Infrastructure, year_step::Int64)::Float64
-    mr = maintenance_year(infra)
+    mr::Dict{String, Float64} = maintenance_year(infra)
 
-    maintenance_cost = 0.0
+    maintenance_cost::Float64 = 0.0
     if year_step % mr["major"] == 0
         maintenance_cost = major_maintenance_cost(infra)
     elseif year_step % mr["minor"] == 0
