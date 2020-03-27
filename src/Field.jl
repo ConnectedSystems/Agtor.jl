@@ -47,7 +47,8 @@ function Base.getproperty(f::FarmField, v::Symbol)
 
     elseif v == :harvest_date
         return f.crop.harvest_date
-
+    elseif v == :num_crops
+        return length(f.crop_rotation)
     else
         return getfield(f, v)
 
@@ -160,8 +161,6 @@ function calc_required_water(f::FarmField, dt::Date)::Float64
     if to_nid < 0.0
         return 0.0
     end
-
-    # @info("$(f.name), $(to_nid)")
     
     tmp::Float64 = f.soil_SWD / f.irrigation.efficiency
     return round(tmp, digits=4)
@@ -182,29 +181,17 @@ function possible_irrigation_area(f::FarmField, vol_ML::Float64, req_ML::Float64
     if req_ML == 0.0
         return area
     end
-    
-    ML_per_ha::Float64 = req_ML
-    perc_area::Float64 = vol_ML / (ML_per_ha * area)
 
-    # println("In possible irrigation area:")
-    # println("f.irrigated_area: ", f.irrigated_area)
-    # println("total_area: ", f.total_area_ha)
-    # println("Determined area: ", area)
-    # println("Perc. area: ", perc_area)
-    # println("ML per ha: ", ML_per_ha)
-    # println("Avail Vol ML: ", vol_ML)
-    # println("   ")
+    perc_area::Float64 = vol_ML / (req_ML * area)
     
     return min(perc_area * area, area)
 end
 
 function set_next_crop!(f::FarmField)
-    state = iterate(f.crop_rotation, f._next_crop_idx)
-    if isnothing(state)
-        state = iterate(f.crop_rotation, 1)
-    end
+    crop_id::Int64 = f._next_crop_idx > f.num_crops ? 1 : f._next_crop_idx
 
-    f.crop, f._next_crop_idx = state
+    # Update crop and next crop id
+    f.crop, f._next_crop_idx = iterate(f.crop_rotation, crop_id)
 
     reset_state!(f)
 end
