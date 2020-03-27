@@ -108,7 +108,7 @@ Parameters
 * ET : Amount of evapotranspiration across timestep in mm
 """
 function update_SWD!(f::FarmField, rainfall::Float64, ET::Float64)
-    tmp = f.soil_SWD - (rainfall - ET)
+    tmp::Float64 = f.soil_SWD - (rainfall - ET)
     tmp = max(0.0, min(tmp, f.soil_TAW))
     f.soil_SWD = round(tmp, digits=4)
 end

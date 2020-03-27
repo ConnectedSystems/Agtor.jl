@@ -29,7 +29,7 @@ function optimize_irrigated_area(m::Manager, zone::FarmZone)::Dict
     areas::Array{JuMP.VariableRef} = JuMP.VariableRef[]
     sizehint!(calc, num_fields)
 
-    field_areas::Dict = Dict{String, Dict}()
+    field_areas::Dict{String, Dict} = Dict{String, Dict}()
     sizehint!(field_areas, num_fields)
 
     zone_ws::Array{WaterSource} = zone.water_sources

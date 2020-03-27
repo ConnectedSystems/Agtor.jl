@@ -15,16 +15,17 @@ mutable struct Climate <: AgComponent
         data[:, :Year] = Dates.year.(c.time_steps)
 
         gdf = groupby(data[:, filter(x -> x != :Date, names(data))], :Year)
-        not_year_col = filter(x -> x != :Year, names(gdf))
+        not_year_col::Array{Symbol,1} = filter(x -> x != :Year, names(gdf))
         yearly = aggregate(gdf, sum)
 
-        rain_cols = filter(x -> occursin("rainfall", x), map(string, names(yearly)))
+        rain_cols::Array{String,1} = filter(x -> occursin("rainfall", x), map(string, names(yearly)))
         append!(rain_cols, ["Year"])
 
         c.annual_rainfall = yearly[:, map(Symbol, rain_cols)]
 
-        stats = [:mean, :std, :min, :q25, :median, :q75, :max, :eltype, :nunique, :nmissing]
+        stats::Array{Symbol,1} = [:mean, :std, :min, :q25, :median, :q75, :max, :eltype, :nunique, :nmissing]
         not_year_col = filter(x -> x != :Year, names(yearly))
+
         c.description = describe(yearly[:, not_year_col], stats...)
 
         return c
@@ -81,7 +82,7 @@ Parameters
 """
 function get_season_range(c::Climate, p_start::Date, p_end::Date)::DataFrame
     dates::Array{Date,1} = c.time_steps
-    mask = (p_start .<= dates .<= p_end)
+    mask::BitArray{1} = (p_start .<= dates .<= p_end)
     return c.data[mask, :]
 end
 
@@ -116,9 +117,9 @@ function get_seasonal_rainfall(c::Climate, season_range::Array{Date}, partial_na
     numeric, representing seasonal rainfall
     """
     s::Date, e::Date = season_range
-    rain_cols = [rc for rc in names(c.data) 
-                 if occursin("rainfall", String(rc)) && occursin(partial_name, String(rc))
-                ]
+    rain_cols::Array{Symbol,1} = [rc for rc in names(c.data) 
+                                  if occursin("rainfall", String(rc)) && occursin(partial_name, String(rc))
+                                ]
 
     subset::DataFrame = get_season_range(c, s, e)[!, rain_cols]
     return sum.(eachcol(subset))[1]
@@ -137,7 +138,7 @@ function get_seasonal_et(c::Climate, season_range::Array{Date}, partial_name::St
     numeric of seasonal rainfall
     """
     s::Date, e::Date = season_range
-    et_cols = [ec for ec in names(c.data) 
+    et_cols::Array{Symbol,1} = [ec for ec in names(c.data) 
                if occursin("ET", String(ec)) && occursin(partial_name, String(ec))]
 
     subset::DataFrame = get_season_range(c, s, e)[!, et_cols]
