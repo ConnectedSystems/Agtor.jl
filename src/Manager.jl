@@ -121,7 +121,7 @@ function optimize_irrigation(m::Manager, zone::FarmZone, dt::Date)::Tuple
                                         values are hectare area
                 Float : \$/ML cost of applying water
     """
-    model = Model(with_optimizer(GLPK.Optimizer))
+    model = Model(GLPK.Optimizer)
     num_fields::Int64 = length(zone.fields)
 
     profit::Array = []
@@ -133,11 +133,14 @@ function optimize_irrigation(m::Manager, zone::FarmZone, dt::Date)::Tuple
     zone_ws::Array{WaterSource} = zone.water_sources
     total_irrigated_area::Float64 = zone.total_irrigated_area
 
-    field_area::Dict = Dict{String, Dict}()
-    sizehint!(field_area, num_fields)
+    field_area::Dict = Dict{String, Dict}(f.name => Dict{String, Float64}() 
+                                            for f::FarmField in zone.fields)
+    # sizehint!(field_area, num_fields)
 
     req_water::Array{Float64} = []
     sizehint!(req_water, num_fields)
+
+    opt_vals::OrderedDict{String, Float64} = OrderedDict()
 
     max_ws_area::Dict{String, Dict} = Dict{String, Dict}()
     for f::FarmField in zone.fields
@@ -146,8 +149,11 @@ function optimize_irrigation(m::Manager, zone::FarmZone, dt::Date)::Tuple
 
         req_water_ML_ha::Float64 = calc_required_water(f, dt) / mm_to_ML
         push!(req_water, req_water_ML_ha)
+
+        max_ws_area[f_name] = possible_area_by_allocation(zone, f, req_water_ML_ha)
+        total_pos_area = min(sum(values(max_ws_area[f_name])), f.irrigated_area)
         crop_income_per_ha::Float64 = estimate_income_per_ha(f.crop)
-        if f.irrigation.name == "dryland" || req_water_ML_ha == 0.0
+        if f.irrigation.name == "dryland" || req_water_ML_ha == 0.0 || total_pos_area == 0.0
             field_area[f_name] = Dict{String, JuMP.VariableRef}(
                 ws.name => @variable(model,
                                      base_name="$(did)$(ws.name)",
