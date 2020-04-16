@@ -13,10 +13,10 @@ abstract type FarmField end
     ssm::Float64 = 0.0
     irrigated_area::Union{Nothing, Float64} = nothing
     sowed::Bool = false
-    _irrigated_volume::Dict = Dict{String, Float64}()
+    _irrigated_volume::DefaultDict = DefaultDict{String, Float64}(0.0)
     _num_irrigation_events::Int64 = 0
     _irrigation_cost::Float64 = 0.0
-    _next_crop_idx::Int64 = 1  # next crop will be 2nd item in crop_rotation
+    _next_crop_idx::Int64 = 2  # next crop will be 2nd item in crop_rotation
     _seasonal_income::OrderedDict{Date, Float64} = OrderedDict{Date, Float64}()
     _seasonal_irrigation_vol::OrderedDict{Date, Float64} = OrderedDict{Date, Float64}()
 end
@@ -63,7 +63,7 @@ function Base.setproperty!(f::FarmField, v::Symbol, value)
                 f._irrigated_volume[k] = value
             end
         elseif length(value) == 2
-            f._irrigated_volume[value[1]] = value[2]
+            f._irrigated_volume[value[1]] += value[2]
         end
     elseif v == :plant_date
         f.crop.plant_date = value
@@ -203,7 +203,7 @@ function reset_state!(f::FarmField)
         f.irrigated_area = f.total_area_ha
     end
 
-    f.irrigated_volume = 0.0
+    f.irrigated_volume = 0.0  # TODO: This clears the underlying log as well.
     f.irrigated_area = 0.0
     f._irrigation_cost = 0.0
     f._num_irrigation_events = 0
@@ -253,7 +253,7 @@ function total_costs(f::FarmField, dt::Date, water_sources::Array, num_fields::I
     irrig_area::Float64 = f.irrigated_area
     h20_usage_cost::Float64 = 0.0
     maint_cost::Float64 = 0.0
-    for w in water_sources
+    for w::WaterSource in water_sources
         water_used::Float64 = volume_used_by_source(f, w.name)
         ws_cost::Float64 = subtotal_costs(w, irrig_area, water_used)
         h20_usage_cost = h20_usage_cost + ws_cost

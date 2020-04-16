@@ -20,7 +20,7 @@ function optimize_irrigated_area(m::Manager, zone::FarmZone)::Dict
     ----------
     * zone : FarmZone object, representing a farm or a farming zone.
     """
-    model = Model(with_optimizer(GLPK.Optimizer))
+    model = Model(GLPK.Optimizer)
 
     calc::Array = []
     num_fields::Int64 = length(zone.fields)
@@ -80,8 +80,17 @@ function optimize_irrigated_area(m::Manager, zone::FarmZone)::Dict
         error("Could not optimize!")
     end
 
-    opt_vals::Dict{String, Float64} = Dict(name(v) => JuMP.value(v) for v in all_variables(model))
-    opt_vals["optimal_result"] = objective_value(model)
+    if termination_status(model) == MOI.OPTIMAL
+        # opt_vals = value.(model)
+        opt_vals = OrderedDict(name(v) => value(v) for v in all_variables(model))
+        opt_vals["optimal_result"] = objective_value(model)
+    elseif termination_status(model) == MOI.TIME_LIMIT && has_values(model)
+        @warn "Farm model optimization was sub-optimal"
+        opt_vals = OrderedDict(name(v) => value(v) for v in all_variables(model))
+        opt_vals["optimal_result"] = objective_value(model)
+    else
+        error("Could not optimize farm water use.")
+    end
 
     return opt_vals
 end
@@ -177,7 +186,6 @@ function optimize_irrigation(m::Manager, zone::FarmZone, dt::Date)::Tuple
         # maintenance_cost = (total_pump_cost + total_irrig_cost)
 
         # estimated gross income - variable costs per ha
-        max_ws_area[f.name] = possible_area_by_allocation(zone, f, req_water_ML_ha)
 
         # Creating individual field area variables
         field_area[f_name] = Dict(
@@ -189,14 +197,13 @@ function optimize_irrigation(m::Manager, zone::FarmZone, dt::Date)::Tuple
         )
 
         # (field_n_gw + field_n_sw) <= possible area
-        irrig_area = sum(values(field_area[f.name]))
-        total_pos_area = sum(values(max_ws_area[f.name]))
-        @constraint(model, irrig_area <= min(total_pos_area, f.irrigated_area))
+        irrig_area = sum(values(field_area[f_name]))
+        @constraint(model, irrig_area <= total_pos_area)
 
         # Costs to pump needed water volume from each water source
-        app_cost_per_ML = ML_water_application_cost(m, zone, f, req_water_ML_ha)
+        app_cost_per_ML::Dict{String, Float64} = ML_water_application_cost(m, zone, f, req_water_ML_ha)
 
-        tmp_d::Dict = Dict{String, Float64}(
+        tmp_d::Dict{String, Float64} = Dict{String, Float64}(
             "$(did)$(k)" => v
             for (k, v) in app_cost_per_ML
         )
@@ -211,22 +218,42 @@ function optimize_irrigation(m::Manager, zone::FarmZone, dt::Date)::Tuple
         append!(profit, tmp_l)
     end
 
-    # (field1_sw + ... + fieldn_sw) * ML_per_ha <= avail_sw
+    # (field_1_sw + ... + field_n_sw) <= sw_irrigation_area
+    # (field_1_gw + ... + field_n_gw) <= gw_irrigation_area
     avg_req_water::Float64 = mean(req_water)
-    for ws in zone_ws
-        irrig_area = sum([field_area[f.name][ws.name] for f in zone.fields])
-        @constraint(model, (irrig_area * avg_req_water) <= ws.allocation)
+    if avg_req_water > 0.0
+        for ws in zone_ws
+            irrig_area = sum([field_area[f.name][ws.name] for f in zone.fields])
+            @constraint(model, irrig_area <= (ws.allocation / avg_req_water))
+        end
     end
 
     @objective(model, Max, sum(profit))
-    JuMP.optimize!(model)
+    optimize!(model)
 
-    if termination_status(model) != MOI.OPTIMAL
-        error("Could not optimize!")
+    if termination_status(model) == MOI.OPTIMAL
+        opt_vals = OrderedDict(name(v) => value(v) for v in JuMP.all_variables(model))
+        opt_vals["optimal_result"] = objective_value(model)
+    elseif termination_status(model) == MOI.TIME_LIMIT && has_values(model)
+        @warn "Farm model optimization was sub-optimal"
+        opt_vals = OrderedDict(name(v) => value(v) for v in JuMP.all_variables(model))
+        opt_vals["optimal_result"] = objective_value(model)
+    else
+        error("Could not optimize farm water use.")
     end
 
-    opt_vals = Dict(name(v) => JuMP.value(v) for v in JuMP.all_variables(model))
-    opt_vals["optimal_result"] = JuMP.objective_value(model)
+    # opt_vals = Dict(name(v) => JuMP.value(v) for v in JuMP.all_variables(model))
+    # opt_vals = JuMP.value.(model)
+    # opt_vals["optimal_result"] = JuMP.objective_value(model)
+
+    # if opt_vals["field1__groundwater"] > 0.0
+    #     @info model
+    #     @info "avg req water ML/ha" avg_req_water
+    #     for ws in zone_ws
+    #         @info ws.name ws.allocation
+    #     end
+    #     @info opt_vals "\n"
+    # end
 
     return opt_vals, app_cost
 end
@@ -270,7 +297,7 @@ function ML_water_application_cost(m::Manager, zone::FarmZone, field::FarmField,
     zone_ws::Array{WaterSource} = zone.water_sources
     flow_rate::Float64 = field.irrigation.flow_rate_Lps
 
-    costs::Dict = Dict(
+    costs::Dict{String, Float64} = Dict(
         w.name => (pump_cost_per_ML(w, flow_rate) 
                     * req_water_ML_ha)
                     + (w.cost_per_ML*req_water_ML_ha)
@@ -380,8 +407,8 @@ function run_timestep(farmer::Manager, zone::FarmZone, dt::Date)
             irrigation, cost_per_ML = optimize_irrigation(farmer, zone::FarmZone, dt)
             water_to_apply_mm = calc_required_water(f, dt)
             for ws in zone.water_sources
-                ws_name = ws.name
-                did = replace("$(f.name)__$(ws_name)", " " => "_")
+                ws_name::String = ws.name
+                did::String = replace("$(f.name)__$(ws_name)", " " => "_")
                 area_to_apply::Float64 = irrigation[did]
 
                 if area_to_apply == 0.0
@@ -442,11 +469,12 @@ function run_timestep(farmer::Manager, zone::FarmZone, dt::Date)
                                            (dt, zone.water_sources))
 
             log_seasonal_income(f, income, dt)
-            log_seasonal_irrigation(f, f.irrigated_volume, dt)
 
-            # println(f.name, " harvested! - ", dt)
-            # println("Est. Total Income: ", f._seasonal_income[dt])
-            # println("------------------")
+            log_seasonal_irrigation(f, f.irrigated_volume, dt)
+            log_irrigation_by_water_source(zone, f, dt)
+
+            # TODO: Log seasonal irrigation based on water source
+            # log_seasonal_irrigation(f, f.irrigation_from_source, dt)
 
             set_next_crop!(f)
         end

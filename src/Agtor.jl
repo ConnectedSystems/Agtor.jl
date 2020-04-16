@@ -3,7 +3,7 @@ module Agtor
 using Parameters
 using CSV, DataFrames, Dates, YAML
 
-import DataStructures: OrderedDict
+import DataStructures: OrderedDict, DefaultDict
 
 include("AgBase/Units.jl")
 include("AgBase/file_loader.jl")

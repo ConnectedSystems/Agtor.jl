@@ -13,6 +13,7 @@ using DataStructures
 
     water_sources::Array{WaterSource}
     opt_field_area::Union{Dict, Nothing} = nothing
+    _irrigation_volume_by_source::DataFrame = DataFrame()
 end
 
 """Use allocation volume from a particular water source.
@@ -56,7 +57,7 @@ function possible_area_by_allocation(zone::FarmZone, field::FarmField, req_water
     @assert in(field.name, [f.name for f in zone.fields]) "Field must be in zone"
 
     tmp::Dict = Dict{String, Float64}()
-    for ws in zone.water_sources
+    for ws::WaterSource in zone.water_sources
         ws_name = ws.name
         tmp[ws_name] = possible_irrigation_area(field, ws.allocation, req_water_ML)
     end
@@ -115,10 +116,38 @@ function apply_rainfall!(zone::FarmZone, dt::Date)
 end
 
 
+function log_irrigation_by_water_source(zone::FarmZone, f::FarmField, dt::Date)
+    
+    # Construct log structure if needed
+    if nrow(zone._irrigation_volume_by_source) == 0
+        tmp_dict = OrderedDict()
+        tmp_dict[:Date] = Date[]
+        for ws::WaterSource in zone.water_sources
+            tmp_dict[Symbol(ws.name)] = Float64[]
+        end
+
+        zone._irrigation_volume_by_source = DataFrame(; tmp_dict...)
+    end
+
+    tmp = [0.0 for ws in zone.water_sources]
+    for (i, ws::WaterSource) in enumerate(zone.water_sources)
+        try
+            tmp[i] += f.irrigation_from_source[ws.name]
+        catch e
+            if isa(e, KeyError)
+                continue
+            end
+            throw(e)
+        end
+    end
+
+    push!(zone._irrigation_volume_by_source, [dt tmp...])
+end
+
 """Collate logged values, summing on identical datetimes"""
 function collate_log(zone::FarmZone, sym::Symbol; last=false)::OrderedDict
     target_log::Dict = Dict{Date, Float64}()
-    for f in zone.fields
+    for f::FarmField in zone.fields
         tmp = getfield(f, sym)
         if last
             tmp = Dict(sort(collect(tmp))[end])
@@ -135,5 +164,10 @@ end
 function collect_results(zone::FarmZone; last=false)::Tuple
     incomes::OrderedDict = collate_log(zone, :_seasonal_income; last=last)
     irrigations::OrderedDict = collate_log(zone, :_seasonal_irrigation_vol; last=last)
-    return incomes, irrigations
+    irrig_ws::OrderedDict = OrderedDict()
+
+    # res = zone._irrigation_volume_by_source
+    # @info aggregate(groupby(res, :Date), sum)
+
+    return incomes, irrigations, irrig_ws
 end
