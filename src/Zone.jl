@@ -1,9 +1,9 @@
 using Dates
 
 using Base.Threads
-using Printf
 using Formatting
 using DataStructures
+using Statistics
 
 
 @with_kw mutable struct FarmZone <: AgComponent
@@ -12,15 +12,15 @@ using DataStructures
     fields::Array{FarmField}
 
     water_sources::Array{WaterSource}
-    opt_field_area::Union{Dict, Nothing} = nothing
     _irrigation_volume_by_source::DataFrame = DataFrame()
 end
+
 
 """Use allocation volume from a particular water source.
 
 Volumes in ML.
 """
-function use_allocation!(z::FarmZone, ws::WaterSource, vol_ML::Float64)
+function use_allocation!(z::FarmZone, ws::WaterSource, vol_ML::Float64)::Nothing
     ws.allocation -= vol_ML
 
     if ws.allocation < 0.0
@@ -35,7 +35,10 @@ function use_allocation!(z::FarmZone, ws::WaterSource, vol_ML::Float64)
         msg *= "From: $ws_name\n"
         error(msg)
     end
+
+    return nothing
 end
+
 
 function Base.getproperty(z::FarmZone, v::Symbol)
     if v == :avail_allocation
@@ -53,10 +56,10 @@ end
 
 
 """Determine the possible irrigation area using water from each water source."""
-function possible_area_by_allocation(zone::FarmZone, field::FarmField, req_water_ML::Float64)::Dict
+function possible_area_by_allocation(zone::FarmZone, field::FarmField, req_water_ML::Float64)::Dict{String, Float64}
     @assert in(field.name, [f.name for f in zone.fields]) "Field must be in zone"
 
-    tmp::Dict = Dict{String, Float64}()
+    tmp::Dict{String, Float64} = Dict{String, Float64}()
     for ws::WaterSource in zone.water_sources
         ws_name = ws.name
         tmp[ws_name] = possible_irrigation_area(field, ws.allocation, req_water_ML)
@@ -65,6 +68,7 @@ function possible_area_by_allocation(zone::FarmZone, field::FarmField, req_water
     return tmp
 end
 
+
 """The total area marked for irrigation."""
 function irrigated_area(zone::FarmZone)::Float64
     fields::Array = zone.fields
@@ -72,20 +76,21 @@ function irrigated_area(zone::FarmZone)::Float64
 end
 
 
-"""Calculate ML per ha to apply."""
-function calc_irrigation_water(zone::FarmZone, field::FarmField)::Float64
-    req_water_ML::Float64 = required_water(field)
+# """Calculate ML per ha to apply."""
+# function calc_irrigation_water(zone::FarmZone, field::FarmField)::Float64
+#     req_water_ML::Float64 = required_water(field)
 
-    # Can only apply water that is available
-    ML_per_ha::Float64 = zone.avail_allocation / field.irrigated_area
-    if req_water_ML < ML_per_ha
-        irrig_water = req_water_ML
-    else
-        irrig_water = ML_per_ha
-    end
+#     # Can only apply water that is available
+#     ML_per_ha::Float64 = zone.avail_allocation / field.irrigated_area
+#     if req_water_ML < ML_per_ha
+#         irrig_water = req_water_ML
+#     else
+#         irrig_water = ML_per_ha
+#     end
 
-    return irrig_water
-end
+#     return irrig_water
+# end
+
 
 function apply_irrigation!(zone::FarmZone, field::CropField, 
                           ws::WaterSource, water_to_apply_mm::Float64,
@@ -98,29 +103,35 @@ function apply_irrigation!(zone::FarmZone, field::CropField,
     field.irrigated_volume = (ws.name, vol_ML)
 end
 
-function apply_rainfall!(zone::FarmZone, dt::Date)
-    data::DataFrame = zone.climate.data
-    idx = zone.climate.time_steps .== dt
-    subset::DataFrame = data[findall(idx), :]
-    rainfall::Float64, et::Float64 = 0.0, 0.0
 
-    Threads.@threads for f in zone.fields
+"""Apply rainfall and ET to influence soil water deficit."""
+function apply_rainfall!(zone::FarmZone, dt::Date)::Nothing
+    data::DataFrame = zone.climate.data
+    idx::BitArray = zone.climate.time_steps .== dt
+    subset::DataFrame = data[idx, :]
+
+    @inbounds for f in zone.fields
         # get rainfall and et for datetime
-        f_name = f.name
-        rain_col = Symbol("$(f_name)_rainfall")
-        et_col = Symbol("$(f_name)_ET")
-        rainfall, et = subset[1, rain_col], subset[1, et_col]
+        f_name::String = f.name
+        rain_col::Symbol = Symbol("$(f_name)_rainfall")
+        et_col::Symbol = Symbol("$(f_name)_ET")
+
+        rainfall::Float64, et::Float64 = subset[1, rain_col], subset[1, et_col]
 
         update_SWD!(f, rainfall, et)
+
+        @debug "SWD After Rainfall" f.soil_SWD rainfall et
     end
+
+    return nothing
 end
 
 
-function log_irrigation_by_water_source(zone::FarmZone, f::FarmField, dt::Date)
+function log_irrigation_by_water_source(zone::FarmZone, f::FarmField, dt::Date)::Nothing
     
     # Construct log structure if needed
     if nrow(zone._irrigation_volume_by_source) == 0
-        tmp_dict = OrderedDict()
+        tmp_dict::OrderedDict = OrderedDict()
         tmp_dict[:Date] = Date[]
         for ws::WaterSource in zone.water_sources
             tmp_dict[Symbol(ws.name)] = Float64[]
@@ -129,7 +140,7 @@ function log_irrigation_by_water_source(zone::FarmZone, f::FarmField, dt::Date)
         zone._irrigation_volume_by_source = DataFrame(; tmp_dict...)
     end
 
-    tmp = [0.0 for ws in zone.water_sources]
+    tmp::Array{Float64} = Float64[0.0 for ws in zone.water_sources]
     for (i, ws::WaterSource) in enumerate(zone.water_sources)
         try
             tmp[i] += f.irrigation_from_source[ws.name]
@@ -142,13 +153,17 @@ function log_irrigation_by_water_source(zone::FarmZone, f::FarmField, dt::Date)
     end
 
     push!(zone._irrigation_volume_by_source, [dt tmp...])
+    
+    return nothing
 end
 
+
 """Collate logged values, summing on identical datetimes"""
-function collate_log(zone::FarmZone, sym::Symbol; last=false)::OrderedDict
-    target_log::Dict = Dict{Date, Float64}()
+function collate_log(zone::FarmZone, sym::Symbol; last=false)::OrderedDict{Date, Float64}
+    target_log::Dict{Date, Float64} = Dict{Date, Float64}()
     for f::FarmField in zone.fields
         tmp = getfield(f, sym)
+
         if last
             tmp = Dict(sort(collect(tmp))[end])
         end
@@ -160,14 +175,28 @@ function collate_log(zone::FarmZone, sym::Symbol; last=false)::OrderedDict
 end
 
 
+function collate_log(zone::FarmZone)::DataFrame
+    tmp::DataFrame = reduce(vcat, [f._seasonal_log for f in zone.fields])
+    collated::DataFrame = aggregate(groupby(tmp, :Date), sum)
+
+    collated[:, Symbol("Dollar per ML")] = collated[:, :income_sum] ./ collated[:, :irrigated_volume_sum]
+    collated[:, Symbol("ML per Irrigated Yield")] = collated[:, :irrigated_volume_sum] ./ collated[:, :irrigated_yield_sum]
+    collated[:, Symbol("Dollar per Ha")] = collated[:, :income_sum] ./ (collated[:, :dryland_area_sum] + collated[:, :irrigated_area_sum])
+    collated[:, Symbol("Avg Irrigated Yield")] = collated[:, :irrigated_yield_sum] ./ collated[:, :irrigated_area_sum]
+    collated[:, Symbol("Avg Dryland Yield")] = collated[:, :dryland_yield_sum] ./ collated[:, :dryland_area_sum]
+
+    return collated
+end
+
+
 """Collect model run results for a FarmZone"""
-function collect_results(zone::FarmZone; last=false)::Tuple
-    incomes::OrderedDict = collate_log(zone, :_seasonal_income; last=last)
-    irrigations::OrderedDict = collate_log(zone, :_seasonal_irrigation_vol; last=last)
-    irrig_ws::OrderedDict = OrderedDict()
+function collect_results(zone::FarmZone; last=false)::DataFrame
+    collated_res = collate_log(zone)
 
-    # res = zone._irrigation_volume_by_source
-    # @info aggregate(groupby(res, :Date), sum)
+    ws_irrig = zone._irrigation_volume_by_source
+    irrig_ws::DataFrame = aggregate(groupby(ws_irrig, :Date), sum)
 
-    return incomes, irrigations, irrig_ws
+    collated_res = hcat(collated_res, irrig_ws[:, setdiff(names(irrig_ws), [:Date])])
+
+    return collated_res
 end
