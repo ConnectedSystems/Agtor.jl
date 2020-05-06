@@ -12,10 +12,10 @@ end
 
 @with_kw mutable struct RealParameter <: AgParameter
     name::String
-    min_val::Real
-    max_val::Real
-    default_val::Real
-    value::Real
+    min_val::Float64
+    max_val::Float64
+    default_val::Float64
+    value::Float64
 
     RealParameter(name, min_val, max_val, value) = new(name, min_val, max_val, value, value)
 end
@@ -34,6 +34,10 @@ function Base.:/(x::AgParameter, y::AgParameter) x.value / y.value end
 function Base.:*(x::AgParameter, y::AgParameter) x.value * y.value end
 function Base.:^(x::AgParameter, y::AgParameter) x.value^y.value end
 
+function Base.:*(x::String, y::ConstantParameter) x * y.value end
+
+function Base.convert(x::Type{Any}, y::Agtor.AgParameter) convert(x, y.value) end
+
 
 """Returns min/max values"""
 function value_range(p::AgParameter)::Tuple
@@ -43,6 +47,7 @@ function value_range(p::AgParameter)::Tuple
     return p.min, p.max
 end
 
+
 """Returns max - min, or 0.0 if no min value defined"""
 function value_dist(p::AgParameter)::Float64
     if hasproperty(p, :min_val) == false
@@ -51,8 +56,9 @@ function value_dist(p::AgParameter)::Float64
     return p.max - p.min
 end
 
+
 function is_const(p::AgParameter)::Bool
-    if value_dist(p) == 0.0
+    if (p isa ConstantParameter) || (value_dist(p) == 0.0)
         return true
     end
     return false

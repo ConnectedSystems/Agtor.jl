@@ -14,7 +14,7 @@ function load_yaml(data_dir::String, ext::String=".yml")::Dict{String, Dict}
 
     data_files = glob("$(data_dir)" * "*$ext")
 
-    loaded_dataset = Dict{String, Dict}()
+    loaded_dataset::Dict{String, Dict} = Dict{String, Dict}()
     Threads.@threads for fn in data_files
         data = YAML.load(open(fn))
         loaded_dataset[data["name"]] = data
