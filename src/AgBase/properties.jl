@@ -1,59 +1,61 @@
+"""
+Generate AgParameter definitions.
 
-function generate_params(prefix::String, dataset::Dict, override::Union{Dict, Nothing}=nothing)
-    """Generate AgParameter definitions.
+Parameters
+----------
+prefix : str
 
-    Parameters
-    ----------
-    prefix : str
-    dataset : Dict, of parameters for given component
-    override : Dict{str, object}, values to override nominals with keys
-               based on prefix + name
-    
-    Returns
-    ----------
-    * Dict matching structure of dataset
-    """
+dataset : Dict, of parameters for given component
+
+override : Dict{str, object}, 
+    values to override nominals with keys based on prefix + name
+
+Returns
+----------
+* Dict matching structure of dataset
+"""
+function generate_params(prefix::String, dataset::Dict, override::Union{Dict, Nothing}=nothing)::Dict{Symbol, Union{Dict, Union{AgParameter, Any}}}
     prefix *= "__"
     if isnothing(override)
         override = Dict()
     end
 
+    created = copy(dataset)
     for (n, vals) in dataset
         var_id = prefix * String(n)
 
         s = Symbol(n)
-        pop!(dataset, n)
+        pop!(created, n)
 
         if isa(vals, Dict)
-            dataset[s] = generate_params(prefix, vals, override)
+            created[s] = generate_params(prefix, vals, override)
             continue
         end
         
         # Replace nominal value with override value if specified
         if var_id in keys(override)
             vals = pop!(override, var_id)
-            dataset[s] = vals # Constant(var_id, vals)
+            created[s] = vals  # ConstantParameter(var_id, vals)
             continue
         end
 
         if length(vals) == 1
-            dataset[s] = vals # Constant(var_id, vals)
+            created[s] = vals  # ConstantParameter(var_id, vals)
             continue
         end 
 
         val_type, param_vals = vals[1], vals[2:end]
 
         if length(unique(param_vals)) == 1
-            dataset[s] = param_vals[1] # Constant(var_id, param_vals[1])
+            created[s] = param_vals[1]  # ConstantParameter(var_id, param_vals[1])
             continue
         end
 
-        # ptype = Symbol(val_type)
-        # param = @eval ptype(var_id, param_vals[2:end]..., param_vals[1])
-        dataset[s] = param_vals[1]
+        ptype = Symbol(val_type)
+        created[s] = eval(ptype)(var_id, param_vals[2:end]..., param_vals[1])
     end
 
-    return dataset
+    return created
 end
 
 
