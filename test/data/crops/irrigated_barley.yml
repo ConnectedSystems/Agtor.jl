@@ -5,7 +5,7 @@ crop_type: irrigated_cereal
 # nominal "best guess" values, min, and max 
 # plant_dates are assumed to be static across all seasons
 properties:
-  plant_date: ["05-31", "05-31", "05-31"]
+  plant_date: ["CategoricalParameter", "05-31", "05-31", "05-31"]
   yield_per_ha: ["RealParameter", 3.25, 2.5, 7.0]
   price_per_yield: ["RealParameter", 200.0, 100.0, 250.0]
   variable_cost_per_ha: ["RealParameter", 160.0, 120.0, 350.0]
