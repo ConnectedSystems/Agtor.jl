@@ -1,6 +1,7 @@
 """Represents generic farm infrastructure."""
 abstract type Infrastructure <: AgComponent end
 
+
 macro def(name, definition)
     return quote
         macro $(esc(name))()
@@ -40,6 +41,7 @@ function maintenance_year(infra::Infrastructure)::Dict{String, Float64}
     )
     return maintenance_year
 end
+
 
 """Calculate maintenance costs.
 

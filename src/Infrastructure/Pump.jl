@@ -33,7 +33,7 @@ where:
 * `D` is the derating factor
 * `102` is a constant, as given in Velloti & Kalogernis (2013)
 
-See
+See:
     * `Robinson, D. W., 2002 <http://www.clw.csiro.au/publications/technical2002/tr20-02.pdf>`_
     * `Vic. Dept. Agriculture, 2006 <http://agriculture.vic.gov.au/agriculture/farm-management/soil-and-water/irrigation/border-check-irrigation-design>`_
     * `Vellotti & Kalogernis, 2013 <http://irrigation.org.au/wp-content/uploads/2013/06/Gennaro-Velloti-and-Kosi-Kalogernis-presentation.pdf>`_
@@ -41,16 +41,20 @@ See
 Parameters
 ----------
 flow_rate_Lps : required flow rate in Litres per second over the irrigation duration
-head_pressure : Head pressure of pumping system in metres. Uses water level of water
-                        source if not given.
-additional_head : Additional head pressure, typically factored in from the implemented
-                        irrigation system
+
+head_pressure : Head pressure of pumping system in metres.
+
+Parameters taken from `Pump`
+----------------------------
 pump_efficiency : Efficiency of pump. Defaults to 0.7 (70%)
+
 derating : Accounts for efficiency losses between the energy required at the pump
                     shaft and the total energy required. Defaults to 0.75
+
 fuel_per_kW : Amount of fuel (in litres) required for a Kilowatt hour.
                     Defaults to 0.25L for diesel (Robinson 2002).
                     Is only used if cost_per_kw is not given.
+
 
 Returns
 -------
