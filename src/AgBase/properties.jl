@@ -20,9 +20,9 @@ function generate_params(prefix::String, dataset::Dict, override::Union{Dict, No
         override = Dict()
     end
 
-    created = copy(dataset)
+    created::Dict{Union{String, Symbol}, Union{AgParameter, Any}} = copy(dataset)
     for (n, vals) in dataset
-        var_id = prefix * String(n)
+        var_id = prefix * n
 
         s = Symbol(n)
         pop!(created, n)
@@ -35,19 +35,19 @@ function generate_params(prefix::String, dataset::Dict, override::Union{Dict, No
         # Replace nominal value with override value if specified
         if var_id in keys(override)
             vals = pop!(override, var_id)
-            created[s] = vals  # ConstantParameter(var_id, vals)
+            created[s] = ConstantParameter(var_id, vals)
             continue
         end
 
         if length(vals) == 1
-            created[s] = vals  # ConstantParameter(var_id, vals)
+            created[s] = ConstantParameter(var_id, vals)
             continue
         end 
 
         val_type, param_vals = vals[1], vals[2:end]
 
         if length(unique(param_vals)) == 1
-            created[s] = param_vals[1]  # ConstantParameter(var_id, param_vals[1])
+            created[s] = ConstantParameter(var_id, param_vals[1])
             continue
         end
 
@@ -56,6 +56,10 @@ function generate_params(prefix::String, dataset::Dict, override::Union{Dict, No
     end
 
     return created
+end
+
+
+function sample_params(dataset::Dict)
 end
 
 

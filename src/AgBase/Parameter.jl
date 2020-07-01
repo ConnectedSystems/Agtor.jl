@@ -1,6 +1,11 @@
 using Mixers
+import Dates
+
 
 abstract type AgParameter end
+
+
+AgUnion = Union{Date, Int64, Float64, AgParameter}
 
 @with_kw mutable struct ConstantParameter <: AgParameter
     name::String
@@ -22,44 +27,79 @@ end
 
 @with_kw mutable struct CategoricalParameter <: AgParameter
     name::String
-    cat_val::Array{Any}
+    cat_val::Tuple{Any}
     default_val::Any
     value::Any
     
 end
 
-function Base.:+(x::AgParameter, y::AgParameter) x.value + y.value end
-function Base.:-(x::AgParameter, y::AgParameter) x.value - y.value end
-function Base.:/(x::AgParameter, y::AgParameter) x.value / y.value end
-function Base.:*(x::AgParameter, y::AgParameter) x.value * y.value end
-function Base.:^(x::AgParameter, y::AgParameter) x.value^y.value end
 
-function Base.:*(x::String, y::ConstantParameter) x * y.value end
+# Below is equivalent to defining methods for each operation, e.g:
+#    function Base.:+(x::AgParameter, y::AgParameter) x.value + y.value end
+for op = (:+, :-, :/, :*, :^)
+    @eval Base.$op(x::AgParameter, y::AgParameter) = Base.$op(x.value, y.value)
+end
+
+for op = (:+, :-, :/, :*, :^)
+    @eval Base.$op(x::Union{Int, Real}, y::AgParameter) = Base.$op(x, y.value)
+end
+
+for op = (:+, :-, :/, :*, :^)
+    @eval Base.$op(x::AgParameter, y::Union{Int, Real}) = Base.$op(x.value, y)
+end
+
+
+function Base.:*(x::String, y::Union{ConstantParameter, CategoricalParameter}) x * y.value end
 
 function Base.convert(x::Type{Any}, y::Agtor.AgParameter) convert(x, y.value) end
 
 
+for op = (:Year, :Month, :Day)
+    @eval Dates.$op(x::AgParameter) = Dates.$op(x.value)
+end
+
+
 """Returns min/max values"""
-function value_range(p::AgParameter)::Tuple
-    if hasproperty(p, :min_val) == false
-        return p.value, p.value
+function min_max(p::AgParameter)
+    if is_const(p)
+        return p.value
     end
-    return p.min, p.max
+
+    return p.min_val, p.max_val
+end
+
+
+"""Returns min/max values"""
+function min_max(dataset::Dict)::Dict
+    mm::Dict{Union{Dict, Symbol}, Union{Dict, Any}} = Dict()
+    for (k, v) in dataset
+        mm[k] = min_max(v)
+    end
+
+    return mm
+end
+
+
+"""Checks if parameter is constant."""
+function is_const(p::AgParameter)::Bool
+    if (p isa ConstantParameter) || (value_range(p) == 0.0)
+        return true
+    end
+
+    return false
 end
 
 
 """Returns max - min, or 0.0 if no min value defined"""
-function value_dist(p::AgParameter)::Float64
+function value_range(p::AgParameter)::Float64
     if hasproperty(p, :min_val) == false
         return 0.0
     end
-    return p.max - p.min
+
+    return p.max_val - p.min_val
 end
 
 
-function is_const(p::AgParameter)::Bool
-    if (p isa ConstantParameter) || (value_dist(p) == 0.0)
-        return true
-    end
-    return false
-end
+# function collate_agparams(spec::Dict, real, consts, cats)
+
+# end
