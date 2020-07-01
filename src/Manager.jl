@@ -1,11 +1,10 @@
 
-using JuMP, GLPK
-using Statistics
+using JuMP, GLPK, Statistics
 import Base.Threads
 
 
 """An 'economically rational' crop farm manager."""
-mutable struct Manager <: AgComponent
+struct Manager <: AgComponent
     name::String
     opt::DataType
 
@@ -135,9 +134,7 @@ Returns
             Float : \$/ML cost of applying water
 """
 function optimize_irrigation(m::Manager, zone::FarmZone, dt::Date)::Tuple{OrderedDict, Dict}
-    
-    # model::Model = copy(m.model)
-    # set_optimizer(model, m.opt)
+
     model::Model = Model(m.opt)
 
     num_fields::Int64 = length(zone.fields)
