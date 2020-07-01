@@ -4,6 +4,7 @@ using Base.Threads
 using Formatting
 using DataStructures
 using Statistics
+# using Infiltrator
 
 
 @with_kw mutable struct FarmZone <: AgComponent
@@ -159,7 +160,7 @@ end
 
 
 """Collate logged values, summing on identical datetimes"""
-function collate_log(zone::FarmZone, sym::Symbol; last=false)::OrderedDict{Date, Float64}
+function collate_field_logs(zone::FarmZone, sym::Symbol; last=false)::OrderedDict{Date, Float64}
     target_log::Dict{Date, Float64} = Dict{Date, Float64}()
     for f::FarmField in zone.fields
         tmp = getfield(f, sym)
@@ -175,9 +176,8 @@ function collate_log(zone::FarmZone, sym::Symbol; last=false)::OrderedDict{Date,
 end
 
 
-function collate_log(zone::FarmZone)::DataFrame
-    tmp::DataFrame = reduce(vcat, [f._seasonal_log for f in zone.fields])
-    collated::DataFrame = aggregate(groupby(tmp, :Date), sum)
+function aggregate_field_logs(field_logs::DataFrame)::DataFrame
+    collated::DataFrame = aggregate(groupby(field_logs, :Date), sum)
 
     collated[:, Symbol("Dollar per ML")] = collated[:, :income_sum] ./ collated[:, :irrigated_volume_sum]
     collated[:, Symbol("ML per Irrigated Yield")] = collated[:, :irrigated_volume_sum] ./ collated[:, :irrigated_yield_sum]
@@ -189,14 +189,38 @@ function collate_log(zone::FarmZone)::DataFrame
 end
 
 
+"""Collate logged values, aggregating to the zonal level based on identical datetimes."""
+function collate_field_logs(zone::FarmZone)::DataFrame
+    tmp::DataFrame = reduce(vcat, [f._seasonal_log for f in zone.fields])
+    collated::DataFrame = aggregate_field_logs(tmp)
+
+    return collated
+end
+
+
+"""Collate logged values, aggregating to the zonal level based on identical datetimes."""
+function collate_field_logs(seasonal_logs::Dict)::DataFrame
+    s_logs = values(seasonal_logs)
+    tmp::DataFrame = reduce(vcat, s_logs)
+    collated::DataFrame = aggregate_field_logs(tmp)
+
+    return collated
+end
+
+
 """Collect model run results for a FarmZone"""
-function collect_results(zone::FarmZone; last=false)::DataFrame
-    collated_res = collate_log(zone)
+function collect_results(zone::FarmZone; last=false)::Tuple{DataFrame,Dict{Any,Any}}
+    field_logs = Dict(
+        f.name => f._seasonal_log
+        for f in zone.fields
+    )
+
+    collated = collate_field_logs(field_logs)
 
     ws_irrig = zone._irrigation_volume_by_source
     irrig_ws::DataFrame = aggregate(groupby(ws_irrig, :Date), sum)
 
-    collated_res = hcat(collated_res, irrig_ws[:, setdiff(names(irrig_ws), [:Date])])
+    collated_res = hcat(collated, irrig_ws[:, setdiff(names(irrig_ws), [:Date])])
 
-    return collated_res
+    return collated_res, field_logs
 end

@@ -1,8 +1,9 @@
+import Revise
 import Agtor
 
 using Profile, BenchmarkTools, OwnTime, Logging
 
-using CSV
+using JLD, HDF5
 using Dates
 using DataStructures
 using DataFrames
@@ -15,6 +16,7 @@ using Agtor
 # $ set JULIA_NUM_THREADS=4 && julia dev.jl
 
 # Start month/day of growing season
+# Represents when water allocations start getting announced.
 const gs_start = (5, 1)
 
 function setup_zone(data_dir::String="../test/data/")
@@ -24,8 +26,6 @@ function setup_zone(data_dir::String="../test/data/")
     use_threads = Threads.nthreads() > 1
     data = CSV.read(tgt, threaded=use_threads, dateformat="dd-mm-YYYY")
     climate_data::Climate = Climate(data)
-
-    climate_data.time_steps[1]
 
     crop_dir::String = "$(data_dir)crops/"
     crop_data::Dict{String, Dict} = load_yaml(crop_dir)
@@ -46,18 +46,16 @@ function setup_zone(data_dir::String="../test/data/")
     pump_specs::Dict{String, Dict} = load_yaml(pump_spec_dir)
     w_specs::Array{WaterSource} = []
     for (k, v) in water_specs
+        # TODO: This should be part of the spec...
         if v["name"] == "groundwater"
-            # pump = Pump('groundwater', 2000.0, 1, 5, 0.05, 0.2, True, 0.7, 0.28, 0.75)
-            pump_name = "groundwater"
             ini_head = 25.0
             allocation = 50.0
         else
-            # pump = Pump('surface_water', 2000.0, 1, 5, 0.05, 0.2, True, 0.7, 0.28, 0.75)
-            pump_name = "surface_water"
             ini_head = 0.0
             allocation = 225.0
         end
 
+        pump_name = v["name"]
         v["pump"] = create(Pump, pump_specs[pump_name])
         v["head"] = ini_head  # convert to metre type
         v["allocation"] = allocation
@@ -94,7 +92,7 @@ function setup_zone(data_dir::String="../test/data/")
     return z1, w_specs
 end
 
-function test_short_run(data_dir::String="../test/data/")::DataFrame
+function test_short_run(data_dir::String="../test/data/")::Tuple{DataFrame,Dict{Any,Any}}
     z1, (deeplead, channel_water) = setup_zone(data_dir)
 
     farmer = Manager("test")
@@ -114,7 +112,7 @@ function test_short_run(data_dir::String="../test/data/")::DataFrame
         end
     end
 
-    results = collect_results(z1)
+    zone_results, field_results = collect_results(z1)
 
     # TODO:
     # Under debug mode or something
@@ -130,17 +128,35 @@ function test_short_run(data_dir::String="../test/data/")::DataFrame
     # [x] $/ha generated
     # [x] yield/ha
 
-    return results
+    return zone_results, field_results
 end
 
 
 # Run twice to get compiled performance
-@time results = test_short_run()
-@time results = test_short_run()
+@time zone_results, field_results = test_short_run()
+@time zone_results, field_results = test_short_run()
 
-CSV.write("dev_result.csv", results)
+# CSV.write("dev_result.csv", zone_results)
 
-@profile results = test_short_run()
+# Write out to Julia HDF5
+jldopen("test.jld", "w") do file
+    g = g_create(file, "zone_1") # create a group
+    g["zone_results"] = zone_results
+    g["field_results"] = field_results
+    # write(file, "zone_results", zone_results)
+    # write(file, "field_results", field_results)
+end
+
+zone_results = jldopen("test.jld", "r") do file
+    read(file, "zone_1")
+end
+
+imported_res = jldopen("test.jld", "r") do file
+    read(file)
+end
+
+
+@profile zone_results, field_results = test_short_run()
 
 # io = open("log.txt", "w+")
 # logger = SimpleLogger(io, Logging.Debug)
