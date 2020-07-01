@@ -1,9 +1,11 @@
-import Agtor: set_next_crop!, update_stages!, in_season
-using Agtor
+import Agtor: set_next_crop!, update_stages!, in_season, load_yaml
+using Agtor, Dates, CSV
 using Test
 
+import Flatten
 
-function setup_zone(data_dir::String="../test/data/")
+
+function setup_zone(data_dir::String="test/data/")
     climate_dir::String = "$(data_dir)climate/"  
     tgt::String = climate_dir * "farm_climate_data.csv"
 
@@ -33,19 +35,16 @@ function setup_zone(data_dir::String="../test/data/")
     w_specs::Array{WaterSource} = []
     for (k, v) in water_specs
         if v["name"] == "groundwater"
-            # pump = Pump('groundwater', 2000.0, 1, 5, 0.05, 0.2, True, 0.7, 0.28, 0.75)
-            pump_name = "groundwater"
             ini_head = 25.0
             allocation = 50.0
         else
-            # pump = Pump('surface_water', 2000.0, 1, 5, 0.05, 0.2, True, 0.7, 0.28, 0.75)
-            pump_name = "surface_water"
             ini_head = 0.0
             allocation = 225.0
         end
 
+        pump_name = v["name"]
         v["pump"] = create(Pump, pump_specs[pump_name])
-        v["head"] = ini_head  # convert to metre type
+        v["head"] = ini_head
         v["allocation"] = allocation
         
         ws::WaterSource = create(WaterSource, v)
@@ -121,9 +120,7 @@ function test_crop_update_stages()
     z1, (deeplead, channel_water) = setup_zone()
     crop = z1.fields[1].crop
 
-    # @info crop.growth_stages
     update_stages!(crop, Date("2010-01-01"))
-    # @info crop.growth_stages
 
     for (k,v) in crop.growth_stages
         @test (v[:start] + Dates.Day(v[:stage_length])) == v[:end]
@@ -131,13 +128,41 @@ function test_crop_update_stages()
 end
 
 
-@testset "Agtor.jl" begin
-    # Write your own tests here.
+function test_pump_creation(data_dir::String="test/data/")
+    pump_spec_dir::String = "$(data_dir)pumps/"
+    pump_specs::Dict{String, Dict} = load_yaml(pump_spec_dir)
 
+    pumps = Pump[create(Pump, spec) for (pn, spec) in pump_specs]
+
+    for created in pumps
+        @test created isa Pump
+        @info Flatten.flatten(created)
+    end
+end
+
+
+function test_parameter_extraction(data_dir::String="test/data/")
+    pump_spec_dir::String = "$(data_dir)pumps/"
+    pump_specs::Dict{String, Dict} = load_yaml(pump_spec_dir)
+
+    @info pump_specs
+end
+
+
+@testset "Agtor.jl" begin
+
+    test_parameter_extraction()
+
+
+    
     test_in_season()
     test_out_of_season()
 
     test_crop_plantings()
     test_crop_update_stages()
+
+    test_pump_creation()
+
+    
 
 end
