@@ -14,13 +14,13 @@ Returns
 ----------
 * Dict matching structure of dataset
 """
-function generate_params(prefix::String, dataset::Dict, override::Union{Dict, Nothing}=nothing)::Dict{Symbol, Union{Dict, Union{AgParameter, Any}}}
+function generate_params(prefix::String, dataset::Dict, override::Union{Dict, Nothing}=nothing)::Dict{Symbol, Any}
     prefix *= "__"
     if isnothing(override)
         override = Dict()
     end
 
-    created::Dict{Union{String, Symbol}, Union{AgParameter, Any}} = copy(dataset)
+    created::Dict{Union{String, Symbol}, Any} = copy(dataset)
     for (n, vals) in dataset
         var_id = prefix * n
 
@@ -39,20 +39,37 @@ function generate_params(prefix::String, dataset::Dict, override::Union{Dict, No
             continue
         end
 
-        if length(vals) == 1
-            created[s] = ConstantParameter(var_id, vals)
-            continue
-        end 
-
-        val_type, param_vals = vals[1], vals[2:end]
-
-        if length(unique(param_vals)) == 1
-            created[s] = ConstantParameter(var_id, param_vals[1])
+        if !in(vals[1], ["CategoricalParameter", "RealParameter", "ConstantParameter"])
+            created[s] = vals
             continue
         end
 
-        ptype = Symbol(val_type)
-        created[s] = eval(ptype)(var_id, param_vals[2:end]..., param_vals[1])
+        # if length(vals) == 1
+        #     created[s] = ConstantParameter(var_id, vals)
+        #     continue
+        # end 
+
+        if isa(vals, Array)
+            val_type, param_vals = vals[1], vals[2:end]
+
+            def_val = param_vals[1]
+
+            if length(unique(param_vals)) == 1
+                created[s] = ConstantParameter(var_id, def_val)
+                continue
+            end
+
+            ptype = Symbol(val_type)
+            # if val_type == "CategoricalParameter"
+            #     created[s] = CategoricalParameter(var_id, param_vals[2:end], def_val)
+            # else
+            #     created[s] = eval(ptype)(var_id, param_vals[2:end]..., def_val)
+            # end
+
+            created[s] = eval(ptype)(var_id, param_vals[2:end], def_val)
+        else
+            created[s] = vals
+        end
     end
 
     return created
