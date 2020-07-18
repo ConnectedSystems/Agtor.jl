@@ -45,7 +45,7 @@ properties:
   # access_service_point,50
   # bore_operation_licence,282.8
   # licence_renewal,136.2
-  yearly_cost: 659
+  yearly_cost: 659.0
 
   # No charge based on area
   cost_per_ha: 0.0
@@ -54,3 +54,6 @@ properties:
   # access: 3.96
   # resource_management: 4.33
   cost_per_ML: 8.29
+
+  head: 0.0  # Initial head
+  allocation: 225.0  # Initial allocation

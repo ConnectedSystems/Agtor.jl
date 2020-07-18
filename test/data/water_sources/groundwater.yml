@@ -38,6 +38,9 @@ properties:
   # low_reliability_storage: 5.18
   # above_entitlement_storage: 15.35
   cost_per_ML: 77.82  # ($/ML)
+  
+  head: 25.0  # Initial head
+  allocation: 50.0  # Initial allocation
 
 
 
