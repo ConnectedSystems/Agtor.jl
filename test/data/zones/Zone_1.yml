@@ -1,0 +1,35 @@
+name: Zone_1
+
+# Paths to data, relative to where project is run
+climate_data: "test/data/climate/farm_climate_data.csv"
+crop_spec: "test/data/crops/"
+irrigation_spec: "test/data/irrigations/"
+water_source_spec: "test/data/water_sources/"
+pump_spec: "test/data/pumps/"
+
+properties:
+
+  fields:
+    field1:
+      total_area_ha: 100.0
+      irrigation: 'gravity'
+      crop: 'irrigated_wheat'  # Initial crop choice
+      crop_rotation: ['irrigated_wheat', 'irrigated_barley']
+
+      # average total available water in soil (mm)
+      soil_TAW: 100.0
+
+      # Initial Soil Water Deficit
+      soil_SWD: 20.0
+  
+    field2:
+      total_area_ha: 90.0
+      irrigation: 'gravity'
+      crop: 'irrigated_wheat'  # Initial crop choice
+      crop_rotation: ['irrigated_wheat', 'irrigated_barley']
+
+      # average total available water in soil (mm)
+      soil_TAW: 100.0
+    
+      # Initial Soil Water Deficit
+      soil_SWD: 20.0
