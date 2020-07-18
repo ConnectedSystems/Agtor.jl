@@ -5,23 +5,23 @@ using Dates
     crop_type::String
 
     # Growth pattern
-    growth_stages::Dict{Symbol, Dict{Symbol, Union{Date, Int64}}}
-    coef_stages::Dict{Symbol, Dict{Symbol, Float64}}
+    growth_stages::Dict{Symbol, Dict{Symbol, Union{Date, Int64, AgParameter}}}
+    coef_stages::Dict{Symbol, Dict{Symbol, Union{Float64, Int64, AgParameter}}}
 
     # Crop properties
-    plant_date::Date
-    yield_per_ha::Float64
-    price_per_yield::Float64
-    variable_cost_per_ha::Float64
-    water_use_ML_per_ha::Float64
-    root_depth_m::Float64
-    et_coef::Float64
-    wue_coef::Float64
-    rainfall_threshold::Float64
-    ssm_coef::Float64
-    effective_root_zone::Float64
-    harvest_date::Date
-    harvest_offset::Day
+    plant_date::Union{Date, AgParameter}
+    yield_per_ha::Union{Float64, AgParameter}
+    price_per_yield::Union{Float64, AgParameter}
+    variable_cost_per_ha::Union{Float64, AgParameter}
+    water_use_ML_per_ha::Union{Float64, AgParameter}
+    root_depth_m::Union{Float64, AgParameter}
+    et_coef::Union{Float64, AgParameter}
+    wue_coef::Union{Float64, AgParameter}
+    rainfall_threshold::Union{Float64, AgParameter}
+    ssm_coef::Union{Float64, AgParameter}
+    effective_root_zone::Union{Float64, AgParameter}
+    harvest_date::Union{Date, AgParameter}
+    harvest_offset::Union{Day, Int64, AgParameter}
 
     function Crop(name::String, crop_type::String, growth_stages::Dict, start_dt::Date; props...)::Crop
         plant_date = props[:plant_date]
@@ -42,8 +42,8 @@ using Dates
         h_day = 0
         offset = 0
         start_date = sow_date
-        g_stages = Dict{Symbol, Dict{Symbol, Union{Date, Int64}}}()
-        coef_stages = Dict{Symbol, Dict{Symbol, Float64}}()
+        g_stages = Dict{Symbol, Dict{Symbol, Union{Date, Int64, AgParameter}}}()
+        coef_stages = Dict{Symbol, Dict{Symbol, Union{Int64, Float64, AgParameter}}}()
 
         @inbounds for (k, v) in growth_stages
             offset = v[:stage_length]
@@ -122,13 +122,17 @@ function subtotal_costs(c::Crop, year::Int64)::Float64
 end
 
 
-function create(cls::Type{Crop}, data::Dict{Any, Any}, start_dt::Date, override=nothing)::Crop
+function create(cls::Type{Crop}, data::Dict{Any, Any}, start_dt::Date, 
+                override=nothing, id_prefix::Union{String, Nothing}=nothing)::Crop
     name = data["name"]
     prop = data["properties"]
     crop_type = data["crop_type"]
     growth_stages = data["growth_stages"]
 
-    prefix = "Crop___$(name)__"
+    cls_name = Base.typename(cls)
+    prefix::String = "$(cls_name)__$(name)__"
+    @add_preprefix
+
     props = generate_params(prefix * "properties", prop, override)
     stages = generate_params(prefix * "growth_stages", growth_stages, override)
 

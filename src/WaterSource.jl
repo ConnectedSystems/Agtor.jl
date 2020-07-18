@@ -1,11 +1,11 @@
 @with_kw mutable struct WaterSource <: AgComponent
     name::String
-    cost_per_ML::Float64
-    cost_per_ha::Float64
-    yearly_cost::Float64
+    cost_per_ML::Union{Int64, Float64, AgParameter}
+    cost_per_ha::Union{Int64, Float64, AgParameter}
+    yearly_cost::Union{Int64, Float64, AgParameter}
     pump::Pump
-    head::Float64
-    allocation::Float64
+    head::Union{Int64, Float64, AgParameter}
+    allocation::Union{Int64, Float64, AgParameter}
 end
 
 function pump_cost_per_ML(ws::WaterSource, flow_rate_Lps::Float64)::Float64

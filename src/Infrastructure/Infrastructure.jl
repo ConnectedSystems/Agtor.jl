@@ -1,14 +1,8 @@
+import Agtor.@def
+
 """Represents generic farm infrastructure."""
 abstract type Infrastructure <: AgComponent end
 
-
-macro def(name, definition)
-    return quote
-        macro $(esc(name))()
-            esc($(Expr(:quote, definition)))
-        end
-    end
-end
 
 @def infrastructure_fields begin
     name::String
@@ -16,14 +10,14 @@ end
     # capital per ha or total implementation cost.
     # up to each implementing component to correctly calculate
     # maintenance, etc.
-    capital_cost::Float64
+    capital_cost::Union{AgParameter, Float64}
 
     # num years maintenance occurs, and 
     # assumed proportion of capital cost
-    minor_maintenance_schedule::Float64
-    major_maintenance_schedule::Float64
-    minor_maintenance_rate::Float64
-    major_maintenance_rate::Float64
+    minor_maintenance_schedule::Union{Int64, Float64, AgParameter}
+    major_maintenance_schedule::Union{Int64, Float64, AgParameter}
+    minor_maintenance_rate::Union{Float64, AgParameter}
+    major_maintenance_rate::Union{Float64, AgParameter}
 end
 
 function minor_maintenance_cost(a::Infrastructure)::Float64

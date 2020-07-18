@@ -1,16 +1,18 @@
-abstract type FarmField end
+using Infiltrator
+
+abstract type FarmField <: AgComponent end
 
 @with_kw mutable struct CropField <: FarmField
 
     name::String
-    total_area_ha::Float64
+    total_area_ha::Union{Float64, AgParameter}
     irrigation::Irrigation
     crop::Crop  # Initial value can just be the first item in crop_rotation
     crop_choices::Array{Crop}  # This can be the unique values in crop_rotation
     crop_rotation::Array{Crop}
-    soil_TAW::Float64
-    soil_SWD::Float64
-    ssm::Float64 = 0.0
+    soil_TAW::Union{Float64, AgParameter}
+    soil_SWD::Union{Float64, AgParameter}
+    ssm::Union{Float64, AgParameter} = 0.0
     irrigated_area::Union{Nothing, Float64} = nothing
     sowed::Bool = false
     _irrigated_volume::DefaultDict = DefaultDict{String, Float64}(0.0)

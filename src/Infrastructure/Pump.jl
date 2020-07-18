@@ -4,12 +4,12 @@
 
     @infrastructure_fields
 
-    pump_efficiency::Float64 = 0.7  # Efficiency of pump. Defaults to 0.7 (70%)
-    cost_per_kW::Float64 = 0.28  # cost in dollars/kW. Defaults to 0.28/kW
+    pump_efficiency::Union{Float64, AgParameter} = 0.7  # Efficiency of pump. Defaults to 0.7 (70%)
+    cost_per_kW::Union{Float64, AgParameter} = 0.28  # cost in dollars/kW. Defaults to 0.28/kW
     
     # Accounts for efficiency losses between the energy required at the pump
     # shaft and the total energy required. Defaults to 0.75
-    derating::Float64 = 0.75
+    derating::Union{Float64, AgParameter} = 0.75
 end
 
 function cost_per_ha(p::Pump, year_step::Int64, area::Float64)::Float64
