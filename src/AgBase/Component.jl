@@ -1,8 +1,22 @@
-
 abstract type AgComponent end
 
+
+macro def(name, definition)
+    return quote
+        macro $(esc(name))()
+            esc($(Expr(:quote, definition)))
+        end
+    end
+end
+
+@def add_preprefix begin
+    if !isnothing(id_prefix)
+        prefix = id_prefix * prefix
+    end
+end
+
 function create(cls::Type{T}, data::Dict{Any, Any},
-                override=nothing) where T <: AgComponent
+                override=nothing, id_prefix::Union{String, Nothing}=nothing) where T <: AgComponent
     cls_name = Base.typename(cls)
     tmp = copy(data)
     name = tmp["name"]
@@ -10,7 +24,9 @@ function create(cls::Type{T}, data::Dict{Any, Any},
 
     tmp = Dict(Symbol(s) => v for (s, v) in tmp)
 
-    prefix = "$(cls_name)___$name"
+    prefix::String = "$(cls_name)__$name"
+    @add_preprefix
+
     props::Dict{Symbol, Any} = generate_params(prefix, prop, override)
 
     return cls(; tmp..., props...)
