@@ -327,6 +327,36 @@ function total_costs(f::FarmField, dt::Date, water_sources::Array{WaterSource}, 
     return total_costs
 end
 
-function create(cls::AgComponent, data)
-    nothing
+
+function create(cls::Type{CropField}, data::Dict, available_crops::Array{Crop}, irrigations::Array{Irrigation}, 
+                override=nothing, id_prefix=nothing)
+
+    for (f_name, f_spec) in data
+        prefix = "Field__$(f_name)___"
+        @add_preprefix
+
+        f_spec["name"] = f_name
+        f_spec["crop_rotation"] = [deepcopy(c) for c in available_crops if c.name in f_spec["crop_rotation"]]
+        f_spec["crop_choices"] = [deepcopy(c) for c in f_spec["crop_rotation"]]
+        f_spec["crop"] = [deepcopy(c) for c in f_spec["crop_rotation"] if c.name == f_spec["crop"]][1]
+        f_spec["irrigation"] = [deepcopy(ir) for ir in irrigations if ir.name == f_spec["irrigation"]][1]
+
+        # Update all ids with correct prefix
+        (add_prefix!(prefix, cmp) for cmp in f_spec["crop_rotation"])
+        (add_prefix!(prefix, cmp) for cmp in f_spec["crop_choices"])
+        add_prefix!(prefix, f_spec["crop"])
+        add_prefix!(prefix, f_spec["irrigation"])
+        
+        for (f, v) in f_spec
+            if isa(f, String)
+                f_spec[Symbol(f)] = v
+                delete!(f_spec, f)
+            end
+        end
+    end
+
+    fields = CropField[cls(; f_spec...) for (k, f_spec) in data]
+
+    return fields
+
 end
