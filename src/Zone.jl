@@ -224,3 +224,48 @@ function collect_results(zone::FarmZone; last=false)::Tuple{DataFrame,Dict{Any,A
 
     return collated_res, field_logs
 end
+
+
+function create(cls::Type{FarmZone}, data::Dict{Any,Any}, override=nothing)
+    cls_name = Base.typename(cls)
+
+    name = data["name"]
+    prop = data["properties"]
+
+    tmp_prefix::String = "$(name)___"
+
+    # Expect only CSV for now...
+    if endswith(data["climate_data"], ".csv")
+        use_threads = Threads.nthreads() > 1
+        climate_seq = CSV.read(data["climate_data"], threaded=use_threads, dateformat="dd-mm-YYYY")
+    end
+
+    climate_data::Climate = Climate(climate_seq)
+
+    crop_data::Dict{String, Dict} = load_yaml(data["crop_spec"])
+    available_crops::Array{Crop} = Crop[create(Crop, data, climate_data.time_steps[1]) for data in values(crop_data)]
+    
+    water_specs::Dict{String, Dict} = load_yaml(data["water_source_spec"])
+    pump_specs::Dict{String, Dict} = load_yaml(data["pump_spec"])
+    water_sources::Array{WaterSource} = create(WaterSource, water_specs, pump_specs, override)
+
+    # Water source are related to a zone
+    [add_prefix!(tmp_prefix, ws) for ws in water_sources]
+
+    irrig_specs::Dict{String, Dict} = load_yaml(data["irrigation_spec"])
+    irrigs = [create(Irrigation, v, override) for v in values(irrig_specs)]
+
+    field_specs = data["properties"]["fields"]
+    fields::Array{CropField} = create(CropField, field_specs, available_crops, irrigs, override, tmp_prefix)
+
+    zone_spec::Dict{Symbol, Any} = Dict(
+        :name => name,
+        :climate => climate_data,
+        :fields => fields,
+        :water_sources => water_sources
+    )
+
+    zone = cls(; zone_spec...)
+
+    return zone
+end
