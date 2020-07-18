@@ -86,9 +86,9 @@ function get_season_range(c::Climate, p_start::Date, p_end::Date)::DataFrame
     return c.data[mask, :]
 end
 
-function ensure_date(c::Climate, p_start::String, p_end::String)::Tuple
-    """Converts strings to datetime."""
 
+"""Converts strings to datetime."""
+function ensure_date(c::Climate, p_start::String, p_end::String)::Tuple
     s::Date = Date(p_start)
     e::Date = Date(p_end)
 
@@ -97,25 +97,26 @@ function ensure_date(c::Climate, p_start::String, p_end::String)::Tuple
     return s, e
 end
 
+
+"""Retrieve seasonal rainfall by matching column name. 
+Columns names are expected to have 'rainfall' with some identifier.
+
+Parameters
+----------
+* season_range : List-like, start and end dates, can be string or datetime object
+* partial_name : str, string to (partially) match column name identifier on
+
+Example
+----------
+Where column names are: 'rainfall_field1', 'rainfall_field2', ...
+
+`get_seasonal_rainfall(c, ['1981-01-01', '1982-06-01'], 'field1')`
+
+Returns
+--------
+numeric, representing seasonal rainfall
+"""
 function get_seasonal_rainfall(c::Climate, season_range::Array{Date}, partial_name::String)::Float64
-    """Retrieve seasonal rainfall by matching column name. 
-    Columns names are expected to have 'rainfall' with some identifier.
-
-    Parameters
-    ----------
-    * season_range : List-like, start and end dates, can be string or datetime object
-    * partial_name : str, string to (partially) match column name identifier on
-
-    Example
-    ----------
-    Where column names are: 'rainfall_field1', 'rainfall_field2', ...
-
-    `get_seasonal_rainfall(c, ['1981-01-01', '1982-06-01'], 'field1')`
-
-    Returns
-    --------
-    numeric, representing seasonal rainfall
-    """
     s::Date, e::Date = season_range
     rain_cols::Array{Symbol,1} = [rc for rc in names(c.data) 
                                   if occursin("rainfall", String(rc)) && occursin(partial_name, String(rc))
@@ -125,18 +126,19 @@ function get_seasonal_rainfall(c::Climate, season_range::Array{Date}, partial_na
     return sum.(eachcol(subset))[1]
 end
 
+
+"""Retrieve seasonal evapotranspiration.
+
+Parameters
+----------
+* season_range : List-like, start and end dates, can be string or datetime object
+* partial_name : str, string to (partially) match column name identifier on
+
+Returns
+--------
+numeric of seasonal rainfall
+"""
 function get_seasonal_et(c::Climate, season_range::Array{Date}, partial_name::String)::DataFrame
-    """Retrieve seasonal evapotranspiration.
-
-    Parameters
-    ----------
-    * season_range : List-like, start and end dates, can be string or datetime object
-    * partial_name : str, string to (partially) match column name identifier on
-
-    Returns
-    --------
-    numeric of seasonal rainfall
-    """
     s::Date, e::Date = season_range
     et_cols::Array{Symbol,1} = [ec for ec in names(c.data) 
                if occursin("ET", String(ec)) && occursin(partial_name, String(ec))]
