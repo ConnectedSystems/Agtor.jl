@@ -44,11 +44,6 @@ function generate_params(prefix::String, dataset::Dict, override::Union{Dict, No
             continue
         end
 
-        # if length(vals) == 1
-        #     created[s] = ConstantParameter(var_id, vals)
-        #     continue
-        # end 
-
         if isa(vals, Array)
             val_type, param_vals = vals[1], vals[2:end]
 
@@ -59,14 +54,12 @@ function generate_params(prefix::String, dataset::Dict, override::Union{Dict, No
                 continue
             end
 
-            ptype = Symbol(val_type)
-            # if val_type == "CategoricalParameter"
-            #     created[s] = CategoricalParameter(var_id, param_vals[2:end], def_val)
-            # else
-            #     created[s] = eval(ptype)(var_id, param_vals[2:end]..., def_val)
-            # end
+            valid_vals = param_vals[2:end]
+            if val_type == "CategoricalParameter"
+                valid_vals = categorical(valid_vals, ordered=true)
+            end
 
-            created[s] = eval(ptype)(var_id, param_vals[2:end], def_val)
+            created[s] = eval(Symbol(val_type))(var_id, valid_vals, def_val)
         else
             created[s] = vals
         end
