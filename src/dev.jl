@@ -32,7 +32,7 @@ function setup_zone(data_dir::String="test/data/")
     return [create(FarmZone, z_spec) for (z_name, z_spec) in zone_specs]
 end
 
-function test_short_run(data_dir::String="test/data/")::Tuple{DataFrame,Dict{Any,Any}}
+function test_short_run(data_dir::String="test/data/")::Tuple{DataFrame,Dict}
     # z1, (deeplead, channel_water) = setup_zone(data_dir)
     zones = setup_zone(data_dir)
     z1 = zones[1]

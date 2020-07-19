@@ -8,7 +8,7 @@ mutable struct Climate <: AgComponent
     description::Any
     annual_rainfall::DataFrame
 
-    function Climate(data)
+    function Climate(data::DataFrame)
         c = new()
         c.data = data
         c.time_steps = data[!, :Date]
