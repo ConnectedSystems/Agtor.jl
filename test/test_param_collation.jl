@@ -19,7 +19,7 @@ function collect_params(data::Array)
     a = []
     for i in data
         if i isa AgComponent
-            append!(a, Flatten.flatten(i))
+            append!(a, param_info(i))
         elseif i isa Dict
             append!(a, collect_params(i))
         end
@@ -30,7 +30,7 @@ end
 
 
 function collate_params(data_dir::String="test/data/")
-    z1 = setup_zone()[1]
+    z1 = setup_zone(data_dir)[1]
 
     components = subtypes(AgComponent)
 
@@ -53,11 +53,11 @@ function collate_params(data_dir::String="test/data/")
             arr_type = eltype(tmp_f)
             tmp_flat = reduce(vcat, Flatten.flatten(tmp_f, Array{arr_type}))
             for i in tmp_flat
-                tmp = map(rp -> (rp.name, param_values(rp)), Flatten.flatten(i, AgParameter))
+                tmp = map(ap -> param_info(ap), Flatten.flatten(i, Agtor.AgParameter))
                 append!(collated, tmp)
             end
         elseif f_type in all_comps
-            tmp = Flatten.flatten(tmp_f, AgParameter)
+            tmp = map(ap -> param_info(ap), Flatten.flatten(tmp_f, Agtor.AgParameter))
             append!(collated, tmp)
         end
     end
