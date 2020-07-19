@@ -111,11 +111,12 @@ function apply_rainfall!(zone::FarmZone, dt::Date)::Nothing
     idx::BitArray = zone.climate.time_steps .== dt
     subset::DataFrame = data[idx, :]
 
+    z_name::String = zone.name
     @inbounds for f in zone.fields
         # get rainfall and et for datetime
         f_name::String = f.name
-        rain_col::Symbol = Symbol("$(f_name)_rainfall")
-        et_col::Symbol = Symbol("$(f_name)_ET")
+        rain_col::Symbol = Symbol("$(z_name)_$(f_name)_rainfall")
+        et_col::Symbol = Symbol("$(z_name)_$(f_name)_ET")
 
         rainfall::Float64, et::Float64 = subset[1, rain_col], subset[1, et_col]
 
