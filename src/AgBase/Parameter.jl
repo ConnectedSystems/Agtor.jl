@@ -55,6 +55,7 @@ end
 function Base.:*(x::String, y::Union{ConstantParameter, CategoricalParameter}) x * y.value end
 
 # function Base.convert(x::Type{Any}, y::Agtor.AgParameter) convert(x, y.value) end
+function Base.convert(x::Type{Any}, y::Agtor.ConstantParameter) convert(x, y.value) end
 
 
 for op = (:Year, :Month, :Day)
