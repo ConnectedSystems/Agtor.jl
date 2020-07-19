@@ -33,9 +33,9 @@ function generate_params(prefix::String, dataset::Dict, override::Union{Dict, No
         end
         
         # Replace nominal value with override value if specified
-        if var_id in keys(override)
-            vals = pop!(override, var_id)
-            created[s] = ConstantParameter(var_id, vals)
+        if Symbol(var_id) in keys(override)
+            vals = pop!(override, Symbol(var_id))
+            created[s] = vals
             continue
         end
 
