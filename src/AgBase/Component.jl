@@ -9,14 +9,17 @@ macro def(name, definition)
     end
 end
 
+
 @def add_preprefix begin
     if !isnothing(id_prefix)
         prefix = id_prefix * prefix
     end
 end
 
-function create(cls::Type{T}, data::Dict{Any, Any},
-                override=nothing, id_prefix::Union{String, Nothing}=nothing) where T <: AgComponent
+
+function create(cls::Type{T}, data::Dict;
+                override::Union{Dict, Nothing}=nothing, 
+                id_prefix::Union{String, Nothing}=nothing) where T <: AgComponent
     cls_name = Base.typename(cls)
     tmp = copy(data)
     name = tmp["name"]

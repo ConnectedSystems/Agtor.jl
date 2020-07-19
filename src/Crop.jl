@@ -122,15 +122,16 @@ function subtotal_costs(c::Crop, year::Int64)::Float64
 end
 
 
-function create(cls::Type{Crop}, data::Dict{Any, Any}, start_dt::Date, 
-                override=nothing, id_prefix::Union{String, Nothing}=nothing)::Crop
+function create(cls::Type{Crop}, data::Dict, start_dt::Date; 
+                override::Union{Dict, Nothing}=nothing, 
+                id_prefix::Union{String, Nothing}=nothing)::Crop
     name = data["name"]
     prop = data["properties"]
     crop_type = data["crop_type"]
     growth_stages = data["growth_stages"]
 
     cls_name = Base.typename(cls)
-    prefix::String = "$(cls_name)__$(name)__"
+    prefix::String = "$(cls_name)___$(name)__"
     @add_preprefix
 
     props = generate_params(prefix * "properties", prop, override)

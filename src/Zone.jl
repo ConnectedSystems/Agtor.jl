@@ -4,7 +4,6 @@ using Base.Threads
 using Formatting
 using DataStructures
 using Statistics
-# using Infiltrator
 
 
 @with_kw mutable struct FarmZone <: AgComponent
@@ -210,7 +209,7 @@ end
 
 
 """Collect model run results for a FarmZone"""
-function collect_results(zone::FarmZone; last=false)::Tuple{DataFrame,Dict{Any,Any}}
+function collect_results(zone::FarmZone; last=false)::Tuple{DataFrame,Dict}
     field_logs = Dict(
         f.name => f._seasonal_log
         for f in zone.fields
@@ -227,7 +226,8 @@ function collect_results(zone::FarmZone; last=false)::Tuple{DataFrame,Dict{Any,A
 end
 
 
-function create(cls::Type{FarmZone}, data::Dict{Any,Any}, override=nothing)
+function create(cls::Type{FarmZone}, data::Dict{Any, Any}; 
+                override::Union{Nothing, Dict}=nothing)::FarmZone
     cls_name = Base.typename(cls)
 
     name = data["name"]
@@ -248,16 +248,18 @@ function create(cls::Type{FarmZone}, data::Dict{Any,Any}, override=nothing)
     
     water_specs::Dict{String, Dict} = load_yaml(data["water_source_spec"])
     pump_specs::Dict{String, Dict} = load_yaml(data["pump_spec"])
-    water_sources::Array{WaterSource} = create(WaterSource, water_specs, pump_specs, override)
+    water_sources::Array{WaterSource} = create(WaterSource, water_specs, pump_specs; 
+                                               override=override)
 
     # Water source are related to a zone
     [add_prefix!(tmp_prefix, ws) for ws in water_sources]
 
     irrig_specs::Dict{String, Dict} = load_yaml(data["irrigation_spec"])
-    irrigs = [create(Irrigation, v, override) for v in values(irrig_specs)]
+    irrigs = [create(Irrigation, v; override=override) for v in values(irrig_specs)]
 
     field_specs = data["properties"]["fields"]
-    fields::Array{CropField} = create(CropField, field_specs, available_crops, irrigs, override, tmp_prefix)
+    fields::Array{CropField} = create(CropField, field_specs, available_crops, irrigs;
+                                      override=override, id_prefix=tmp_prefix)
 
     zone_spec::Dict{Symbol, Any} = Dict(
         :name => name,

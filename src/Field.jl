@@ -332,11 +332,13 @@ function total_costs(f::FarmField, dt::Date, water_sources::Array{WaterSource}, 
 end
 
 
-function create(cls::Type{CropField}, data::Dict, available_crops::Array{Crop}, irrigations::Array{Irrigation}, 
-                override=nothing, id_prefix=nothing)
+function create(cls::Type{CropField}, data::Dict{Any,Any}, available_crops::Array{Crop}, 
+                irrigations::Array{Irrigation};
+                override::Union{Dict, Nothing}=nothing, 
+                id_prefix::Union{String, Nothing}=nothing)
 
     for (f_name, f_spec) in data
-        prefix = "Field__$(f_name)___"
+        prefix = "Field___$(f_name)___"
         @add_preprefix
 
         f_spec["name"] = f_name
