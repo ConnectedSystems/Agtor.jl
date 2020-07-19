@@ -116,9 +116,9 @@ Calculate soil water deficit.
 Water deficit is represented as positive values.
 
 Parameters
-==========
-* rainfall : Amount of rainfall across timestep in mm
-* ET : Amount of evapotranspiration across timestep in mm
+----------
+    * rainfall : Amount of rainfall across timestep in mm
+    * ET : Amount of evapotranspiration across timestep in mm
 """
 function update_SWD!(f::FarmField, rainfall::Float64, ET::Float64)::Nothing
     tmp::Float64 = f.soil_SWD - (rainfall - ET)
@@ -154,7 +154,7 @@ As an example, if a crop has a root depth (:math:`RD_{r}`) of 1m, an effective r
 
 Returns
 -------
-* float : net irrigation depth as negative value
+    * float : net irrigation depth as negative value
 """
 function nid(f::FarmField, dt::Date)::Float64
     crop::Crop = f.crop
@@ -259,17 +259,18 @@ end
 
 Parameters
 ----------
-yield_func : function, used to calculate crop yield.
-ssm : float, stored soil moisture at season start
-gsr : float, growing season rainfall.
-irrig : float, volume (in mm) of irrigation water applied
-comps : list-like : (current datetime, water sources considered)
+    yield_func : function, used to calculate crop yield.
+    ssm : float, stored soil moisture at season start
+    gsr : float, growing season rainfall.
+    irrig : float, volume (in mm) of irrigation water applied
+    comps : list-like : (current datetime, water sources considered)
 
 Returns
 ----------
-* float : net income
-* float : irrigated crop yield, tonnes/Ha
-* float : dryland crop yield, tonnes/Ha
+    Tuple:
+        * float : net income
+        * float : irrigated crop yield, tonnes/Ha
+        * float : dryland crop yield, tonnes/Ha
 """
 function total_income(f::FarmField, yield_func::Function, 
                       ssm::Float64, gsr::Float64, 
@@ -277,6 +278,7 @@ function total_income(f::FarmField, yield_func::Function,
     inc::Float64, irrigated::Float64, dryland::Float64 = gross_income(f, yield_func, ssm, gsr, irrig)
     return inc - total_costs(f, comps...), irrigated, dryland
 end
+
 
 function gross_income(f::FarmField, yield_func::Function, ssm::Float64, 
                       gsr::Float64, irrig::Float64)::Tuple
