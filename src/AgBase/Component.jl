@@ -27,7 +27,7 @@ function create(cls::Type{T}, data::Dict;
 
     tmp = Dict(Symbol(s) => v for (s, v) in tmp)
 
-    prefix::String = "$(cls_name)__$name"
+    prefix::String = "$(cls_name)___$name"
     @add_preprefix
 
     props::Dict{Symbol, Any} = generate_params(prefix, prop, override)
