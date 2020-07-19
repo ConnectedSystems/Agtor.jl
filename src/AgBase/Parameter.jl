@@ -29,11 +29,25 @@ end
 
 @with_kw mutable struct CategoricalParameter <: AgParameter
     name::String
-    cat_val::Union{Tuple, Array}
+    cat_val::CategoricalArray
+    min_val::Int64
+    max_val::Int64
     default_val::Any
     value::Any
 
-    CategoricalParameter(name, cat_val, value) = new(name, cat_val, value, value)
+    function CategoricalParameter(name::String, cat_val::CategoricalArray, value::Any)::CategoricalValue
+        min_val = 1
+        max_val = length(cat_val)
+
+        return new(name, cat_val, min_val, max_val, value, value)
+    end
+
+    function CategoricalParameter(name::String, cat_val::CategoricalArray, default_value::Any, value::Any)::CategoricalValue
+        min_val = 1
+        max_val = length(cat_val)
+
+        return new(name, cat_val, min_val, max_val, value, value)
+    end
 end
 
 
@@ -77,31 +91,56 @@ end
 function min_max(dataset::Dict)::Dict
     mm::Dict{Union{Dict, Symbol}, Union{Dict, Any}} = Dict()
     for (k, v) in dataset
-        mm[k] = min_max(v)
+        if v isa AgParameter
+            mm[k] = min_max(v)
+        else
+            mm[k] = v
+        end
     end
 
     return mm
+end
+
+
+function param_info(p::AgParameter)
+    return (name=p.name, ptype=typeof(p), param_values(p)...)
 end
 
 
 """Extract parameter values from AgParameter"""
 function param_values(p::AgParameter)
     if is_const(p)
-        return p.value, p.value, p.value
+        return (default=p.value, min_val=p.value, max_val=p.value)
     end
 
-    return p.default_val, p.min_val, p.max_val
+    return (default=p.default_val, min_val=p.min_val, max_val=p.max_val)
 end
+
 
 """Extract parameter values from Dict specification."""
 function param_values(dataset::Dict)::Dict
     mm::Dict{Symbol, Any} = Dict()
     for (k, v) in dataset
-        low_val, max_val = min_max(v)
-        mm[k] = v.default_val, low_val, max_val
+        if v isa AgParameter && !is_const(v)
+            mm[Symbol(v.name)] = param_values(v)
+        end
     end
 
     return mm
+end
+
+
+"""Extract parameter values from Dict specification and store in a common Dict."""
+function param_values!(dataset::Dict, mainset::Dict)::Nothing
+    for (k, v) in dataset
+        if Symbol(v.name) in mainset
+            error("$(v.name) is already set!")
+        end
+
+        if v isa AgParameter && !is_const(v)
+            mainset[Symbol(v.name)] = param_values(v)
+        end
+    end
 end
 
 
