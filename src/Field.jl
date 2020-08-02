@@ -3,7 +3,6 @@ using Infiltrator
 abstract type FarmField <: AgComponent end
 
 @with_kw mutable struct CropField <: FarmField
-
     name::String
     total_area_ha::Union{Float64, AgParameter}
     irrigation::Irrigation
@@ -15,10 +14,13 @@ abstract type FarmField <: AgComponent end
     ssm::Union{Float64, AgParameter} = 0.0
     irrigated_area::Union{Nothing, Float64} = nothing
     sowed::Bool = false
-    _irrigated_volume::DefaultDict = DefaultDict{String, Float64}(0.0)
+    _irrigated_volume::DefaultDict = DefaultDict{Symbol, Float64}(0.0)
     _num_irrigation_events::Int64 = 0
     _irrigation_cost::Float64 = 0.0
-    _next_crop_idx::Int64 = 2  # next crop will be 2nd item in crop_rotation
+
+    # next crop will be 2nd item in crop_rotation and this
+    # counter will increment and reset as the seasons go by
+    _next_crop_idx::Int64 = 2
 
     _seasonal_log::DataFrame = DataFrame([Date, Float64, Float64, Float64, Float64, Float64, Float64, Float64], 
                                          [:Date, :income, :irrigated_volume, :irrigated_yield, :dryland_yield, :growing_season_rainfall, :irrigated_area, :dryland_area])
@@ -82,8 +84,8 @@ end
 
 """Volume used from a water source in ML"""
 function volume_used_by_source(f::FarmField, ws_name::String)::Float64
-    if haskey(f._irrigated_volume, ws_name)
-        return f._irrigated_volume[ws_name] / mm_to_ML
+    if haskey(f._irrigated_volume, Symbol(ws_name))
+        return f._irrigated_volume[Symbol(ws_name)] / mm_to_ML
     end
     
     return 0.0
@@ -329,40 +331,4 @@ function total_costs(f::FarmField, dt::Date, water_sources::Array{WaterSource}, 
     total_costs::Float64 = h20_usage_cost + maint_cost + crop_costs
 
     return total_costs
-end
-
-
-function create(cls::Type{CropField}, data::Dict{Any,Any}, available_crops::Array{Crop}, 
-                irrigations::Array{Irrigation};
-                override::Union{Dict, Nothing}=nothing, 
-                id_prefix::Union{String, Nothing}=nothing)
-
-    for (f_name, f_spec) in data
-        prefix = "Field___$(f_name)___"
-        @add_preprefix
-
-        f_spec["name"] = f_name
-        f_spec["crop_rotation"] = [deepcopy(c) for c in available_crops if c.name in f_spec["crop_rotation"]]
-        f_spec["crop_choices"] = [deepcopy(c) for c in f_spec["crop_rotation"]]
-        f_spec["crop"] = [deepcopy(c) for c in f_spec["crop_rotation"] if c.name == f_spec["crop"]][1]
-        f_spec["irrigation"] = [deepcopy(ir) for ir in irrigations if ir.name == f_spec["irrigation"]][1]
-
-        # Update all ids with correct prefix
-        (add_prefix!(prefix, cmp) for cmp in f_spec["crop_rotation"])
-        (add_prefix!(prefix, cmp) for cmp in f_spec["crop_choices"])
-        add_prefix!(prefix, f_spec["crop"])
-        add_prefix!(prefix, f_spec["irrigation"])
-        
-        for (f, v) in f_spec
-            if isa(f, String)
-                f_spec[Symbol(f)] = v
-                delete!(f_spec, f)
-            end
-        end
-    end
-
-    fields = CropField[cls(; f_spec...) for (k, f_spec) in data]
-
-    return fields
-
 end

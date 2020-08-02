@@ -23,23 +23,18 @@ function subtotal_costs(ws::WaterSource, area::Float64, water_used_ML::Float64):
 end
 
 
-function create(cls::Type{WaterSource}, data::Dict{String, Dict},
-                pump_specs::Dict{String, Dict}; 
-                override::Union{Dict, Nothing}=nothing, 
+function create(cls::Type{WaterSource}, ws_specs::Dict{Symbol, Dict},
+                pump_specs::Dict{Symbol, Dict};
                 id_prefix::Union{String, Nothing}=nothing)::Array{WaterSource}
     cls_name = Base.typename(cls)
-    tmp_prefix::String = "$(cls_name)___"
 
     ws::Array{WaterSource} = []
-    for (k, v) in data
-        pump_name = v["name"]  # pump will have same name as the water_source
+    for (k, v) in ws_specs
+        pump_name = v[:name]  # pump will have same name as the water_source
 
-        prefix = tmp_prefix * "$(pump_name)___"
-        @add_preprefix
-
-        v["pump"] = create(Pump, pump_specs[pump_name]; override=override, id_prefix=prefix)
+        v[:pump] = create(pump_specs[Symbol(pump_name)])
         
-        ws_i::WaterSource = create(cls, v; override=override)
+        ws_i::WaterSource = create(v)
         push!(ws, ws_i)
     end
 

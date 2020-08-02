@@ -226,40 +226,51 @@ function collect_results(zone::FarmZone; last=false)::Tuple{DataFrame,Dict}
 end
 
 
-function create(cls::Type{FarmZone}, data::Dict{Any, Any}; 
+function create(cls::Type{FarmZone}, spec::Dict{Symbol, Any}; 
                 override::Union{Nothing, Dict}=nothing)::FarmZone
     cls_name = Base.typename(cls)
 
-    name = data["name"]
-    prop = data["properties"]
+    name = spec[:name]
 
     tmp_prefix::String = "$(name)___"
 
     # Expect only CSV for now...
-    if endswith(data["climate_data"], ".csv")
+    if endswith(spec[:climate_data], ".csv")
         use_threads = Threads.nthreads() > 1
-        climate_seq = CSV.read(data["climate_data"], threaded=use_threads, dateformat="dd-mm-YYYY")
+        climate_seq = DataFrame!(CSV.File(spec[:climate_data], threaded=use_threads, dateformat="dd-mm-YYYY"))
     end
 
     climate_data::Climate = Climate(climate_seq)
 
-    crop_data::Dict{String, Dict} = load_yaml(data["crop_spec"])
-    available_crops::Array{Crop} = Crop[create(Crop, data, climate_data.time_steps[1]) for data in values(crop_data)]
+    crop_specs::Dict{Symbol, Dict} = spec[:crop_spec]
+    water_specs::Dict{Symbol, Dict} = spec[:water_source_spec]
+    pump_specs::Dict{Symbol, Dict} = spec[:pump_spec]
+
+    water_sources::Array{WaterSource} = create(WaterSource, water_specs, pump_specs)
+
+    # Water source available to the zone
+    # [add_prefix!(tmp_prefix*"WaterSource___Pump___", ws.pump) for ws in water_sources]
+
+    # This will be used in future to provide list of irrigations that could be considered
+    irrig_spec::Dict{Symbol, Dict} = spec[:irrigation_spec]
+
+    field_specs = copy(spec[:fields])
+    for (fk, f) in field_specs
+        available_crops::Array{Crop} = Crop[create(sp, climate_data.time_steps[1]) for (k,sp) in crop_specs]
+
+        f[:irrigation] = create(collect(values(f[:irrigation_spec]))[1])
+        f[:crop_rotation] = [create(c, climate_data.time_steps[1]) for c in collect(values(f[:crop_rotation_spec]))]
+
+        f[:crop] = create(collect(values(f[:crop_spec]))[1], climate_data.time_steps[1])
+        f[:crop_choices] = [deepcopy(c) for c in available_crops]
+
+        # Clean up unneeded specs
+        delete!(f, :irrigation_spec)
+        delete!(f, :crop_rotation_spec)
+        delete!(f, :crop_spec)
+    end
     
-    water_specs::Dict{String, Dict} = load_yaml(data["water_source_spec"])
-    pump_specs::Dict{String, Dict} = load_yaml(data["pump_spec"])
-    water_sources::Array{WaterSource} = create(WaterSource, water_specs, pump_specs; 
-                                               override=override)
-
-    # Water source are related to a zone
-    [add_prefix!(tmp_prefix, ws) for ws in water_sources]
-
-    irrig_specs::Dict{String, Dict} = load_yaml(data["irrigation_spec"])
-    irrigs = [create(Irrigation, v; override=override) for v in values(irrig_specs)]
-
-    field_specs = data["properties"]["fields"]
-    fields::Array{CropField} = create(CropField, field_specs, available_crops, irrigs;
-                                      override=override, id_prefix=tmp_prefix)
+    fields = [create(v) for (k,v) in field_specs]
 
     zone_spec::Dict{Symbol, Any} = Dict(
         :name => name,

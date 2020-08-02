@@ -122,20 +122,16 @@ function subtotal_costs(c::Crop, year::Int64)::Float64
 end
 
 
-function create(cls::Type{Crop}, data::Dict, start_dt::Date; 
-                override::Union{Dict, Nothing}=nothing, 
-                id_prefix::Union{String, Nothing}=nothing)::Crop
-    name = data["name"]
-    prop = data["properties"]
-    crop_type = data["crop_type"]
-    growth_stages = data["growth_stages"]
+function create(spec::Dict, start_dt::Date)::Crop
 
-    cls_name = Base.typename(cls)
-    prefix::String = "$(cls_name)___$(name)__"
-    @add_preprefix
+    # cls_name = Base.typename(cls)
+    # prefix::String = "$(cls_name)___$(name)__"
+    # @add_preprefix
 
-    props = generate_params(prefix * "properties", prop, override)
-    stages = generate_params(prefix * "growth_stages", growth_stages, override)
-
-    return cls(name, crop_type, stages, start_dt; props...)
+    # props = generate_agparams(prefix * "properties", prop)
+    # stages = generate_agparams(prefix * "growth_stages", growth_stages)
+    data = copy(spec)
+    cls_name = pop!(data, :component)
+    cls = eval(Symbol(cls_name))
+    return cls(spec[:name], spec[:crop_type], spec[:growth_stages], start_dt; spec...)
 end
