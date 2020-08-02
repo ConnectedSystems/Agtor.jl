@@ -10,7 +10,7 @@ function setup_zone(data_dir::String="test/data/")
     tgt::String = climate_dir * "farm_climate_data.csv"
 
     use_threads = Threads.nthreads() > 1
-    data = CSV.read(tgt, threaded=use_threads, dateformat="dd-mm-YYYY")
+    data = DataFrame!(CSV.File(tgt, threaded=use_threads, dateformat="dd-mm-YYYY"))
     climate_data::Climate = Climate(data)
 
     climate_data.time_steps[1]
