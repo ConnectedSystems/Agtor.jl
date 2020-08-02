@@ -257,7 +257,7 @@ function create(cls::Type{FarmZone}, spec::Dict{Symbol, Any};
         f[:irrigation] = create(collect(values(f[:irrigation_spec]))[1])
         f[:crop_rotation] = [create(c, climate_data.time_steps[1]) for c in collect(values(f[:crop_rotation_spec]))]
 
-        f[:crop] = create(collect(values(f[:crop_spec]))[1], climate_data.time_steps[1])
+        f[:crop] = f[:crop_rotation][1]  # create(collect(values(f[:crop_spec]))[1], climate_data.time_steps[1])
 
         # available_crops::Array{Crop} = Crop[create(sp, climate_data.time_steps[1]) for (k,sp) in crop_specs]
         # f[:crop_choices] = [deepcopy(c) for c in available_crops]
