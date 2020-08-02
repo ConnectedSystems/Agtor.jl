@@ -5,8 +5,93 @@ import Dates
 
 abstract type AgParameter end
 
-
 AgUnion = Union{Date, Int64, Float64, AgParameter}
+
+
+"""
+Generate AgParameter definitions.
+
+Parameters
+----------
+prefix : str
+
+dataset : Dict, of parameters for given component
+
+override : Dict{str, object}, 
+    values to override nominals with keys based on prefix + name
+
+Returns
+----------
+* Dict matching structure of dataset
+"""
+function generate_agparams(prefix::Union{String, Symbol}, dataset::Dict, override::Union{Dict, Nothing}=nothing)::Dict{Symbol, Any}
+    if "component" in keys(dataset)
+        comp = dataset["component"]
+        comp_name = dataset["name"]
+        prefix *= "$(comp)___$(comp_name)"
+    end
+
+    if isnothing(override)
+        override = Dict()
+    end
+
+    created::Dict{Union{String, Symbol}, Any} = copy(dataset)
+    for (n, vals) in dataset
+        var_id = prefix * "__$n"
+
+        s = Symbol(n)
+        pop!(created, n)
+
+        if isa(vals, Dict)
+            created[s] = generate_agparams(prefix*"__", vals, override)
+            continue
+        elseif endswith(String(n), "_spec")
+            # Recurse into other defined specifications
+            tmp = load_yaml(vals)
+            created[s] = generate_agparams(prefix*"__", tmp, override)
+            continue
+        end
+        
+        # Replace nominal value with override value if specified
+        if Symbol(var_id) in keys(override)
+            vals = pop!(override, Symbol(var_id))
+            created[s] = vals
+            continue
+        end
+
+        if !in(vals[1], ["CategoricalParameter", "RealParameter", "ConstantParameter"])
+            created[s] = vals
+            continue
+        end
+
+        if isa(vals, Array)
+            val_type, param_vals = vals[1], vals[2:end]
+
+            def_val = param_vals[1]
+
+            if length(unique(param_vals)) == 1
+                created[s] = ConstantParameter(var_id, def_val)
+                continue
+            end
+
+            valid_vals = param_vals[2:end]
+            if val_type == "CategoricalParameter"
+                valid_vals = categorical(valid_vals, ordered=true)
+            end
+
+            created[s] = eval(Symbol(val_type))(var_id, valid_vals, def_val)
+        else
+            created[s] = vals
+        end
+    end
+
+    return created
+end
+
+
+function sample_params(dataset::Dict)
+end
+
 
 @with_kw mutable struct ConstantParameter <: AgParameter
     name::String
@@ -35,18 +120,18 @@ end
     default_val::Any
     value::Any
 
-    function CategoricalParameter(name::String, cat_val::CategoricalArray, value::Any)::CategoricalValue
+    function CategoricalParameter(name::Symbol, cat_val::CategoricalArray, value::Any)::CategoricalValue
         min_val = 1
         max_val = length(cat_val)
 
         return new(name, cat_val, min_val, max_val, value, value)
     end
 
-    function CategoricalParameter(name::String, cat_val::CategoricalArray, default_value::Any, value::Any)::CategoricalValue
+    function CategoricalParameter(name::Symbol, cat_val::CategoricalArray, default_value::Any, value::Any)::CategoricalValue
         min_val = 1
         max_val = length(cat_val)
 
-        return new(name, cat_val, min_val, max_val, value, value)
+        return new(name, cat_val, min_val, max_val, default_value, value)
     end
 end
 
@@ -103,26 +188,48 @@ end
 
 
 function param_info(p::AgParameter)
-    return (name=p.name, ptype=typeof(p), param_values(p)...)
+    return (name=p.name, ptype=typeof(p), extract_values(p)...)
 end
 
 
 """Extract parameter values from AgParameter"""
-function param_values(p::AgParameter)
-    if is_const(p)
-        return (default=p.value, min_val=p.value, max_val=p.value)
+function extract_values(p::AgParameter; prefix::Union{String, Nothing}=nothing)::NamedTuple
+    if !isnothing(prefix)
+        name = prefix * p.name
+    else
+        name = p.name
     end
 
-    return (default=p.default_val, min_val=p.min_val, max_val=p.max_val)
+    if is_const(p)
+        return (name=name, ptype=typeof(p), default=p.value, min_val=p.value, max_val=p.value)
+    end
+
+    return (name=name, ptype=typeof(p), default=p.default_val, min_val=p.min_val, max_val=p.max_val)
+end
+
+
+function collect_agparams!(dataset::Dict, store::Array)
+    for (k, v) in dataset
+        if v isa AgParameter && !is_const(v)
+            push!(store, extract_values(v))
+        elseif v isa Dict
+            collect_agparams!(v, store)
+        end
+    end
 end
 
 
 """Extract parameter values from Dict specification."""
-function param_values(dataset::Dict)::Dict
+function collect_agparams(dataset::Dict; prefix::Union{String, Nothing}=nothing)::Dict
     mm::Dict{Symbol, Any} = Dict()
     for (k, v) in dataset
         if v isa AgParameter && !is_const(v)
-            mm[Symbol(v.name)] = param_values(v)
+            if !isnothing(prefix)
+                name = prefix * v.name
+            else
+                name = v.name
+            end
+            mm[Symbol(name)] = extract_values(v; prefix=prefix)
         end
     end
 
@@ -130,15 +237,15 @@ function param_values(dataset::Dict)::Dict
 end
 
 
-"""Extract parameter values from Dict specification and store in a common Dict."""
-function param_values!(dataset::Dict, mainset::Dict)::Nothing
+# """Extract parameter values from Dict specification and store in a common Dict."""
+function collect_agparams!(dataset::Dict, mainset::Dict)::Nothing
     for (k, v) in dataset
         if Symbol(v.name) in mainset
             error("$(v.name) is already set!")
         end
 
         if v isa AgParameter && !is_const(v)
-            mainset[Symbol(v.name)] = param_values(v)
+            mainset[Symbol(v.name)] = extract_values(v)
         end
     end
 end
@@ -171,9 +278,3 @@ function add_prefix!(prefix, component)
         pr.name = prefix*pr.name
     end
 end
-
-
-
-# function collate_agparams(spec::Dict, real, consts, cats)
-
-# end

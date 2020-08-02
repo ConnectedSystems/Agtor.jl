@@ -17,22 +17,40 @@ end
 end
 
 
-function create(cls::Type{T}, data::Dict;
-                override::Union{Dict, Nothing}=nothing, 
-                id_prefix::Union{String, Nothing}=nothing) where T <: AgComponent
-    cls_name = Base.typename(cls)
-    tmp = copy(data)
-    name = tmp["name"]
-    prop = pop!(tmp, "properties")
+# macro create(cls, comp_spec, id_prefix, collated=nothing, other=nothing)
 
-    tmp = Dict(Symbol(s) => v for (s, v) in tmp)
+#     return :(begin
+#         local cls_name = Base.typename($cls) 
+#         local spec = copy($(esc(comp_spec)))
+#         local name = spec["name"]
+#         local prefix = String($id_prefix)
+#         prefix = prefix * "$(cls_name)___$name"
+#         local props = generate_agparams(prefix, pop!(spec, "properties"))
 
-    prefix::String = "$(cls_name)___$name"
-    @add_preprefix
+#         local tmp = extract_spec(props)
 
-    props::Dict{Symbol, Any} = generate_params(prefix, prop, override)
+#         if !isnothing($(esc(collated)))
+#             append!($(esc(collated)), tmp)
+#         end
 
-    return cls(; tmp..., props...)
+#         spec = Dict(Symbol(s) => v for (s, v) in spec)
+
+#         local op = $(esc(other))
+#         if !isnothing(op)
+#             return create($cls, spec, props; id_prefix=prefix, op...)
+#         else
+#             return create($cls, spec, props; id_prefix=prefix)
+#         end
+#     end)
+# end
+
+
+function create(spec::Dict)
+    dt = copy(spec)
+
+    cls_name = pop!(dt, :component)
+    cls = eval(Symbol(cls_name))
+    return cls(; dt...)
 end
 
 
