@@ -22,3 +22,13 @@ function load_yaml(data_dir::String, ext::String=".yml")::Dict{String, Dict}
 
     return loaded_dataset
 end
+
+function load_yaml(file_list::Array{String})::Dict{String, Dict}
+    loaded_dataset::Dict{String, Dict} = Dict{String, Dict}()
+    Threads.@threads for fn in file_list
+        data = YAML.load(open(fn))
+        loaded_dataset[data["name"]] = data
+    end
+
+    return loaded_dataset
+end
