@@ -44,7 +44,7 @@ irrig_specs = load_yaml(irrig_dir)
 
 farmer = Manager("test")
 
-irrig_params = generate_agparams("", irrig_specs["gravity"], nothing)
+irrig_params = generate_agparams("", irrig_specs["gravity"])
 
 # or_spec = param_values(irrig_params)
 # or_spec[:Irrigation___gravity__efficiency] = 0.6
@@ -85,7 +85,7 @@ zone_specs = load_yaml(zone_dir)
 zone_params = generate_agparams("", zone_specs["Zone_1"])
 
 collated_specs = []
-collect_agparams!(zone_params, collated_specs)
+collect_agparams!(zone_params, collated_specs; ignore=["crop_spec"])
 
 z1 = create(FarmZone, zone_params)
 

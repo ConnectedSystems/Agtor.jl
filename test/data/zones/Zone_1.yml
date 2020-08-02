@@ -3,8 +3,8 @@ component: Zone
 
 # Paths to data, relative to where project is run
 climate_data: "test/data/climate/farm_climate_data.csv"
-crop_spec: "test/data/crops/"  # Crops that may be considered in this Zone
-irrigation_spec: "test/data/irrigations/"
+# crop_spec: "test/data/crops/"  # Crops that may be considered in this Zone
+# irrigation_spec: "test/data/irrigations/"
 water_source_spec: "test/data/water_sources/"
 pump_spec: "test/data/pumps/"
 

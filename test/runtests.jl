@@ -56,7 +56,7 @@ function setup_zone(data_dir::String="test/data/")
         :total_area_ha => 100.0,
         :irrigation => irrig,
         :crop => crop_rotation[1],
-        :crop_choices => crop_rotation,
+        # :crop_choices => crop_rotation,
         :crop_rotation => crop_rotation,
         :soil_TAW => 100.0,
         :soil_SWD => 20.0
@@ -107,7 +107,7 @@ function test_crop_plantings()
     z1, (deeplead, channel_water) = setup_zone()
     field = z1.fields[1]
 
-    for _ in field.crop_choices
+    for _ in field.crop_rotation
         crop = field.crop
         @test (crop.plant_date + crop.harvest_offset) == crop.harvest_date
 

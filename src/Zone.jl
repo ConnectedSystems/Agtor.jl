@@ -242,27 +242,25 @@ function create(cls::Type{FarmZone}, spec::Dict{Symbol, Any};
 
     climate_data::Climate = Climate(climate_seq)
 
-    crop_specs::Dict{Symbol, Dict} = spec[:crop_spec]
     water_specs::Dict{Symbol, Dict} = spec[:water_source_spec]
     pump_specs::Dict{Symbol, Dict} = spec[:pump_spec]
 
     water_sources::Array{WaterSource} = create(WaterSource, water_specs, pump_specs)
 
-    # Water source available to the zone
-    # [add_prefix!(tmp_prefix*"WaterSource___Pump___", ws.pump) for ws in water_sources]
-
-    # This will be used in future to provide list of irrigations that could be considered
-    irrig_spec::Dict{Symbol, Dict} = spec[:irrigation_spec]
+    # This will be used in future to provide list of irrigations/crops that could be considered
+    # crop_specs::Dict{Symbol, Dict} = spec[:crop_spec]
+    # irrig_spec::Dict{Symbol, Dict} = spec[:irrigation_spec]
 
     field_specs = copy(spec[:fields])
     for (fk, f) in field_specs
-        available_crops::Array{Crop} = Crop[create(sp, climate_data.time_steps[1]) for (k,sp) in crop_specs]
 
         f[:irrigation] = create(collect(values(f[:irrigation_spec]))[1])
         f[:crop_rotation] = [create(c, climate_data.time_steps[1]) for c in collect(values(f[:crop_rotation_spec]))]
 
         f[:crop] = create(collect(values(f[:crop_spec]))[1], climate_data.time_steps[1])
-        f[:crop_choices] = [deepcopy(c) for c in available_crops]
+
+        # available_crops::Array{Crop} = Crop[create(sp, climate_data.time_steps[1]) for (k,sp) in crop_specs]
+        # f[:crop_choices] = [deepcopy(c) for c in available_crops]
 
         # Clean up unneeded specs
         delete!(f, :irrigation_spec)

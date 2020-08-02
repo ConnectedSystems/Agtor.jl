@@ -7,7 +7,7 @@ abstract type FarmField <: AgComponent end
     total_area_ha::Union{Float64, AgParameter}
     irrigation::Irrigation
     crop::Crop  # Initial value can just be the first item in crop_rotation
-    crop_choices::Array{Crop}  # This can be the unique values in crop_rotation
+    # crop_choices::Array{Crop}  # This can be the unique values in crop_rotation
     crop_rotation::Array{Crop}
     soil_TAW::Union{Float64, AgParameter}
     soil_SWD::Union{Float64, AgParameter}

@@ -208,12 +208,15 @@ function extract_values(p::AgParameter; prefix::Union{String, Nothing}=nothing):
 end
 
 
-function collect_agparams!(dataset::Dict, store::Array)
+function collect_agparams!(dataset::Dict, store::Array; ignore::Union{Array, Nothing}=nothing)
     for (k, v) in dataset
+        if !isnothing(ignore) && (k in ignore)
+            continue
+        end
         if v isa AgParameter && !is_const(v)
             push!(store, extract_values(v))
         elseif v isa Dict
-            collect_agparams!(v, store)
+            collect_agparams!(v, store; ignore=ignore)
         end
     end
 end
