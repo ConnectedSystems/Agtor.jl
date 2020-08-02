@@ -4,15 +4,20 @@ using Base.Threads
 
 
 function load_yaml(data_dir::String, ext::String=".yml")::Dict{String, Dict}
-    if startswith(ext, ".") == false
-        error("Extension must include period, e.g. '.yml'")
-    end
 
-    if endswith(data_dir, "/") == false || endswith(data_dir, "\\") == false
-        data_dir *= '/'
-    end
+    if !endswith(data_dir, ext)
+        if startswith(ext, ".") == false
+            error("Extension must include period, e.g. '.yml'")
+        end
 
-    data_files = glob("$(data_dir)" * "*$ext")
+        if endswith(data_dir, "/") == false || endswith(data_dir, "\\") == false
+            data_dir *= '/'
+        end
+
+        data_files = glob("$(data_dir)" * "*$ext")
+    else
+        data_files = [data_dir]
+    end
 
     loaded_dataset::Dict{String, Dict} = Dict{String, Dict}()
     Threads.@threads for fn in data_files
