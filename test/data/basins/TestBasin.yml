@@ -1,9 +1,9 @@
 name: TestBasin
+component: Basin
 
 # Paths to data
 climate_data: "test/data/climate/"
 zone_data: "test/data/zones/"
 
-properties:
-  climate_options: ["CategoricalParameter", "test", "test", "test2"]
-  zones: ["Zone_1"]
+climate_options: ["CategoricalParameter", "test", "test", "test2"]
+zones: ["Zone_1"]
