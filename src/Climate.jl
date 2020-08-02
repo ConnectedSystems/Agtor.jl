@@ -14,17 +14,17 @@ mutable struct Climate <: AgComponent
         c.time_steps = data[!, :Date]
         data[:, :Year] = Dates.year.(c.time_steps)
 
-        gdf = groupby(data[:, filter(x -> x != :Date, names(data))], :Year)
-        not_year_col::Array{Symbol,1} = filter(x -> x != :Year, names(gdf))
-        yearly = aggregate(gdf, sum)
+        gdf = groupby(data[:, filter(x -> x != :Date, propertynames(data))], :Year)
+        not_year_col::Array{Symbol,1} = collect(filter(x -> x != :Year, propertynames(gdf)))
+        yearly = combine(gdf, valuecols(gdf) .=> sum)
 
-        rain_cols::Array{String,1} = filter(x -> occursin("rainfall", x), map(string, names(yearly)))
+        rain_cols::Array{String,1} = filter(x -> occursin("rainfall", x), names(yearly))
         append!(rain_cols, ["Year"])
 
         c.annual_rainfall = yearly[:, map(Symbol, rain_cols)]
 
         stats::Array{Symbol,1} = [:mean, :std, :min, :q25, :median, :q75, :max, :eltype, :nunique, :nmissing]
-        not_year_col = filter(x -> x != :Year, names(yearly))
+        not_year_col = filter(x -> x != :Year, propertynames(yearly))
 
         c.description = describe(yearly[:, not_year_col], stats...)
 
