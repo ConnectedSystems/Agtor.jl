@@ -9,7 +9,7 @@ mutable struct Basin <: AgComponent
 
     function Basin(spec::Dict)
 
-        props = generate_params(spec["name"], spec["properties"])
+        props = generate_agparams(spec["name"], spec["properties"])
 
         basin = new()
         basin.climate_options = props[:climate_options]
