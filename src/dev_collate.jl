@@ -95,6 +95,10 @@ z1 = create(FarmZone, zone_params)
 
 # @create FarmZone zone_specs["Zone_1"] ""
 
+# AgParameter collection now works fairly seamlessly
+# Need to work out the best way to update all agparams with new sampled values.
+# See notes below
+
 # So far this is working for RealParameters, but CategoricalParameters 
 # are a special case.
 # CategoricalArrays can map string entries to numbered positions
