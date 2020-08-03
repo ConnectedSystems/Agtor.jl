@@ -39,45 +39,23 @@ end
 
 data_dir = "test/data/"
 
-irrig_dir = "$(data_dir)irrigations/"
-irrig_specs = load_yaml(irrig_dir)
+# irrig_dir = "$(data_dir)irrigations/"
+# irrig_specs = load_yaml(irrig_dir)
+# irrig_params = generate_agparams("", irrig_specs["gravity"])
 
-farmer = Manager("test")
-
-irrig_params = generate_agparams("", irrig_specs["gravity"])
-
-# or_spec = param_values(irrig_params)
-# or_spec[:Irrigation___gravity__efficiency] = 0.6
-# or_spec[:Irrigation___gravity__head_pressure] = 15.0
-# or_spec[:Irrigation___gravity__capital_cost] = 2250.0
-test_irrig = create(irrig_params)
-@info "creating irrigation" create(irrig_params)
-
-# @assert test_irrig.efficiency == 0.6
-# @assert test_irrig.head_pressure == 15.0
-# @assert test_irrig.capital_cost == 2250.0
+# test_irrig = create(irrig_params)
+# @info "creating irrigation" create(irrig_params)
 
 #################
 
 using DataFrames
 
-# @info flatten(test_irrig)
-@info Flatten.flatten(test_irrig, Agtor.AgParameter)
-
-entries = map(ap -> param_info(ap), Flatten.flatten(test_irrig, Agtor.AgParameter))
-
-@info DataFrame(entries)
+# # @info flatten(test_irrig)
+# @info Flatten.flatten(test_irrig, Agtor.AgParameter)
+# entries = map(ap -> param_info(ap), Flatten.flatten(test_irrig, Agtor.AgParameter))
+# @info DataFrame(entries)
 
 #################
-
-# collated = []
-# println("Testing collation")
-# @create Irrigation irrig_specs["gravity"] "Test"
-# @info collated
-
-
-# @create Irrigation irrig_specs["gravity"] "Test**" collated
-# @info collated
 
 zone_dir = "$(data_dir)zones/"
 zone_specs = load_yaml(zone_dir)
@@ -89,9 +67,30 @@ collect_agparams!(zone_params, collated_specs; ignore=["crop_spec"])
 
 z1 = create(FarmZone, zone_params)
 
-@infiltrate
-
 @info z1
+
+struct Foo{A,B,C}
+    a::A
+    b::B
+    c::C
+end
+
+test = Foo([Agtor.RealParameter("blasted", 0, 1, 0.7), Agtor.RealParameter("grav", 0, 1, 0.7)],
+            Agtor.RealParameter("spray", -1, 1, 0.7), 
+            Dict("a"=>Agtor.RealParameter("bing", 0, 3, 0.75))
+)
+
+sample = [(blasted=0.7, grav=0.6, spray=0.5, bing=3.0)]
+df = DataFrame(sample)
+
+println("calling subtypes first time")
+@info subtypes(DataFrame)
+
+@info test
+
+println("before update test")
+
+update_params(test, df)
 
 # @create FarmZone zone_specs["Zone_1"] ""
 

@@ -15,19 +15,6 @@ function setup_zone(data_dir::String="test/data/")
 end
 
 
-function collect_params(data::Array)
-    a = []
-    for i in data
-        if i isa AgComponent
-            append!(a, param_info(i))
-        elseif i isa Dict
-            append!(a, collect_params(i))
-        end
-    end
-
-    return a
-end
-
 
 function collate_params(data_dir::String="test/data/")
     z1 = setup_zone(data_dir)[1]
@@ -67,10 +54,6 @@ function collate_params(data_dir::String="test/data/")
     return collated
 end
 
-
-# @testset "Agtor.jl" begin
-#     collate_params()
-# end
 
 all_agparams = collate_params()
 

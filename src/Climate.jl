@@ -1,4 +1,4 @@
-using CSV, DataFrames, Dates
+using DataFrames, Dates, Infiltrator
 
 """Serves as an interface to climate data"""
 mutable struct Climate <: AgComponent
@@ -15,13 +15,14 @@ mutable struct Climate <: AgComponent
         data[:, :Year] = Dates.year.(c.time_steps)
 
         gdf = groupby(data[:, filter(x -> x != :Date, propertynames(data))], :Year)
+
         not_year_col::Array{Symbol,1} = collect(filter(x -> x != :Year, propertynames(gdf)))
-        yearly = combine(gdf, valuecols(gdf) .=> sum)
+        yearly = combine(gdf, names(gdf) .=> sum)
 
-        rain_cols::Array{String,1} = filter(x -> occursin("rainfall", x), names(yearly))
-        append!(rain_cols, ["Year"])
+        rain_cols::Array{Symbol,1} = filter(x -> occursin("rainfall", String(x)), names(yearly))
+        push!(rain_cols, :Year)
 
-        c.annual_rainfall = yearly[:, map(Symbol, rain_cols)]
+        c.annual_rainfall = yearly[:, rain_cols]
 
         stats::Array{Symbol,1} = [:mean, :std, :min, :q25, :median, :q75, :max, :eltype, :nunique, :nmissing]
         not_year_col = filter(x -> x != :Year, propertynames(yearly))
