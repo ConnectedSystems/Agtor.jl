@@ -75,22 +75,18 @@ struct Foo{A,B,C}
     c::C
 end
 
-test = Foo([Agtor.RealParameter("blasted", 0, 1, 0.7), Agtor.RealParameter("grav", 0, 1, 0.7)],
-            Agtor.RealParameter("spray", -1, 1, 0.7), 
-            Dict("a"=>Agtor.RealParameter("bing", 0, 3, 0.75))
+test = Foo([Agtor.RealParameter("blasted", 0, 1, 0.5), Agtor.RealParameter("grav", 0, 1, 0.5)],
+            Agtor.RealParameter("spray", -1, 1, 0.5), 
+            Dict("a"=>Agtor.RealParameter("bing", 0, 3, 0.5))
 )
 
-sample = [(blasted=0.7, grav=0.6, spray=0.5, bing=3.0)]
+sample = [(blasted=0.3, grav=0.3, spray=0.3, bing=3.0)]
 df = DataFrame(sample)
 
-println("calling subtypes first time")
-@info subtypes(DataFrame)
 
-@info test
-
-println("before update test")
-
-update_params(test, df)
+@info "before" test
+update_params(test, df[1, :])
+@info "after" test
 
 # @create FarmZone zone_specs["Zone_1"] ""
 
@@ -108,5 +104,8 @@ update_params(test, df)
 # Rather than recreating the Component, why aren't we just updating an existing one?
 # Can iterate through updating based on symbol match - we're doing exactly that to extract
 # parameter specs anyway...
+#
+# But how to handle changes to climate sequences?
+# Or do we side-step the issue and only pass in samples for each specific climate scenario...
 
 # see also test_param_collation.jl
