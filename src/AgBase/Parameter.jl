@@ -306,44 +306,37 @@ Usage:
 function update_params(comp, sample)
     # entries = map(ap -> param_info(ap), Flatten.flatten(test_irrig, Agtor.AgParameter))
 
-    println("get to here?")
-    components = subtypes(AgComponent)
-    println("after subtypes?")
-
-    # Collect all subtypes of AgComponent
-    all_ = Base.Iterators.flatten([subtypes(sc) for sc in components 
-                                   if length(subtypes(sc)) > 0])
-    all_comps = vcat(collect(all_), components)
-
-    ignore = [Climate, Manager, Infrastructure]
-    all_comps = [i for i in all_comps if !in(i, ignore)]
-
-    @info "components considered:" all_comps
-
+    tgt_params = names(sample)
     collated = []
     for f_name in fieldnames(typeof(comp))
         tmp_f = getfield(comp, f_name)
-        f_type = typeof(tmp_f)
         if tmp_f isa Array
             arr_type = eltype(tmp_f)
             tmp_flat = reduce(vcat, Flatten.flatten(tmp_f, Array{arr_type}))
             for i in tmp_flat
-                tmp = map(ap -> extract_values(ap), Flatten.flatten(i, Agtor.AgParameter))
-                append!(collated, tmp)
+                # tmp = Flatten.flatten(i, Agtor.AgParameter)
+                update_params!(i, sample)
             end
-        elseif tmp_f isa Dict
-            for (k,v) in tmp_f
-                if v isa AgParameter
-                    println("found one!", extract_values(v))
-                end
-            end
-        else
-            tmp = map(ap -> extract_values(ap), Flatten.flatten(tmp_f, Agtor.AgParameter))
-            append!(collated, tmp)
+        elseif isa(tmp_f, AgComponent) || isa(tmp_f, Dict)
+            update_params!(tmp_f, sample)
+        elseif tmp_f isa AgParameter
+            update_params!(tmp_f, sample)
         end
     end
+end
 
-    @info collated
+function update_params!(comp::Dict, sample)
+    for (k,v) in comp
+        if v isa AgParameter
+            update_params!(v, sample)
+        end
+    end
+end
+
+function update_params!(p::AgParameter, sample)
+    if p.name in names(sample)
+        p.value = sample[Symbol(p.name)]
+    end
 end
 
 # collated = []
