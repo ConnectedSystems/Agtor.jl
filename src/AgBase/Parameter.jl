@@ -1,4 +1,5 @@
 using Mixers
+using Agtor
 import Flatten
 import Dates
 
@@ -6,91 +7,6 @@ import Dates
 abstract type AgParameter end
 
 AgUnion = Union{Date, Int64, Float64, AgParameter}
-
-
-"""
-Generate AgParameter definitions.
-
-Parameters
-----------
-prefix : str
-
-dataset : Dict, of parameters for given component
-
-override : Dict{str, object}, 
-    values to override nominals with keys based on prefix + name
-
-Returns
-----------
-* Dict matching structure of dataset
-"""
-function generate_agparams(prefix::Union{String, Symbol}, dataset::Dict, override::Union{Dict, Nothing}=nothing)::Dict{Symbol, Any}
-    if "component" in keys(dataset)
-        comp = dataset["component"]
-        comp_name = dataset["name"]
-        prefix *= "$(comp)___$(comp_name)"
-    end
-
-    if isnothing(override)
-        override = Dict()
-    end
-
-    created::Dict{Union{String, Symbol}, Any} = copy(dataset)
-    for (n, vals) in dataset
-        var_id = prefix * "__$n"
-
-        s = Symbol(n)
-        pop!(created, n)
-
-        if isa(vals, Dict)
-            created[s] = generate_agparams(prefix*"__", vals, override)
-            continue
-        elseif endswith(String(n), "_spec")
-            # Recurse into other defined specifications
-            tmp = load_yaml(vals)
-            created[s] = generate_agparams(prefix*"__", tmp, override)
-            continue
-        end
-        
-        # Replace nominal value with override value if specified
-        if Symbol(var_id) in keys(override)
-            vals = pop!(override, Symbol(var_id))
-            created[s] = vals
-            continue
-        end
-
-        if !in(vals[1], ["CategoricalParameter", "RealParameter", "ConstantParameter"])
-            created[s] = vals
-            continue
-        end
-
-        if isa(vals, Array)
-            val_type, param_vals = vals[1], vals[2:end]
-
-            def_val = param_vals[1]
-
-            if length(unique(param_vals)) == 1
-                created[s] = ConstantParameter(var_id, def_val)
-                continue
-            end
-
-            valid_vals = param_vals[2:end]
-            if val_type == "CategoricalParameter"
-                valid_vals = categorical(valid_vals, ordered=true)
-            end
-
-            created[s] = eval(Symbol(val_type))(var_id, valid_vals, def_val)
-        else
-            created[s] = vals
-        end
-    end
-
-    return created
-end
-
-
-function sample_params(dataset::Dict)
-end
 
 
 @with_kw mutable struct ConstantParameter <: AgParameter
@@ -187,8 +103,88 @@ function min_max(dataset::Dict)::Dict
 end
 
 
-function param_info(p::AgParameter)
-    return (name=p.name, ptype=typeof(p), extract_values(p)...)
+"""
+Generate AgParameter definitions.
+
+Parameters
+----------
+prefix : str
+
+dataset : Dict, of parameters for given component
+
+override : Dict{str, object}, 
+    values to override nominals with keys based on prefix + name
+
+Returns
+----------
+* Dict matching structure of dataset
+"""
+function generate_agparams(prefix::Union{String, Symbol}, dataset::Dict, override::Union{Dict, Nothing}=nothing)::Dict{Symbol, Any}
+    if "component" in keys(dataset)
+        comp = dataset["component"]
+        comp_name = dataset["name"]
+        prefix *= "$(comp)___$(comp_name)"
+    end
+
+    if isnothing(override)
+        override = Dict()
+    end
+
+    created::Dict{Union{String, Symbol}, Any} = copy(dataset)
+    for (n, vals) in dataset
+        var_id = prefix * "__$n"
+
+        s = Symbol(n)
+        pop!(created, n)
+
+        if isa(vals, Dict)
+            created[s] = generate_agparams(prefix*"__", vals, override)
+            continue
+        elseif endswith(String(n), "_spec")
+            # Recurse into other defined specifications
+            tmp = load_yaml(vals)
+            created[s] = generate_agparams(prefix*"__", tmp, override)
+            continue
+        end
+        
+        # Replace nominal value with override value if specified
+        if Symbol(var_id) in keys(override)
+            vals = pop!(override, Symbol(var_id))
+            created[s] = vals
+            continue
+        end
+
+        if !in(vals[1], ["CategoricalParameter", "RealParameter", "ConstantParameter"])
+            created[s] = vals
+            continue
+        end
+
+        if isa(vals, Array)
+            val_type, param_vals = vals[1], vals[2:end]
+
+            def_val = param_vals[1]
+
+            if length(unique(param_vals)) == 1
+                created[s] = ConstantParameter(var_id, def_val)
+                continue
+            end
+
+            valid_vals = param_vals[2:end]
+            if val_type == "CategoricalParameter"
+                valid_vals = categorical(valid_vals, ordered=true)
+            end
+
+            created[s] = eval(Symbol(val_type))(var_id, valid_vals, def_val)
+        else
+            created[s] = vals
+        end
+    end
+
+    return created
+end
+
+
+function sample_params(dataset::Dict)
 end
 
 
@@ -281,3 +277,88 @@ function add_prefix!(prefix, component)
         pr.name = prefix*pr.name
     end
 end
+
+
+function get_subtypes()
+    return subtypes(DataFrame)
+end
+
+
+"""
+Usage:
+    zone_dir = "data_dir/zones/"
+    zone_specs = load_yaml(zone_dir)
+    zone_params = generate_agparams("", zone_specs["Zone_1"])
+    
+    collated_specs = []
+    collect_agparams!(zone_params, collated_specs; ignore=["crop_spec"])
+
+    z1 = create(FarmZone, zone_params)
+
+    param_info = DataFrame(collated_specs)
+
+    # Generate dataframe of samples
+    samples = sample(param_info, 1000, sampler)  # where sampler is some function
+
+    # Update z1 components with values found in first row
+    @update z1 samples[1]
+"""
+function update_params(comp, sample)
+    # entries = map(ap -> param_info(ap), Flatten.flatten(test_irrig, Agtor.AgParameter))
+
+    println("get to here?")
+    components = subtypes(AgComponent)
+    println("after subtypes?")
+
+    # Collect all subtypes of AgComponent
+    all_ = Base.Iterators.flatten([subtypes(sc) for sc in components 
+                                   if length(subtypes(sc)) > 0])
+    all_comps = vcat(collect(all_), components)
+
+    ignore = [Climate, Manager, Infrastructure]
+    all_comps = [i for i in all_comps if !in(i, ignore)]
+
+    @info "components considered:" all_comps
+
+    collated = []
+    for f_name in fieldnames(typeof(comp))
+        tmp_f = getfield(comp, f_name)
+        f_type = typeof(tmp_f)
+        if tmp_f isa Array
+            arr_type = eltype(tmp_f)
+            tmp_flat = reduce(vcat, Flatten.flatten(tmp_f, Array{arr_type}))
+            for i in tmp_flat
+                tmp = map(ap -> extract_values(ap), Flatten.flatten(i, Agtor.AgParameter))
+                append!(collated, tmp)
+            end
+        elseif tmp_f isa Dict
+            for (k,v) in tmp_f
+                if v isa AgParameter
+                    println("found one!", extract_values(v))
+                end
+            end
+        else
+            tmp = map(ap -> extract_values(ap), Flatten.flatten(tmp_f, Agtor.AgParameter))
+            append!(collated, tmp)
+        end
+    end
+
+    @info collated
+end
+
+# collated = []
+# for f_name in fieldnames(typeof(z1))
+#     tmp_f = getfield(z1, f_name)
+#     f_type = typeof(tmp_f)
+#     if tmp_f isa Array
+#         arr_type = eltype(tmp_f)
+#         tmp_flat = reduce(vcat, Flatten.flatten(tmp_f, Array{arr_type}))
+#         for i in tmp_flat
+#             tmp = map(ap -> param_info(ap), Flatten.flatten(i, Agtor.AgParameter))
+#             append!(collated, tmp)
+#         end
+#     elseif f_type in all_comps
+#         tmp = map(ap -> param_info(ap), Flatten.flatten(tmp_f, Agtor.AgParameter))
+#         append!(collated, tmp)
+#     end
+# end
