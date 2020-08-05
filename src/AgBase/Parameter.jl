@@ -28,6 +28,18 @@ end
     RealParameter(name, range_vals::Array, value) = new(name, range_vals..., value, value)
 end
 
+
+@doc """
+    Categorical parameters.
+
+    Min and max values will map to (integer) element position in an CategoricalArray.
+
+    Sampling between the min and max values will be mapped to their categorical value in the given array
+    using `floor()` of the Float value `x`.
+
+    Valid values for the CategoricalParameter will therefore be: 
+    `1 <= x < (n+1)`, where n is number of options.
+"""
 @with_kw mutable struct CategoricalParameter <: AgParameter
     name::String
     cat_val::CategoricalArray
@@ -38,17 +50,40 @@ end
 
     function CategoricalParameter(name::Symbol, cat_val::CategoricalArray, value::Any)::CategoricalValue
         min_val = 1
-        max_val = length(cat_val)
+        max_val = length(cat_val) + 1
 
         return new(name, cat_val, min_val, max_val, value, value)
     end
 
     function CategoricalParameter(name::Symbol, cat_val::CategoricalArray, default_value::Any, value::Any)::CategoricalValue
         min_val = 1
-        max_val = length(cat_val)
+        max_val = length(cat_val) + 1
 
         return new(name, cat_val, min_val, max_val, default_value, value)
     end
+end
+
+"""Setter for CategoricalParameter to handle float to categorical element position."""
+function Base.setproperty!(cat::CategoricalParameter, v::Symbol, value)::Nothing
+    if v == :value
+        if value isa AbstractFloat || value isa Integer
+            cat_pos = floor(Int, value)
+            cat.value = cat.cat_val[cat_pos]
+        elseif value isa String
+            pos = cat.cat_val(findfirst(x-> x == value, cat.cat_val))
+            if isnothing(pos)
+                error("$(pos) is not a valid option for $(cat.name)")
+            end
+
+            cat.value = cat.cat_val[pos]
+        else
+            error("Type $(typeof(value)) is not a valid type option for $(cat.name), has to be Integer, Float or String")
+        end
+    else
+        setfield!(f, Symbol(v), value)
+    end
+
+    return nothing
 end
 
 
