@@ -5,6 +5,8 @@ using Formatting
 using DataStructures
 using Statistics
 
+import Agtor: Climate
+
 
 @with_kw mutable struct FarmZone <: AgComponent
     name::String
@@ -226,21 +228,12 @@ function collect_results(zone::FarmZone; last=false)::Tuple{DataFrame,Dict}
 end
 
 
-function create(cls::Type{FarmZone}, spec::Dict{Symbol, Any}; 
-                override::Union{Nothing, Dict}=nothing)::FarmZone
+function create(cls::Type{FarmZone}, spec::Dict{Symbol, Any}, climate_data::Climate)::FarmZone
     cls_name = Base.typename(cls)
 
     name = spec[:name]
 
     tmp_prefix::String = "$(name)___"
-
-    # Expect only CSV for now...
-    if endswith(spec[:climate_data], ".csv")
-        use_threads = Threads.nthreads() > 1
-        climate_seq = DataFrame!(CSV.File(spec[:climate_data], threaded=use_threads, dateformat="dd-mm-YYYY"))
-    end
-
-    climate_data::Climate = Climate(climate_seq)
 
     water_specs::Dict{Symbol, Dict} = spec[:water_source_spec]
     pump_specs::Dict{Symbol, Dict} = spec[:pump_spec]
