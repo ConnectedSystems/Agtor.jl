@@ -1,5 +1,3 @@
-using Infiltrator
-
 abstract type FarmField <: AgComponent end
 
 @with_kw mutable struct CropField <: FarmField
