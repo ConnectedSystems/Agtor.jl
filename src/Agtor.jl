@@ -15,12 +15,12 @@ include("AgBase/Component.jl")
 include("Infrastructure/Infrastructure.jl")
 include("Infrastructure/Irrigation.jl")
 include("Infrastructure/Pump.jl")
+include("Climate.jl")
 include("WaterSource.jl")
 include("Crop.jl")
 include("Field.jl")
 include("Zone.jl")
 include("Manager.jl")
-include("Climate.jl")
 include("Basin.jl")
 
 AgUnion = Union{Int64, Float64, Agtor.AgParameter}
