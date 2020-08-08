@@ -48,14 +48,14 @@ end
     default_val::Any
     value::Any
 
-    function CategoricalParameter(name::Symbol, cat_val::CategoricalArray, value::Any)::CategoricalValue
+    function CategoricalParameter(name::String, cat_val::CategoricalArray, value::Any)::CategoricalValue
         min_val = 1
         max_val = length(cat_val) + 1
 
         return new(name, cat_val, min_val, max_val, value, value)
     end
 
-    function CategoricalParameter(name::Symbol, cat_val::CategoricalArray, default_value::Any, value::Any)::CategoricalValue
+    function CategoricalParameter(name::String, cat_val::CategoricalArray, default_value::Any, value::Any)::CategoricalValue
         min_val = 1
         max_val = length(cat_val) + 1
 
@@ -147,22 +147,15 @@ prefix : str
 
 dataset : Dict, of parameters for given component
 
-override : Dict{str, object}, 
-    values to override nominals with keys based on prefix + name
-
 Returns
 ----------
 * Dict matching structure of dataset
 """
-function generate_agparams(prefix::Union{String, Symbol}, dataset::Dict, override::Union{Dict, Nothing}=nothing)::Dict{Symbol, Any}
+function generate_agparams(prefix::Union{String, Symbol}, dataset::Dict)::Dict{Symbol, Any}
     if "component" in keys(dataset)
         comp = dataset["component"]
         comp_name = dataset["name"]
         prefix *= "$(comp)___$(comp_name)"
-    end
-
-    if isnothing(override)
-        override = Dict()
     end
 
     created::Dict{Union{String, Symbol}, Any} = copy(dataset)
@@ -173,19 +166,12 @@ function generate_agparams(prefix::Union{String, Symbol}, dataset::Dict, overrid
         pop!(created, n)
 
         if isa(vals, Dict)
-            created[s] = generate_agparams(prefix*"__", vals, override)
+            created[s] = generate_agparams(prefix*"__", vals)
             continue
         elseif endswith(String(n), "_spec")
             # Recurse into other defined specifications
             tmp = load_yaml(vals)
-            created[s] = generate_agparams(prefix*"__", tmp, override)
-            continue
-        end
-        
-        # Replace nominal value with override value if specified
-        if Symbol(var_id) in keys(override)
-            vals = pop!(override, Symbol(var_id))
-            created[s] = vals
+            created[s] = generate_agparams(prefix*"__", tmp)
             continue
         end
 
