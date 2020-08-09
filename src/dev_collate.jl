@@ -25,15 +25,24 @@ function setup_zone(data_dir::String="test/data/")
     zone_spec_dir::String = "$(data_dir)zones/"
     zone_specs::Dict{String, Dict} = load_yaml(zone_spec_dir)
 
-    return [create(FarmZone, z_spec) for (z_name, z_spec) in zone_specs]
-end
+    zone_params = generate_agparams("", zone_specs["Zone_1"])
 
-function test_short_run(data_dir::String="test/data/")
-    z1, (deeplead, channel_water) = setup_zone(data_dir)
+    collated_specs::Array = []
+    agparams = collect_agparams!(zone_params, collated_specs; ignore=["crop_spec"])
 
-    farmer = Manager("test")
-    
-    return nothing
+    climate_data::String = "$(data_dir)climate/farm_climate_data.csv"
+
+    # Expect only CSV for now...
+    if endswith(climate_data, ".csv")
+        use_threads = Threads.nthreads() > 1
+        climate_seq = DataFrame!(CSV.File(climate_data, threaded=use_threads, dateformat="dd-mm-YYYY"))
+    else
+        error("Currently, climate data can only be provided in CSV format")
+    end
+
+    climate::Climate = Climate(climate_seq)
+
+    return create(zone_params, climate), agparams
 end
 
 
@@ -48,8 +57,6 @@ data_dir = "test/data/"
 
 #################
 
-using DataFrames
-
 # # @info flatten(test_irrig)
 # @info Flatten.flatten(test_irrig, Agtor.AgParameter)
 # entries = map(ap -> param_info(ap), Flatten.flatten(test_irrig, Agtor.AgParameter))
@@ -57,17 +64,11 @@ using DataFrames
 
 #################
 
-zone_dir = "$(data_dir)zones/"
-zone_specs = load_yaml(zone_dir)
+z1, collated = setup_zone(data_dir)
 
-zone_params = generate_agparams("", zone_specs["Zone_1"])
+@info collated
 
-collated_specs = []
-collect_agparams!(zone_params, collated_specs; ignore=["crop_spec"])
-
-z1 = create(FarmZone, zone_params)
-
-@info z1
+CSV.write("test_params.csv", collated)
 
 struct Foo{A,B,C}
     a::A
@@ -75,17 +76,18 @@ struct Foo{A,B,C}
     c::C
 end
 
-test = Foo([Agtor.RealParameter("blasted", 0, 1, 0.5), Agtor.RealParameter("grav", 0, 1, 0.5)],
-            Agtor.RealParameter("spray", -1, 1, 0.5), 
-            Dict("a"=>Agtor.RealParameter("bing", 0, 3, 0.5))
+
+test = Foo([Agtor.RealParameter("Doo", 0, 1, 0.5), Agtor.RealParameter("Boo", 0, 1, 0.5)],
+            Agtor.RealParameter("FooBar", -1, 1, 0.5), 
+            Dict("Blig"=>Agtor.RealParameter("Blig___Blag", 0, 3, 0.5))
 )
 
-sample = [(blasted=0.3, grav=0.3, spray=0.3, bing=3.0)]
+sample = [(Doo=0.3, Boo=0.3, FooBar=0.3, Blig___Blag=3.0)]
 df = DataFrame(sample)
 
-
+@info "Updating with values:" df
 @info "before" test
-update_params(test, df[1, :])
+update_params!(test, df[1, :])
 @info "after" test
 
 # @create FarmZone zone_specs["Zone_1"] ""

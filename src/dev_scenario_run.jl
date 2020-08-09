@@ -30,6 +30,11 @@ function setup_zone(data_dir::String="test/data/")
     zone_spec_dir::String = "$(data_dir)zones/"
     zone_specs::Dict{String, Dict} = load_yaml(zone_spec_dir)
 
+    zone_params = generate_agparams("", zone_specs["Zone_1"])
+
+    collated_specs::Array = []
+    agparams = collect_agparams!(zone_params, collated_specs; ignore=["crop_spec"])
+
     climate_data::String = "$(data_dir)climate/farm_climate_data.csv"
 
     # Expect only CSV for now...
@@ -41,22 +46,19 @@ function setup_zone(data_dir::String="test/data/")
     end
 
     climate::Climate = Climate(climate_seq)
-    return [create(z_spec, climate) for (z_name, z_spec) in zone_specs]
+
+    return create(zone_params, climate), agparams
 end
 
-function test_short_run(data_dir::String="test/data/")::Tuple{DataFrame,Dict}
-    # z1, (deeplead, channel_water) = setup_zone(data_dir)
-    zones = setup_zone(data_dir)
-    z1 = zones[1]
 
-    farmer = Manager("test")
-    time_sequence = z1.climate.time_steps
+function run_model(farmer, zone)
+    time_sequence = zone.climate.time_steps
     @inbounds for dt_i in time_sequence
-        run_timestep(farmer, z1, dt_i)
+        run_timestep(farmer, zone, dt_i)
 
         # Resetting allocations for test run
         if monthday(dt_i) == gs_start
-            for ws in z1.water_sources
+            for ws in zone.water_sources
                 if ws.name == "surface_water"
                     ws.allocation = 150.0
                 elseif ws.name == "groundwater"
@@ -66,54 +68,41 @@ function test_short_run(data_dir::String="test/data/")::Tuple{DataFrame,Dict}
         end
     end
 
-    zone_results, field_results = collect_results(z1)
-
-    # TODO:
-    # Under debug mode or something
-    # [] Provide copy of (seasonal) rainfall
-    # [] Leftover allocations
-    # [x] time series of SWD (after rainfall)
-    # [x] time series of SWD (after irrigation)
-
-    # For reporting results:
-    # [x] irrigated area for season
-    # [x] ML/ha used
-    # [x] $/ML used
-    # [x] $/ha generated
-    # [x] yield/ha
+    zone_results, field_results = collect_results(zone)
 
     return zone_results, field_results
 end
 
 
-# Run twice to get compiled performance
-@time zone_results, field_results = test_short_run()
-@time zone_results, field_results = test_short_run()
+function test_short_run(data_dir::String="test/data/")::Tuple{DataFrame,Dict}
+    z1, agparams = setup_zone(data_dir)
 
-# CSV.write("dev_result.csv", zone_results)
+    farmer = Manager("test")
+    zone_results, field_results = run_model(farmer, z1)
 
-# Write out to Julia HDF5
-jldopen("test.jld", "w") do file
-    g = g_create(file, "zone_1") # create a group
-    g["zone_results"] = zone_results
-    g["field_results"] = field_results
-end
-
-zone_results = jldopen("test.jld", "r") do file
-    read(file, "zone_1")
-end
-
-imported_res = jldopen("test.jld", "r") do file
-    read(file)
+    return zone_results, field_results
 end
 
 
-@profile zone_results, field_results = test_short_run()
+function test_scenario_run(data_dir::String="test/data/")::Array
+    z1, agparams = setup_zone(data_dir)
 
-# io = open("log.txt", "w+")
-# logger = SimpleLogger(io, Logging.Debug)
-# with_logger(logger) do
-#     @time results = test_short_run()    
-# end
-# flush(io)
-# close(io)
+    scen_data = joinpath(data_dir, "scenarios", "sampled_params.csv")
+    samples = DataFrame!(CSV.File(scen_data))
+
+    farmer = Manager("test")
+
+    all_results = []
+    for r in eachrow(samples)
+        tmp_z = modify_params(z1, r)
+
+        zone_results, field_results = run_model(farmer, tmp_z)
+        push!(all_results, zone_results)
+    end
+
+    return all_results
+end
+
+test_short_run()
+
+@btime test_scenario_run()
