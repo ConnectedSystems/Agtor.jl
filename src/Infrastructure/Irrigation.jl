@@ -3,9 +3,9 @@
 @with_kw mutable struct Irrigation <: Infrastructure
     @infrastructure_fields
 
-    efficiency::Union{Int64, Float64, AgParameter}
-    flow_ML_day::Union{Int64, Float64, AgParameter}
-    head_pressure::Union{Int64, Float64, AgParameter}
+    efficiency::Union{Float64, AgParameter}
+    flow_ML_day::Union{Float64, AgParameter}
+    head_pressure::Union{Float64, AgParameter}
 
 end
 
@@ -13,7 +13,7 @@ end
 function Base.getproperty(irrig::Irrigation, v::Symbol)
     if v == :flow_rate_Lps
         # Calculate flow rate in litres per second
-        return irrig.flow_ML_day / 86400.0
+        return irrig.flow_ML_day::Float64 / 86400.0
     end
 
     return getfield(irrig, v)

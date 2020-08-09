@@ -29,7 +29,7 @@ function major_maintenance_cost(a::Infrastructure)::Float64
 end
 
 function maintenance_year(infra::Infrastructure)::Dict{String, Float64}
-    maintenance_year = Dict(
+    maintenance_year::Dict{String, Float64} = Dict{String, Float64}(
         "minor" => infra.minor_maintenance_schedule,
         "major" => infra.major_maintenance_schedule
     )

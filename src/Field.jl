@@ -12,7 +12,7 @@ abstract type FarmField <: AgComponent end
     ssm::Union{Float64, AgParameter} = 0.0
     irrigated_area::Union{Nothing, Float64} = nothing
     sowed::Bool = false
-    _irrigated_volume::DefaultDict = DefaultDict{Symbol, Float64}(0.0)
+    _irrigated_volume::DefaultDict = DefaultDict{String, Float64}(0.0)
     _num_irrigation_events::Int64 = 0
     _irrigation_cost::Float64 = 0.0
 
@@ -62,7 +62,7 @@ end
 """Setter for Field"""
 function Base.setproperty!(f::FarmField, v::Symbol, value)::Nothing
     if v == :irrigated_volume
-        if value == nothing || length(value) == 1
+        if isnothing(value) || length(value) == 1
             for (k, _v) in f._irrigated_volume
                 f._irrigated_volume[k] = value
             end
@@ -121,8 +121,8 @@ Parameters
     * ET : Amount of evapotranspiration across timestep in mm
 """
 function update_SWD!(f::FarmField, rainfall::Float64, ET::Float64)::Nothing
-    tmp::Float64 = f.soil_SWD - (rainfall - ET)
-    tmp = max(0.0, min(tmp, f.soil_TAW))
+    tmp::Float64 = f.soil_SWD::Float64 - (rainfall - ET)::Float64
+    tmp = max(0.0, min(tmp, f.soil_TAW::Float64))
     f.soil_SWD = round(tmp, digits=4)
 
     return nothing

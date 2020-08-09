@@ -82,8 +82,8 @@ Parameters
 * p_end : datetime, end of range in Y-m-d format, inclusive.
 """
 function get_season_range(c::Climate, p_start::Date, p_end::Date)::DataFrame
-    dates::Array{Date,1} = c.time_steps
-    mask::BitArray{1} = (p_start .<= dates .<= p_end)
+    dates::Array{Date,1} = c.time_steps::Array{Date,1}
+    mask::BitArray{1} = (p_start .<= dates .<= p_end)::BitArray{1}
     return c.data[mask, :]
 end
 
@@ -119,7 +119,7 @@ numeric, representing seasonal rainfall
 """
 function get_seasonal_rainfall(c::Climate, season_range::Array{Date}, partial_name::String)::Float64
     s::Date, e::Date = season_range
-    rain_cols::Array{Symbol,1} = [rc for rc in names(c.data) 
+    rain_cols::Array{String,1} = [rc for rc in names(c.data) 
                                   if occursin("rainfall", String(rc)) && occursin(partial_name, String(rc))
                                 ]
 

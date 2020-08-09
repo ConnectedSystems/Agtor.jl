@@ -22,7 +22,7 @@ end
 
 Volumes in ML.
 """
-function use_allocation!(z::FarmZone, ws::WaterSource, vol_ML::Float64)::Nothing
+function use_allocation!(ws::WaterSource, vol_ML::Float64)::Nothing
     ws.allocation -= vol_ML
 
     if ws.allocation < 0.0
@@ -73,7 +73,7 @@ end
 
 """The total area marked for irrigation."""
 function irrigated_area(zone::FarmZone)::Float64
-    fields::Array = zone.fields
+    fields::Array{FarmField} = zone.fields
     return sum([f.irrigated_area for f in fields])
 end
 
@@ -94,36 +94,36 @@ end
 # end
 
 
-function apply_irrigation!(zone::FarmZone, field::CropField, 
+function apply_irrigation!(field::CropField, 
                           ws::WaterSource, water_to_apply_mm::Float64,
                           area_to_apply::Float64)
     vol_ML_ha::Float64 = water_to_apply_mm / mm_to_ML
     vol_ML::Float64 = vol_ML_ha * area_to_apply
-    use_allocation!(zone, ws, vol_ML)
+    use_allocation!(ws, vol_ML)
 
-    field.soil_SWD -= max(0.0, (water_to_apply_mm * field.irrigation.efficiency))
+    apply::Float64 = (water_to_apply_mm * field.irrigation.efficiency)
+    field.soil_SWD -= max(0.0, apply)
     field.irrigated_volume = (ws.name, vol_ML)
 end
 
 
 """Apply rainfall and ET to influence soil water deficit."""
 function apply_rainfall!(zone::FarmZone, dt::Date)::Nothing
-    data::DataFrame = zone.climate.data
-    idx::BitArray = zone.climate.time_steps .== dt
+    climate::Climate = zone.climate::Climate
+    data::DataFrame = climate.data::DataFrame
+    idx::BitArray = (climate.time_steps .== dt)::BitArray
     subset::DataFrame = data[idx, :]
 
-    z_name::String = zone.name
-    @inbounds for f in zone.fields
+    z_name::String = zone.name::String
+    @inbounds for f::FarmField in zone.fields
         # get rainfall and et for datetime
-        f_name::String = f.name
+        f_name::String = f.name::String
         rain_col::Symbol = Symbol("$(z_name)_$(f_name)_rainfall")
         et_col::Symbol = Symbol("$(z_name)_$(f_name)_ET")
 
         rainfall::Float64, et::Float64 = subset[1, rain_col], subset[1, et_col]
 
         update_SWD!(f, rainfall, et)
-
-        @debug "SWD After Rainfall" f.soil_SWD rainfall et
     end
 
     return nothing
@@ -179,7 +179,8 @@ end
 
 
 function aggregate_field_logs(field_logs::DataFrame)::DataFrame
-    collated::DataFrame = aggregate(groupby(field_logs, :Date), sum)
+    grouped = groupby(field_logs, :Date)
+    collated::DataFrame = combine(grouped, valuecols(grouped) .=> sum)
 
     collated[:, Symbol("Dollar per ML")] = collated[:, :income_sum] ./ collated[:, :irrigated_volume_sum]
     collated[:, Symbol("ML per Irrigated Yield")] = collated[:, :irrigated_volume_sum] ./ collated[:, :irrigated_yield_sum]
@@ -220,9 +221,10 @@ function collect_results(zone::FarmZone; last=false)::Tuple{DataFrame,Dict}
     collated = collate_field_logs(field_logs)
 
     ws_irrig = zone._irrigation_volume_by_source
-    irrig_ws::DataFrame = aggregate(groupby(ws_irrig, :Date), sum)
+    irrig_group = groupby(ws_irrig, :Date)
+    irrig_ws::DataFrame = combine(irrig_group, valuecols(irrig_group) .=> sum)
 
-    collated_res = hcat(collated, irrig_ws[:, setdiff(names(irrig_ws), [:Date])])
+    collated_res = hcat(collated, irrig_ws[:, setdiff(names(irrig_ws), ["Date"])])
 
     return collated_res, field_logs
 end

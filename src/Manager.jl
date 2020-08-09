@@ -24,7 +24,7 @@ Parameters
 * m : Agtor.Manager, 
 * zone : Agtor.FarmZone, representing a farm or a farming zone.
 """
-function optimize_irrigated_area(m::Manager, zone::FarmZone)::Dict
+function optimize_irrigated_area(m::Manager, zone::FarmZone)::OrderedDict{String, Float64}
     model::Model = Model(m.opt)
 
     num_fields::Int64 = length(zone.fields)
@@ -60,12 +60,12 @@ function optimize_irrigated_area(m::Manager, zone::FarmZone)::Dict
         )
 
         # total_pump_cost = sum([ws.pump.maintenance_cost(year_step) for ws in zone_ws])
-        profits::Array = [field_areas[f.name][w.name] * 
+        profits::Array{JuMP.GenericAffExpr{Float64,JuMP.VariableRef}} = [field_areas[f.name][w.name] * 
                             (naive_crop_income - app_cost_per_ML[w.name])
                           for w in zone_ws]
 
         append!(calc, profits)
-        curr_field_areas = collect(values(field_areas[f.name]))
+        curr_field_areas::Array = collect(values(field_areas[f.name]))
         areas = append!(areas, curr_field_areas)
 
         # Total irrigated area cannot be greater than field area
@@ -249,7 +249,7 @@ function optimize_irrigation(m::Manager, zone::FarmZone, dt::Date)::Tuple{Ordere
 end
 
 """Extract total irrigated area from OptLang optimized results."""
-function get_optimum_irrigated_area(m::Manager, field::FarmField, primals::Dict)::Float64
+function get_optimum_irrigated_area(field::FarmField, primals::OrderedDict)::Float64
     return sum([v for (k, v) in primals if occursin(field.name, k)])
 end
 
@@ -404,7 +404,7 @@ function run_timestep(farmer::Manager, zone::FarmZone, dt::Date)::Nothing
                 end
 
                 vol_to_apply_ML_ha::Float64 = (water_to_apply_mm / mm_to_ML)
-                apply_irrigation!(zone, f, ws, water_to_apply_mm, area_to_apply)
+                apply_irrigation!(f, ws, water_to_apply_mm, area_to_apply)
 
                 tmp::Float64 = sum([v for (k, v) in cost_per_ML if occursin(f.name, k) && occursin(ws_name, k)])
 
@@ -417,7 +417,7 @@ function run_timestep(farmer::Manager, zone::FarmZone, dt::Date)::Nothing
 
             # cropping for this field begins
             opt_field_area = optimize_irrigated_area(farmer, zone)
-            f.irrigated_area = get_optimum_irrigated_area(farmer, f, opt_field_area)
+            f.irrigated_area = get_optimum_irrigated_area(f, opt_field_area)
 
             # zone.opt_field_area = opt_field_area
         elseif season_end
