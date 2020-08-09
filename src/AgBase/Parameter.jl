@@ -1,5 +1,6 @@
 using Mixers
 using Agtor
+using DataFrames
 import Flatten
 import Dates
 
@@ -104,7 +105,7 @@ end
 
 function Base.:*(x::String, y::Union{ConstantParameter, CategoricalParameter}) x * y.value end
 
-# function Base.convert(x::Type{Any}, y::Agtor.AgParameter) convert(x, y.value) end
+# function Base.convert(x::Type{Union{Float64, Int64}}, y::Agtor.RealParameter) convert(x, y.value) end
 function Base.convert(x::Type{Any}, y::Agtor.ConstantParameter) convert(x, y.value) end
 
 
@@ -158,7 +159,7 @@ function generate_agparams(prefix::Union{String, Symbol}, dataset::Dict)::Dict{S
         prefix *= "$(comp)___$(comp_name)"
     end
 
-    created::Dict{Union{String, Symbol}, Any} = copy(dataset)
+    created::Dict{Union{String, Symbol}, Any} = deepcopy(dataset)
     for (n, vals) in dataset
         var_id = prefix * "__$n"
 
@@ -230,9 +231,23 @@ function collect_agparams!(dataset::Dict, store::Array; ignore::Union{Array, Not
         if !isnothing(ignore) && (k in ignore)
             continue
         end
+
         if v isa AgParameter && !is_const(v)
             push!(store, extract_values(v))
-        elseif v isa Dict
+        elseif v isa Dict || v isa Array
+            collect_agparams!(v, store; ignore=ignore)
+        end
+    end
+
+    return DataFrame(store)
+end
+
+
+function collect_agparams!(dataset::Array, store::Array; ignore::Union{Array, Nothing}=nothing)
+    for v in dataset
+        if v isa AgParameter && !is_const(v)
+            push!(store, extract_values(v))
+        elseif v isa Dict || v isa Array
             collect_agparams!(v, store; ignore=ignore)
         end
     end
@@ -292,16 +307,11 @@ end
 
 
 """Modify AgParameter name in place by adding a prefix."""
-function add_prefix!(prefix, component)
+function add_prefix!(prefix::String, component)
     params = Flatten.flatten(component, AgParameter)
     for pr in params
         pr.name = prefix*pr.name
     end
-end
-
-
-function get_subtypes()
-    return subtypes(DataFrame)
 end
 
 
@@ -313,8 +323,18 @@ Usage:
     
     collated_specs = []
     collect_agparams!(zone_params, collated_specs; ignore=["crop_spec"])
+    
+    # Expect only CSV for now...
+    climate_data::String = "data/climate/farm_climate_data.csv"
+    if endswith(climate_data, ".csv")
+        use_threads = Threads.nthreads() > 1
+        climate_seq = DataFrame!(CSV.File(climate_data, threaded=use_threads, dateformat="dd-mm-YYYY"))
+    else
+        error("Currently, climate data can only be provided in CSV format")
+    end
 
-    z1 = create(FarmZone, zone_params)
+    climate::Climate = Climate(climate_seq)
+    z1 = create(zone_params, climate)
 
     param_info = DataFrame(collated_specs)
 
@@ -324,11 +344,10 @@ Usage:
     # Update z1 components with values found in first row
     @update z1 samples[1]
 """
-function update_params(comp, sample)
+function update_params!(comp, sample)
     # entries = map(ap -> param_info(ap), Flatten.flatten(test_irrig, Agtor.AgParameter))
 
     tgt_params = names(sample)
-    collated = []
     for f_name in fieldnames(typeof(comp))
         tmp_f = getfield(comp, f_name)
         if tmp_f isa Array
@@ -348,16 +367,24 @@ end
 
 function update_params!(comp::Dict, sample)
     for (k,v) in comp
-        if v isa AgParameter
-            update_params!(v, sample)
-        end
+        update_params!(v, sample)
     end
 end
 
 function update_params!(p::AgParameter, sample)
-    if p.name in names(sample)
-        p.value = sample[Symbol(p.name)]
+    # p_name = Symbol(p.name)
+    p_name::String = p.name
+    if p_name in names(sample)
+        p.value = sample[p_name]
     end
+end
+
+
+function modify_params(comp, sample)
+    comp = deepcopy(comp)
+    update_params!(comp, sample)
+
+    return comp
 end
 
 # collated = []
