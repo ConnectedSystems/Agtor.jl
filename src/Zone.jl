@@ -228,8 +228,9 @@ function collect_results(zone::FarmZone; last=false)::Tuple{DataFrame,Dict}
 end
 
 
-function create(cls::Type{FarmZone}, spec::Dict{Symbol, Any}, climate_data::Climate)::FarmZone
-    cls_name = Base.typename(cls)
+function create(data::Dict{Symbol, Any}, climate_data::Climate)::FarmZone
+    spec = deepcopy(data)
+    _ = pop!(spec, :component)
 
     name = spec[:name]
 
@@ -238,22 +239,18 @@ function create(cls::Type{FarmZone}, spec::Dict{Symbol, Any}, climate_data::Clim
     water_specs::Dict{Symbol, Dict} = spec[:water_source_spec]
     pump_specs::Dict{Symbol, Dict} = spec[:pump_spec]
 
-    water_sources::Array{WaterSource} = create(WaterSource, water_specs, pump_specs)
+    water_sources::Array{WaterSource} = create(water_specs, pump_specs)
 
     # This will be used in future to provide list of irrigations/crops that could be considered
     # crop_specs::Dict{Symbol, Dict} = spec[:crop_spec]
     # irrig_spec::Dict{Symbol, Dict} = spec[:irrigation_spec]
 
-    field_specs = copy(spec[:fields])
+    field_specs = deepcopy(spec[:fields])
     for (fk, f) in field_specs
-
         f[:irrigation] = create(collect(values(f[:irrigation_spec]))[1])
-        f[:crop_rotation] = [create(c, climate_data.time_steps[1]) for c in collect(values(f[:crop_rotation_spec]))]
-
-        f[:crop] = f[:crop_rotation][1]  # create(collect(values(f[:crop_spec]))[1], climate_data.time_steps[1])
-
-        # available_crops::Array{Crop} = Crop[create(sp, climate_data.time_steps[1]) for (k,sp) in crop_specs]
-        # f[:crop_choices] = [deepcopy(c) for c in available_crops]
+        f[:crop_rotation] = [create(c, climate_data.time_steps[1]) 
+                             for c in collect(values(f[:crop_rotation_spec]))]
+        f[:crop] = f[:crop_rotation][1]
 
         # Clean up unneeded specs
         delete!(f, :irrigation_spec)
@@ -270,7 +267,7 @@ function create(cls::Type{FarmZone}, spec::Dict{Symbol, Any}, climate_data::Clim
         :water_sources => water_sources
     )
 
-    zone = cls(; zone_spec...)
+    zone = FarmZone(; zone_spec...)
 
     return zone
 end

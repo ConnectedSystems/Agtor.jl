@@ -18,21 +18,8 @@ mutable struct Basin <: AgComponent
         end
 
         climate::Climate = Climate(climate_seq)
-        basin.zones = Dict(k => create(FarmZone, v, climate) for (k, v) in zone_specs)
+        basin.zones = Dict(k => create(v, climate) for (k, v) in zone_specs)
 
         return basin
     end
-end
-
-
-function setup_zones(data_path::String, zone_names::Array)
-    zone_spec_dir::String = data_path
-    zone_specs::Dict{String, Dict} = load_yaml(zone_spec_dir)
-
-    return [create(FarmZone, z_spec) for (z_name, z_spec) in zone_specs if z_name in zone_names]
-end
-
-function create(cls::Type{Basin}, spec::Dict; climate_data::String)
-    cls_name = pop!(spec, :component)
-    return cls(spec[:name], spec[:zone_spec]; climate_data)
 end

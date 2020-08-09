@@ -49,11 +49,25 @@ end
 
 
 function create(spec::Dict)
-    dt = copy(spec)
-
+    dt = deepcopy(spec)
     cls_name = pop!(dt, :component)
     cls = eval(Symbol(cls_name))
+
     return cls(; dt...)
+end
+
+
+function create(spec::Dict, climate_data::String)
+    dt = deepcopy(spec)
+    cls_name = pop!(dt, :component)
+    cls = eval(Symbol(cls_name))
+
+    if cls_name == "Basin"
+        return cls(dt[:name], dt[:zone_spec]; 
+                   climate_data=climate_data)
+    end
+
+    error("Unknown component: $(cls_name), with additional parameter '$(climate_data)'")
 end
 
 

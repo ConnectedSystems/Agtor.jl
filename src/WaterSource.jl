@@ -23,15 +23,12 @@ function subtotal_costs(ws::WaterSource, area::Float64, water_used_ML::Float64):
 end
 
 
-function create(cls::Type{WaterSource}, ws_specs::Dict{Symbol, Dict},
+function create(ws_specs::Dict{Symbol, Dict},
                 pump_specs::Dict{Symbol, Dict};
                 id_prefix::Union{String, Nothing}=nothing)::Array{WaterSource}
-    cls_name = Base.typename(cls)
-
     ws::Array{WaterSource} = []
     for (k, v) in ws_specs
         pump_name = v[:name]  # pump will have same name as the water_source
-
         v[:pump] = create(pump_specs[Symbol(pump_name)])
         
         ws_i::WaterSource = create(v)

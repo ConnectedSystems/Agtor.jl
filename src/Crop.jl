@@ -123,15 +123,7 @@ end
 
 
 function create(spec::Dict, start_dt::Date)::Crop
-
-    # cls_name = Base.typename(cls)
-    # prefix::String = "$(cls_name)___$(name)__"
-    # @add_preprefix
-
-    # props = generate_agparams(prefix * "properties", prop)
-    # stages = generate_agparams(prefix * "growth_stages", growth_stages)
-    data = copy(spec)
-    cls_name = pop!(data, :component)
-    cls = eval(Symbol(cls_name))
-    return cls(spec[:name], spec[:crop_type], spec[:growth_stages], start_dt; spec...)
+    data = deepcopy(spec)
+    _ = pop!(data, :component)
+    return Crop(data[:name], data[:crop_type], data[:growth_stages], start_dt; data...)
 end
