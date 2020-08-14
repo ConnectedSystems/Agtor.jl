@@ -1,5 +1,6 @@
 
 using JuMP, GLPK, Statistics
+using OrderedCollections
 import Base.Threads
 
 
@@ -34,7 +35,7 @@ function optimize_irrigated_area(m::Manager, zone::FarmZone)::OrderedDict{String
     areas::Array{JuMP.VariableRef} = JuMP.VariableRef[]
     sizehint!(areas, num_fields)
 
-    field_areas::Dict{String, Dict} = Dict{String, Dict}()
+    field_areas::LittleDict{Symbol, Dict} = LittleDict{Symbol, Dict}()
     sizehint!(field_areas, num_fields)
 
     zone_ws::Array{WaterSource} = zone.water_sources
@@ -42,17 +43,18 @@ function optimize_irrigated_area(m::Manager, zone::FarmZone)::OrderedDict{String
     @inbounds for f::FarmField in zone.fields
         area_to_consider::Float64 = f.total_area_ha
         did::String = replace("$(f.name)__", " " => "_")
+        f_name = Symbol(f.name)
 
         naive_crop_income::Float64 = estimate_income_per_ha(f.crop)
         naive_req_water::Float64 = f.crop.water_use_ML_per_ha
-        app_cost_per_ML::Dict{String, Float64} = ML_water_application_cost(m, zone, f, naive_req_water)
+        app_cost_per_ML::LittleDict{Symbol, Float64} = ML_water_application_cost(m, zone, f, naive_req_water)
 
         pos_field_area::Float64 = sum(Float64[w.allocation / naive_req_water
                                         for w in zone_ws])
         pos_field_area = min(pos_field_area, area_to_consider)
         
-        field_areas[f.name] = Dict{String, JuMP.VariableRef}(
-            w.name => @variable(model, 
+        field_areas[f_name] = LittleDict{Symbol, JuMP.VariableRef}(
+            Symbol(w.name) => @variable(model, 
                                 base_name="$(did)$(w.name)", 
                                 lower_bound=0, 
                                 upper_bound=min((w.allocation / naive_req_water), area_to_consider))
@@ -60,12 +62,12 @@ function optimize_irrigated_area(m::Manager, zone::FarmZone)::OrderedDict{String
         )
 
         # total_pump_cost = sum([ws.pump.maintenance_cost(year_step) for ws in zone_ws])
-        profits::Array{JuMP.GenericAffExpr{Float64,JuMP.VariableRef}} = [field_areas[f.name][w.name] * 
-                            (naive_crop_income - app_cost_per_ML[w.name])
+        profits::Array{JuMP.GenericAffExpr{Float64,JuMP.VariableRef}} = [field_areas[f_name][Symbol(w.name)] * 
+                            (naive_crop_income - app_cost_per_ML[Symbol(w.name)])
                           for w in zone_ws]
 
         append!(calc, profits)
-        curr_field_areas::Array = collect(values(field_areas[f.name]))
+        curr_field_areas::Array = collect(values(field_areas[f_name]))
         areas = append!(areas, curr_field_areas)
 
         # Total irrigated area cannot be greater than field area
@@ -80,15 +82,16 @@ function optimize_irrigated_area(m::Manager, zone::FarmZone)::OrderedDict{String
     @objective(model, Max, sum(calc))
 
     JuMP.optimize!(model)
-    if termination_status(model) != MOI.OPTIMAL
+    state = termination_status(model)
+    if state != MOI.OPTIMAL
         error("Could not optimize!")
     end
 
-    opt_vals::OrderedDict{String, Float64} = OrderedDict(name(v) => value(v) for v in all_variables(model))
+    opt_vals::OrderedDict{String, Float64} = OrderedDict(JuMP.name(v) => value(v) for v in all_variables(model))
     opt_vals["optimal_result"] = objective_value(model)
-    if termination_status(model) == MOI.OPTIMAL
+    if state == MOI.OPTIMAL
 
-    elseif termination_status(model) == MOI.TIME_LIMIT && has_values(model)
+    elseif state == MOI.TIME_LIMIT && has_values(model)
         @warn "Farm model optimization was sub-optimal"
     else
         error("Could not optimize farm water use.")
@@ -147,15 +150,15 @@ function optimize_irrigation(m::Manager, zone::FarmZone, dt::Date)::Tuple{Ordere
     zone_ws::Array{WaterSource} = zone.water_sources
     total_irrigated_area::Float64 = zone.total_irrigated_area
 
-    field_area::Dict = Dict{String, Dict{String, JuMP.VariableRef}}()
-    sizehint!(field_area, num_fields)    
+    field_area::LittleDict{Symbol, LittleDict} = LittleDict{Symbol, LittleDict{Symbol, JuMP.VariableRef}}()
+    sizehint!(field_area, num_fields)
 
     req_water::Array{Float64} = []
     sizehint!(req_water, num_fields)
 
-    max_ws_area::Dict{String, Dict} = Dict{String, Dict{String, Float64}}()
+    max_ws_area::LittleDict{Symbol, LittleDict} = LittleDict{Symbol, LittleDict{Symbol, Float64}}()
     @inbounds for f::FarmField in zone.fields
-        f_name::String = f.name
+        f_name::Symbol = Symbol(f.name)
         did::String = replace("$(f_name)__", " " => "_")
 
         req_water_ML_ha::Float64 = calc_required_water(f, dt) / mm_to_ML
@@ -167,8 +170,8 @@ function optimize_irrigation(m::Manager, zone::FarmZone, dt::Date)::Tuple{Ordere
 
         # If no water available or required...
         if f.irrigation.name == "dryland" || req_water_ML_ha == 0.0 || total_pos_area == 0.0
-            field_area[f_name] = Dict{String, JuMP.VariableRef}(
-                ws.name => @variable(model,
+            field_area[f_name] = LittleDict{Symbol, JuMP.VariableRef}(
+                Symbol(ws.name) => @variable(model,
                                      base_name="$(did)$(ws.name)",
                                      lower_bound=0.0,
                                      upper_bound=0.0)
@@ -191,11 +194,11 @@ function optimize_irrigation(m::Manager, zone::FarmZone, dt::Date)::Tuple{Ordere
 
         # estimated gross income - variable costs per ha
         # Creating individual field area variables
-        @inbounds field_area[f_name] = Dict{String, JuMP.VariableRef}(
-            ws.name => @variable(model,
+        @inbounds field_area[f_name] = LittleDict{Symbol, JuMP.VariableRef}(
+            Symbol(ws.name) => @variable(model,
                                  base_name="$(did)$(ws.name)",
                                  lower_bound=0.0,
-                                 upper_bound=max_ws_area[f_name][ws.name])
+                                 upper_bound=max_ws_area[f_name][Symbol(ws.name)])
             for ws in zone_ws
         )
 
@@ -204,9 +207,9 @@ function optimize_irrigation(m::Manager, zone::FarmZone, dt::Date)::Tuple{Ordere
         @constraint(model, irrig_area <= total_pos_area)
 
         # Costs to pump needed water volume from each water source
-        app_cost_per_ML::Dict{String, Float64} = ML_water_application_cost(m, zone, f, req_water_ML_ha)
+        app_cost_per_ML::LittleDict{Symbol, Float64} = ML_water_application_cost(m, zone, f, req_water_ML_ha)
 
-        tmp_d::Dict{String, Float64} = Dict{String, Float64}(
+        tmp_d::LittleDict{String, Float64} = LittleDict{String, Float64}(
             "$(did)$(k)" => v
             for (k, v) in app_cost_per_ML
         )
@@ -214,8 +217,8 @@ function optimize_irrigation(m::Manager, zone::FarmZone, dt::Date)::Tuple{Ordere
 
         @inbounds tmp_l = [
             (crop_income_per_ha 
-            - (app_cost_per_ML[ws.name] * req_water_ML_ha)
-            ) * field_area[f_name][ws.name]
+            - (app_cost_per_ML[Symbol(ws.name)] * req_water_ML_ha)
+            ) * field_area[f_name][Symbol(ws.name)]
             for ws in zone_ws
         ]
         append!(profit, tmp_l)
@@ -226,7 +229,7 @@ function optimize_irrigation(m::Manager, zone::FarmZone, dt::Date)::Tuple{Ordere
     avg_req_water::Float64 = mean(req_water)
     if avg_req_water > 0.0
         @inbounds for ws in zone_ws
-            @inbounds irrig_area = sum([field_area[f.name][ws.name] for f in zone.fields])
+            @inbounds irrig_area = sum([field_area[Symbol(f.name)][Symbol(ws.name)] for f in zone.fields])
             @constraint(model, irrig_area <= (ws.allocation / avg_req_water))
         end
     end
@@ -234,12 +237,13 @@ function optimize_irrigation(m::Manager, zone::FarmZone, dt::Date)::Tuple{Ordere
     @objective(model, Max, sum(profit))
     optimize!(model)
 
-    opt_vals::OrderedDict{String, Float64} = OrderedDict(name(v) => value(v) for v in JuMP.all_variables(model))
+    opt_vals::OrderedDict{String, Float64} = OrderedDict(JuMP.name(v) => value(v) for v in JuMP.all_variables(model))
     opt_vals["optimal_result"] = objective_value(model)
 
-    if termination_status(model) == MOI.OPTIMAL
+    state = termination_status(model)
+    if state == MOI.OPTIMAL
         
-    elseif termination_status(model) == MOI.TIME_LIMIT && has_values(model)
+    elseif state == MOI.TIME_LIMIT && has_values(model)
         @warn "Farm model optimization was sub-optimal"
     else
         error("Could not optimize farm water use.")
@@ -283,12 +287,12 @@ Returns
 -------
 * dict[str, float] : water source name and cost per ML
 """
-function ML_water_application_cost(m::Manager, zone::FarmZone, field::FarmField, req_water_ML_ha::Float64)::Dict
+function ML_water_application_cost(m::Manager, zone::FarmZone, field::FarmField, req_water_ML_ha::Float64)::LittleDict
     zone_ws::Array{WaterSource} = zone.water_sources
     flow_rate::Float64 = field.irrigation.flow_rate_Lps
 
-    costs::Dict{String, Float64} = Dict(
-        w.name => (pump_cost_per_ML(w, flow_rate) 
+    costs::LittleDict{Symbol, Float64} = LittleDict(
+        Symbol(w.name) => (pump_cost_per_ML(w, flow_rate) 
                     * req_water_ML_ha)
                     + (w.cost_per_ML*req_water_ML_ha)
         for w in zone_ws
