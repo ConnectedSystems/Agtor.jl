@@ -159,7 +159,7 @@ function generate_agparams(prefix::Union{String, Symbol}, dataset::Dict)::Dict{S
         prefix *= "$(comp)___$(comp_name)"
     end
 
-    created::Dict{Union{String, Symbol}, Any} = deepcopy(dataset)
+    created::Dict{Any, Any} = deepcopy(dataset)
     for (n, vals) in dataset
         var_id = prefix * "__$n"
 
@@ -342,9 +342,9 @@ Usage:
     samples = sample(param_info, 1000, sampler)  # where sampler is some function
 
     # Update z1 components with values found in first row
-    @update z1 samples[1]
+    set_params!(z1, samples[1])
 """
-function update_params!(comp, sample)
+function set_params!(comp, sample)
     # entries = map(ap -> param_info(ap), Flatten.flatten(test_irrig, Agtor.AgParameter))
 
     tgt_params = names(sample)
@@ -355,23 +355,23 @@ function update_params!(comp, sample)
             tmp_flat = reduce(vcat, Flatten.flatten(tmp_f, Array{arr_type}))
             for i in tmp_flat
                 # tmp = Flatten.flatten(i, Agtor.AgParameter)
-                update_params!(i, sample)
+                set_params!(i, sample)
             end
         elseif isa(tmp_f, AgComponent) || isa(tmp_f, Dict)
-            update_params!(tmp_f, sample)
+            set_params!(tmp_f, sample)
         elseif tmp_f isa AgParameter
-            update_params!(tmp_f, sample)
+            set_params!(tmp_f, sample)
         end
     end
 end
 
-function update_params!(comp::Dict, sample)
+function set_params!(comp::Dict, sample)
     for (k,v) in comp
-        update_params!(v, sample)
+        set_params!(v, sample)
     end
 end
 
-function update_params!(p::AgParameter, sample)
+function set_params!(p::AgParameter, sample)
     # p_name = Symbol(p.name)
     p_name::String = p.name
     if p_name in names(sample)
@@ -380,26 +380,9 @@ function update_params!(p::AgParameter, sample)
 end
 
 
-function modify_params(comp, sample)
+function update_model(comp, sample)
     comp = deepcopy(comp)
-    update_params!(comp, sample)
+    set_params!(comp, sample)
 
     return comp
 end
-
-# collated = []
-# for f_name in fieldnames(typeof(z1))
-#     tmp_f = getfield(z1, f_name)
-#     f_type = typeof(tmp_f)
-#     if tmp_f isa Array
-#         arr_type = eltype(tmp_f)
-#         tmp_flat = reduce(vcat, Flatten.flatten(tmp_f, Array{arr_type}))
-#         for i in tmp_flat
-#             tmp = map(ap -> param_info(ap), Flatten.flatten(i, Agtor.AgParameter))
-#             append!(collated, tmp)
-#         end
-#     elseif f_type in all_comps
-#         tmp = map(ap -> param_info(ap), Flatten.flatten(tmp_f, Agtor.AgParameter))
-#         append!(collated, tmp)
-#     end
-# end
