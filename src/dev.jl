@@ -1,5 +1,4 @@
 import Revise
-import Agtor
 
 using Profile, BenchmarkTools, OwnTime, Logging
 
@@ -9,7 +8,6 @@ using DataStructures
 using DataFrames
 using Agtor
 using Flatten
-using Infiltrator
 
 # Assumes we are in top-level project dir
 # julia --project=.
@@ -20,6 +18,7 @@ using Infiltrator
 # Windows:
 # $ set JULIA_NUM_THREADS=4 && julia dev.jl
 # $ set JULIA_NUM_THREADS=4 && julia --project=.
+# $ julia --project=. -p 4
 
 
 # Start month/day of growing season
@@ -91,6 +90,17 @@ end
 @time zone_results, field_results = test_short_run()
 
 # CSV.write("dev_result.csv", zone_results)
+
+function save_results(fn, results)
+    jldopen(fn, "w") do file
+        for i in results
+            g = g_create(file, i) # create a group
+            g["zone_results"] = zone_results
+            g["field_results"] = field_results
+        end
+    end
+end
+
 
 # Write out to Julia HDF5
 jldopen("test.jld", "w") do file

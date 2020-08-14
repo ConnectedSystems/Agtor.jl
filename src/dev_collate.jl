@@ -3,7 +3,7 @@ import Agtor
 
 using Profile, BenchmarkTools, OwnTime, Logging, Infiltrator
 
-using CSV
+using JLD, HDF5, CSV
 using Dates
 using DataStructures
 using DataFrames
@@ -23,12 +23,12 @@ const gs_start = (5, 1)
 
 function setup_zone(data_dir::String="test/data/")
     zone_spec_dir::String = "$(data_dir)zones/"
-    zone_specs::Dict{String, Dict} = load_yaml(zone_spec_dir)
-
-    zone_params = generate_agparams("", zone_specs["Zone_1"])
-
+    # zone_specs::Dict{String, Dict} = load_yaml(zone_spec_dir)
+    # zone_params = generate_agparams("", zone_specs["Zone_1"])
+    zone_params = load_spec(zone_spec_dir)
+    tgt_zone = zone_params[:Zone_1]
     collated_specs::Array = []
-    agparams = collect_agparams!(zone_params, collated_specs; ignore=["crop_spec"])
+    agparams = collect_agparams!(tgt_zone, collated_specs; ignore=[:crop_spec])
 
     climate_data::String = "$(data_dir)climate/farm_climate_data.csv"
 
@@ -42,7 +42,7 @@ function setup_zone(data_dir::String="test/data/")
 
     climate::Climate = Climate(climate_seq)
 
-    return create(zone_params, climate), agparams
+    return create(tgt_zone, climate), agparams
 end
 
 
@@ -87,7 +87,7 @@ df = DataFrame(sample)
 
 @info "Updating with values:" df
 @info "before" test
-update_params!(test, df[1, :])
+set_params!(test, df[1, :])
 @info "after" test
 
 # @create FarmZone zone_specs["Zone_1"] ""

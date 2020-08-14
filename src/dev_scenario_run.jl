@@ -1,15 +1,14 @@
 import Revise
-import Agtor
 
 using Profile, BenchmarkTools, OwnTime, Logging
 
-using JLD, HDF5, CSV
+using CSV
 using Dates
-using DataStructures
-using DataFrames
+using DataStructures, DataFrames
 using Agtor
 using Flatten
-using Infiltrator
+
+# import Base.Threads.@spawn
 
 # Assumes we are in top-level project dir
 # julia --project=.
@@ -27,13 +26,13 @@ using Infiltrator
 const gs_start = (5, 1)
 
 function setup_zone(data_dir::String="test/data/")
-    zone_spec_dir::String = "$(data_dir)zones/"
-    zone_specs::Dict{String, Dict} = load_yaml(zone_spec_dir)
-
-    zone_params = generate_agparams("", zone_specs["Zone_1"])
+    zone_spec_dir::String = "$(data_dir)zones"
+    # zone_specs::Dict{String, Dict} = load_yaml(zone_spec_dir)
+    # zone_params = generate_agparams("", zone_specs["Zone_1"])
+    zone_params::Dict{Symbol, Dict} = load_spec(zone_spec_dir)
 
     collated_specs::Array = []
-    agparams = collect_agparams!(zone_params, collated_specs; ignore=["crop_spec"])
+    agparams = collect_agparams!(zone_params[:Zone_1], collated_specs; ignore=[:crop_spec])
 
     climate_data::String = "$(data_dir)climate/farm_climate_data.csv"
 
@@ -47,7 +46,7 @@ function setup_zone(data_dir::String="test/data/")
 
     climate::Climate = Climate(climate_seq)
 
-    return create(zone_params, climate), agparams
+    return create(zone_params[:Zone_1], climate), agparams
 end
 
 
@@ -94,15 +93,19 @@ function test_scenario_run(data_dir::String="test/data/")::Array
 
     all_results = []
     for r in eachrow(samples)
-        tmp_z = modify_params(z1, r)
+        tmp_z = update_model(z1, r)
 
         zone_results, field_results = run_model(farmer, tmp_z)
-        push!(all_results, zone_results)
+        push!(all_results, (zone_results, field_results))
     end
+
+    # all_results = [@spawn run_model(farmer, update_model(z1, r)) for r in eachrow(samples)]
 
     return all_results
 end
 
-test_short_run()
+@btime test_short_run()
 
-@btime test_scenario_run()
+x = @btime test_scenario_run()
+
+save_results("batch_run.jld", x)

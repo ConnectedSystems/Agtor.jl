@@ -19,7 +19,7 @@ mutable struct Climate <: AgComponent
         not_year_col::Array{Symbol,1} = collect(filter(x -> x != :Year, propertynames(gdf)))
         yearly = combine(gdf, names(gdf) .=> sum)
 
-        rain_cols::Array{Symbol,1} = filter(x -> occursin("rainfall", String(x)), propertynames(yearly))
+        rain_cols::Array{Symbol,1} = filter(x -> occursin("rainfall", string(x)), propertynames(yearly))
         push!(rain_cols, :Year)
 
         c.annual_rainfall = yearly[:, rain_cols]
