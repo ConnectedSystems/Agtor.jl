@@ -4,6 +4,7 @@ using Base.Threads
 using Formatting
 using DataStructures
 using Statistics
+using OrderedCollections
 
 import Agtor: Climate
 
@@ -50,7 +51,7 @@ function Base.getproperty(z::FarmZone, v::Symbol)
     elseif v == :total_area_ha
         return sum([f.total_area_ha for f in z.fields])
     elseif v == :total_irrigated_area
-        return sum([f.irrigated_area for f in z.fields])
+        return sum([!isnothing(f.irrigated_area) ? f.irrigated_area : 0.0 for f in z.fields])
     end
 
     return getfield(z, v)
