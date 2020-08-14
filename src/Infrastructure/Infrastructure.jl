@@ -20,35 +20,19 @@ abstract type Infrastructure <: AgComponent end
     major_maintenance_rate::Union{Float64, AgParameter}
 end
 
-function minor_maintenance_cost(a::Infrastructure)::Float64
-    return a.capital_cost * a.minor_maintenance_rate
-end
-
-function major_maintenance_cost(a::Infrastructure)::Float64
-    return a.capital_cost * a.major_maintenance_rate
-end
-
-function maintenance_year(infra::Infrastructure)::Dict{String, Float64}
-    maintenance_year::Dict{String, Float64} = Dict{String, Float64}(
-        "minor" => infra.minor_maintenance_schedule,
-        "major" => infra.major_maintenance_schedule
-    )
-    return maintenance_year
-end
-
 
 """Calculate maintenance costs.
 
 Warning: This can be on a per ha basis or given as a total.
 """
 function maintenance_cost(infra::Infrastructure, year_step::Int64)::Float64
-    mr::Dict{String, Float64} = maintenance_year(infra)
-
+    minor=infra.minor_maintenance_schedule
+    major=infra.major_maintenance_schedule
     maintenance_cost::Float64 = 0.0
-    if year_step % mr["major"] == 0
-        maintenance_cost = major_maintenance_cost(infra)
-    elseif year_step % mr["minor"] == 0
-        maintenance_cost = minor_maintenance_cost(infra)
+    if year_step % major == 0
+        maintenance_cost = infra.capital_cost * infra.major_maintenance_rate
+    elseif year_step % minor == 0
+        maintenance_cost = infra.capital_cost * infra.minor_maintenance_rate
     end
 
     return maintenance_cost
