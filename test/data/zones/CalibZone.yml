@@ -1,4 +1,4 @@
-name: Zone_1
+name: CalibZone
 component: Zone
 
 # Paths to data, relative to where project is run
@@ -15,26 +15,10 @@ fields:
 
     total_area_ha: 100.0
     irrigation_spec: "test/data/irrigations/gravity.yml"
-    # crop_spec: "test/data/crops/irrigated_wheat.yml"
-    # Initial crop is the first one in this list
-    crop_rotation_spec: ["test/data/crops/irrigated_wheat.yml", "test/data/crops/irrigated_barley.yml"]
+    crop_rotation_spec: ["test/data/crops/uncalibrated_wheat.yml"]
 
     # average total available water in soil (mm)
     soil_TAW: 100.0
 
-    # Initial Soil Water Deficit
-    soil_SWD: 20.0
-
-  field2:
-    name: field2
-    component: CropField
-
-    total_area_ha: 90.0
-    irrigation_spec: "test/data/irrigations/gravity.yml"
-    crop_rotation_spec: ["test/data/crops/irrigated_wheat.yml", "test/data/crops/irrigated_barley.yml"]
-
-    # average total available water in soil (mm)
-    soil_TAW: 100.0
-  
     # Initial Soil Water Deficit
     soil_SWD: 20.0
