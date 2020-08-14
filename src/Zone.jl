@@ -59,14 +59,13 @@ end
 
 
 """Determine the possible irrigation area using water from each water source."""
-function possible_area_by_allocation(zone::FarmZone, field::FarmField, req_water_ML::Float64)::Dict{String, Float64}
+function possible_area_by_allocation(zone::FarmZone, field::FarmField, req_water_ML::Float64)::LittleDict{Symbol, Float64}
     @assert in(field.name, [f.name for f in zone.fields]) "Field must be in zone"
 
-    tmp::Dict{String, Float64} = Dict{String, Float64}()
-    for ws::WaterSource in zone.water_sources
-        ws_name = ws.name
-        tmp[ws_name] = possible_irrigation_area(field, ws.allocation, req_water_ML)
-    end
+    tmp::LittleDict{Symbol, Float64} = LittleDict{Symbol, Float64}(
+        Symbol(ws.name) => possible_irrigation_area(field, ws.allocation, req_water_ML)
+        for ws::WaterSource in zone.water_sources
+    )
 
     return tmp
 end
@@ -97,14 +96,16 @@ end
 
 function apply_irrigation!(field::CropField, 
                           ws::WaterSource, water_to_apply_mm::Float64,
-                          area_to_apply::Float64)
+                          area_to_apply::Float64)::Nothing
     vol_ML_ha::Float64 = water_to_apply_mm / mm_to_ML
     vol_ML::Float64 = vol_ML_ha * area_to_apply
     use_allocation!(ws, vol_ML)
 
     apply::Float64 = (water_to_apply_mm * field.irrigation.efficiency)
-    field.soil_SWD -= max(0.0, apply)
+    field.soil_SWD::Union{Float64, AgParameter} -= max(0.0, apply)::Float64
     field.irrigated_volume = (ws.name, vol_ML)
+
+    return nothing
 end
 
 
@@ -112,7 +113,7 @@ end
 function apply_rainfall!(zone::FarmZone, dt::Date)::Nothing
     climate::Climate = zone.climate::Climate
     data::DataFrame = climate.data::DataFrame
-    idx::BitArray = (climate.time_steps .== dt)::BitArray
+    idx::BitArray = (climate.time_steps::Array .== dt)::BitArray
     subset::DataFrame = data[idx, :]
 
     z_name::String = zone.name::String
@@ -157,7 +158,7 @@ function log_irrigation_by_water_source(zone::FarmZone, f::FarmField, dt::Date):
     end
 
     push!(zone._irrigation_volume_by_source, [dt tmp...])
-    
+
     return nothing
 end
 
@@ -231,7 +232,7 @@ function collect_results(zone::FarmZone; last=false)::Tuple{DataFrame,Dict}
 end
 
 
-function create(data::Dict{Symbol, Any}, climate_data::Climate)::FarmZone
+function create(data::Dict{Symbol}, climate_data::Climate)::FarmZone
     spec = deepcopy(data)
     _ = pop!(spec, :component)
 
@@ -258,7 +259,6 @@ function create(data::Dict{Symbol, Any}, climate_data::Climate)::FarmZone
         # Clean up unneeded specs
         delete!(f, :irrigation_spec)
         delete!(f, :crop_rotation_spec)
-        delete!(f, :crop_spec)
     end
     
     fields = [create(v) for (k,v) in field_specs]
