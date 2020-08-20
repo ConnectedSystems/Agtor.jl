@@ -14,7 +14,7 @@ fields:
     component: CropField
 
     total_area_ha: 100.0
-    irrigation_spec: "test/data/irrigations/gravity.yml"
+    irrigation_spec: "test/data/irrigations/dryland.yml"
     crop_rotation_spec: ["test/data/crops/uncalibrated_wheat.yml"]
 
     # average total available water in soil (mm)
