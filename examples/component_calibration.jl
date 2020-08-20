@@ -62,7 +62,7 @@ function create_obj_func(tgt_spec, pars)
         f1 = field_results["field1"]
     
         mod_years = map(x -> Year(x), f1.Date)
-        avail_years = (mod_years .>= Dates.Year(1991)) && (mod_years .<= Dates.Year(2015))
+        avail_years = (mod_years .>= Dates.Year(1990)) .& (mod_years .<= Dates.Year(2015))
     
         subset = f1[avail_years, :]
         avg_yield = (subset[!, :irrigated_yield] + subset[!, :dryland_yield]) ./ (subset[!, :irrigated_area] + subset[!, :dryland_area])
@@ -96,7 +96,7 @@ initial_x = crop_params.default
 
 obj_func = create_obj_func(tgt_spec, crop_params)
 
-res = optimize(obj_func, lower, upper, initial_x)
+res = optimize(obj_func, lower, upper, initial_x, SAMIN())
 # 8.770169e-01 (0.877) w/ SAMIN(), no convergence - took 3055 seconds (~51 mins)
 
 
