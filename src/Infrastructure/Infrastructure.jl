@@ -23,7 +23,7 @@ end
 
 """Calculate maintenance costs.
 
-Warning: This can be on a per ha basis or given as a total.
+Warning: This can be on a per hectare basis or given as a total.
 """
 function maintenance_cost(infra::Infrastructure, year_step::Int64)::Float64
     minor=infra.minor_maintenance_schedule

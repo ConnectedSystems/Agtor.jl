@@ -44,9 +44,9 @@ function create_obj_func(tgt_spec, pars)
     # Load observed wheat production
     hist_wheat_prod = "$(data_dir)crops/Vic_NC_wheat_production.csv"
     obs_wheat = DataFrame!(CSV.File(hist_wheat_prod, threaded=use_threads, dateformat="YYYY", comment="#", types=Dict(1=>Dates.Date)))
-    obs_wheat[!, :Year] = obs_wheat[!, :Year] .+ Dates.Year(1)
+    # obs_wheat[!, :Year] = obs_wheat[!, :Year] .- Dates.Year(1)
 
-    obs_wheat = obs_wheat[obs_wheat[!, :Year] .<= Dates.Date("2016-01-01"), :]
+    obs_wheat = obs_wheat[obs_wheat[!, :Year] .<= Dates.Date("2015-01-01"), :]
     obs_wheat[!, :Average] = (obs_wheat[!, Symbol(" Wheat produced (t)")] ./ obs_wheat[!, Symbol(" Wheat area sown (ha)")])
 
     function run_func(params=nothing)
@@ -62,7 +62,7 @@ function create_obj_func(tgt_spec, pars)
         f1 = field_results["field1"]
     
         mod_years = map(x -> Year(x), f1.Date)
-        avail_years = (mod_years .>= Dates.Year(1991))
+        avail_years = (mod_years .>= Dates.Year(1991)) && (mod_years .<= Dates.Year(2015))
     
         subset = f1[avail_years, :]
         avg_yield = (subset[!, :irrigated_yield] + subset[!, :dryland_yield]) ./ (subset[!, :irrigated_area] + subset[!, :dryland_area])
@@ -128,3 +128,27 @@ summary(res)
 # └     ∇f(x) calls:   1957
 # [ Info: [379.7167523959479, 100.00000000000001, 7.755910986915787]
 # [ Info: (Zone__CalibZone___CropField__field1___Crop__uncalibrated_wheat~rainfall_threshold = 379.7167523959479, Zone__CalibZone___CropField__field1___Crop__uncalibrated_wheat~et_coef = 100.00000000000001, Zone__CalibZone___CropField__field1___Crop__uncalibrated_wheat~wue_coef = 7.755910986915787)
+
+# Fminbox with L-BFGS
+# ┌ Info:  * Status: success
+# │
+# │  * Candidate solution
+# │     Final objective value:     8.896766e-01
+# │
+# │  * Found with
+# │     Algorithm:     Fminbox with L-BFGS
+# │
+# │  * Convergence measures
+# │     |x - x'|               = 0.00e+00 ≤ 0.0e+00
+# │     |x - x'|/|x'|          = 0.00e+00 ≤ 0.0e+00
+# │     |f(x) - f(x')|         = 0.00e+00 ≤ 0.0e+00
+# │     |f(x) - f(x')|/|f(x')| = 0.00e+00 ≤ 0.0e+00
+# │     |g(x)|                 = 2.09e-04 ≰ 1.0e-08
+# │
+# │  * Work counters
+# │     Seconds run:   6642  (vs limit Inf)
+# │     Iterations:    7
+# │     f(x) calls:    2507
+# └     ∇f(x) calls:   2507
+# [ Info: [380.4056132641329, 100.00000000000001, 7.703705039894828, 0.31532465148791083]
+# [ Info: (Zone__CalibZone___CropField__field1___Crop__uncalibrated_wheat~rainfall_threshold = 380.4056132641329, Zone__CalibZone___CropField__field1___Crop__uncalibrated_wheat~et_coef = 100.00000000000001, Zone__CalibZone___CropField__field1___Crop__uncalibrated_wheat~wue_coef = 7.703705039894828, Zone__CalibZone___CropField__field1___Crop__uncalibrated_wheat~ssm_coef = 0.31532465148791083)
