@@ -15,7 +15,7 @@ problem = {
   'bounds': param_bounds
 }
 
-raw_samples = latin_sampler(problem, 5)
+raw_samples = latin_sampler(problem, 5, seed=101)
 samples = pd.DataFrame(raw_samples, columns=param_names)
 
 samples.to_csv("sampled_params.csv", index=False)
