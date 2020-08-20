@@ -436,13 +436,14 @@ function run_timestep(farmer::Manager, zone::FarmZone, dt::Date)::Nothing
 
                 irrig_mm::Float64 = f.irrigated_vol_mm
 
-                # The French-Schultz method assumes 30% of previous 3 months
+                # The French-Schultz method assumes 25-30% of previous 3 months
                 # rainfall contributed towards crop growth
+                # The SSM coefficient is set as a crop parameter.
                 prev::Date = f.plant_date - Month(3)
                 prev_mm::Float64 = get_seasonal_rainfall(zone.climate, [prev, s_start], f_name)
 
-                fs_ssm_assumption::Float64 = 0.3
-                ssm_mm::Float64 = prev_mm * fs_ssm_assumption
+                # fs_ssm_assumption::Float64 = 0.3
+                ssm_mm::Float64 = prev_mm * f.crop.ssm_coef
 
                 income::Float64, irrigated_yield::Float64, dryland_yield::Float64 = 
                     total_income(f, calc_potential_crop_yield, 
