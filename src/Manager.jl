@@ -42,7 +42,7 @@ function optimize_irrigated_area(m::Manager, zone::FarmZone)::OrderedDict{String
 
     @inbounds for f::FarmField in zone.fields
         area_to_consider::Float64 = f.total_area_ha
-        did::String = replace("$(f.name)__", " " => "_")
+        did::String = f._fname  # replace("$(f.name)__", " " => "_")
         f_name = Symbol(f.name)
 
         naive_crop_income::Float64 = estimate_income_per_ha(f.crop)
@@ -159,7 +159,7 @@ function optimize_irrigation(m::Manager, zone::FarmZone, dt::Date)::Tuple{Ordere
     max_ws_area::LittleDict{Symbol, LittleDict} = LittleDict{Symbol, LittleDict{Symbol, Float64}}()
     @inbounds for f::FarmField in zone.fields
         f_name::Symbol = Symbol(f.name)
-        did::String = replace("$(f_name)__", " " => "_")
+        did::String = f._fname  # replace("$(f.name)__", " " => "_")
 
         req_water_ML_ha::Float64 = calc_required_water(f, dt) / mm_to_ML
         push!(req_water, req_water_ML_ha)
@@ -387,6 +387,8 @@ function run_timestep(farmer::Manager, zone::FarmZone, dt::Date)::Nothing
         season_end::Bool = matching_dates(dt, s_end)
         crop::Crop = f.crop
 
+        f_name::String = f.name
+
         if within_season
             apply_rainfall!(zone, dt)
 
@@ -400,7 +402,7 @@ function run_timestep(farmer::Manager, zone::FarmZone, dt::Date)::Nothing
             water_to_apply_mm = calc_required_water(f, dt)
             for ws in zone.water_sources
                 ws_name::String = ws.name
-                did::String = replace("$(f.name)__$(ws_name)", " " => "_")
+                did::String = replace("$(f_name)__$(ws_name)", " " => "_")
                 area_to_apply::Float64 = irrigation[did]
 
                 if area_to_apply == 0.0
@@ -410,7 +412,7 @@ function run_timestep(farmer::Manager, zone::FarmZone, dt::Date)::Nothing
                 vol_to_apply_ML_ha::Float64 = (water_to_apply_mm / mm_to_ML)
                 apply_irrigation!(f, ws, water_to_apply_mm, area_to_apply)
 
-                tmp::Float64 = sum([v for (k, v) in cost_per_ML if occursin(f.name, k) && occursin(ws_name, k)])
+                tmp::Float64 = sum([v for (k, v) in cost_per_ML if occursin(f_name, k) && occursin(ws_name, k)])
 
                 log_irrigation_cost(f, (tmp * vol_to_apply_ML_ha * area_to_apply))
             end 
@@ -428,7 +430,7 @@ function run_timestep(farmer::Manager, zone::FarmZone, dt::Date)::Nothing
             # End of season
 
             # growing season rainfall
-            gsr_mm::Float64 = get_seasonal_rainfall(zone.climate, [s_start, s_end], f.name)
+            gsr_mm::Float64 = get_seasonal_rainfall(zone.climate, [s_start, s_end], f_name)
 
             if f.sowed == true
 
@@ -437,7 +439,7 @@ function run_timestep(farmer::Manager, zone::FarmZone, dt::Date)::Nothing
                 # The French-Schultz method assumes 30% of previous 3 months
                 # rainfall contributed towards crop growth
                 prev::Date = f.plant_date - Month(3)
-                prev_mm::Float64 = get_seasonal_rainfall(zone.climate, [prev, s_start], f.name)
+                prev_mm::Float64 = get_seasonal_rainfall(zone.climate, [prev, s_start], f_name)
 
                 fs_ssm_assumption::Float64 = 0.3
                 ssm_mm::Float64 = prev_mm * fs_ssm_assumption

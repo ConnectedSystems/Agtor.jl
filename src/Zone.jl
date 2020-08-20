@@ -119,9 +119,9 @@ function apply_rainfall!(zone::FarmZone, dt::Date)::Nothing
     z_name::String = zone.name::String
     @inbounds for f::FarmField in zone.fields
         # get rainfall and et for datetime
-        f_name::String = f.name::String
-        rain_col::Symbol = Symbol("$(z_name)_$(f_name)_rainfall")
-        et_col::Symbol = Symbol("$(z_name)_$(f_name)_ET")
+        zf_id::String = "$(z_name)_$(f.name)"
+        rain_col::Symbol = Symbol("$(zf_id)_rainfall")
+        et_col::Symbol = Symbol("$(zf_id)_ET")
 
         rainfall::Float64, et::Float64 = subset[1, rain_col], subset[1, et_col]
 
@@ -187,10 +187,14 @@ function aggregate_field_logs(field_logs::DataFrame)::DataFrame
     collated[:, Symbol("Dollar per ML")] = collated[:, :income_sum] ./ collated[:, :irrigated_volume_sum]
     collated[:, Symbol("ML per Irrigated Yield")] = collated[:, :irrigated_volume_sum] ./ collated[:, :irrigated_yield_sum]
     collated[:, Symbol("Dollar per Ha")] = collated[:, :income_sum] ./ (collated[:, :dryland_area_sum] + collated[:, :irrigated_area_sum])
-    collated[:, Symbol("Avg Irrigated Yield")] = collated[:, :irrigated_yield_sum] ./ collated[:, :irrigated_area_sum]
-    collated[:, Symbol("Avg Dryland Yield")] = collated[:, :dryland_yield_sum] ./ collated[:, :dryland_area_sum]
+    collated[:, Symbol("Mean Irrigated Yield")] = collated[:, :irrigated_yield_sum] ./ collated[:, :irrigated_area_sum]
+    collated[:, Symbol("Mean Dryland Yield")] = collated[:, :dryland_yield_sum] ./ collated[:, :dryland_area_sum]
 
     return collated
+end
+
+
+function calculate_metrics(collated_logs::DataFrame)
 end
 
 
