@@ -87,6 +87,7 @@ agparams = collect_agparams!(tgt_spec, [])
 crop_params = agparams[occursin.("_irrigated_wheat", agparams[!, "name"]) .&
                        (occursin.("wue_coef", agparams[!, "name"]) .|
                         occursin.("et_coef", agparams[!, "name"]) .|
+                        occursin.("ssm_coef", agparams[!, "name"]) .|
                         occursin.("rainfall_threshold", agparams[!, "name"])), :]
 
 lower = crop_params.min_val
