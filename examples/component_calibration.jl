@@ -42,7 +42,7 @@ function create_obj_func(tgt_spec, pars)
     zone = create(tgt_spec, climate)
 
     # Load observed wheat production
-    hist_wheat_prod = "test/data/crops/Vic_NC_wheat_production.csv"
+    hist_wheat_prod = "$(data_dir)crops/Vic_NC_wheat_production.csv"
     obs_wheat = DataFrame!(CSV.File(hist_wheat_prod, threaded=use_threads, dateformat="YYYY", comment="#", types=Dict(1=>Dates.Date)))
     obs_wheat[!, :Year] = obs_wheat[!, :Year] .+ Dates.Year(1)
 
@@ -84,7 +84,7 @@ agparams = collect_agparams!(tgt_spec, [])
 
 
 # Find relevant crop parameters for French-Schultz calibration
-crop_params = agparams[occursin.("_irrigated_wheat", agparams[!, "name"]) .&
+crop_params = agparams[occursin.("_uncalibrated_wheat", agparams[!, "name"]) .&
                        (occursin.("wue_coef", agparams[!, "name"]) .|
                         occursin.("et_coef", agparams[!, "name"]) .|
                         occursin.("ssm_coef", agparams[!, "name"]) .|
