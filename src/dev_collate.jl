@@ -86,9 +86,25 @@ sample = [(Doo=0.3, Boo=0.3, FooBar=0.3, Blig___Blag=3.0)]
 df = DataFrame(sample)
 
 @info "Updating with values:" df
-@info "before" test
+@info "DF before" test
 set_params!(test, df[1, :])
-@info "after" test
+@info "DF after" test
+
+
+@info "Updating with values:" df
+@info "DF before" test
+set_params!(test, df[1, :])
+@info "DF after" test
+
+
+@info typeof(df[1, :])
+sample = (Doo=0.2, Boo=0.2, FooBar=0.2, Blig___Blag=2.0)
+@info "DF before" test
+@info typeof(sample)
+set_params!(test, sample)
+@info "DF after" test
+
+@assert test.c["Blig"].value == 2.0
 
 # @create FarmZone zone_specs["Zone_1"] ""
 
