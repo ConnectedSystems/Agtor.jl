@@ -10,13 +10,12 @@ An agricultural management model currently under development.
 
 Description
 ===========
+Agtor is designed to facilitate interdisciplinary exploratory scenario modelling of agricultural systems and related system interactions. Agtor operates at a zonal scale where the zone may represent an individual farm/field, sub-catchment area, or the catchment itself.
+
 Based on an earlier version developed for the Lower Campaspe region in North-Central Victoria.
 
-This repository holds the experimental Julia port of [Agtor](https://github.com/ConnectedSystems/Agtor)
-
-Agtor is designed to facilitate multi-disciplinary investigation of interactions across systems that interact with agriculture. Agtor operates at a zonal scale where the zone may represent an individual farm, sub-catchment area, or the catchment itself.
-
 Contributions are welcome.
+
 
 Why the name "Agtor"?
 ------------
@@ -28,14 +27,20 @@ Development Setup
 =================
 
 1. Fork or clone this repository.
-2. Set up and activate a conda environment for the project (optional but recommended).
-
-The tests found in the `tests` directory represent tentative usage examples. The `test_run.py` file gives an example of a model run. (not yet available for the Julia version)
-
-Run from the top-level of the project, e.g.
+2. Navigate to the project directory and instantiate package environment:
 
 ```bash
-$ julia ./tests/test_run.py
+$ julia --project=.
+
+julia> ]
+
+(Agtor) pkg> instantiate
 ```
 
+Tentative usage examples are provided in the `examples` directory.
+
+Tests are found in the `test` directory and the `runtests.jl` will invoke all available tests.
+
 As Agtor is under development all current details are subject to change.
+
+Documentation is forthcoming.
