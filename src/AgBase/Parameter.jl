@@ -156,23 +156,27 @@ function generate_agparams(prefix::Union{String, Symbol}, dataset::Dict)::Dict{S
     if "component" in keys(dataset)
         comp = dataset["component"]
         comp_name = dataset["name"]
-        prefix *= "$(comp)___$(comp_name)"
+        if prefix === ""
+            prefix *= "$(comp)__$(comp_name)"
+        else
+            prefix *= "___$(comp)__$(comp_name)"
+        end
     end
 
     created::Dict{Any, Any} = deepcopy(dataset)
     for (n, vals) in dataset
-        var_id = prefix * "__$n"
+        var_id = prefix * "~$n"
 
         s = Symbol(n)
         pop!(created, n)
 
         if isa(vals, Dict)
-            created[s] = generate_agparams(prefix*"__", vals)
+            created[s] = generate_agparams(prefix, vals)
             continue
         elseif endswith(String(n), "_spec")
             # Recurse into other defined specifications
             tmp = load_yaml(vals)
-            created[s] = generate_agparams(prefix*"__", tmp)
+            created[s] = generate_agparams(prefix, tmp)
             continue
         end
 
@@ -346,15 +350,12 @@ Usage:
 """
 function set_params!(comp, sample)
     # entries = map(ap -> param_info(ap), Flatten.flatten(test_irrig, Agtor.AgParameter))
-
-    tgt_params = names(sample)
     for f_name in fieldnames(typeof(comp))
         tmp_f = getfield(comp, f_name)
         if tmp_f isa Array
             arr_type = eltype(tmp_f)
             tmp_flat = reduce(vcat, Flatten.flatten(tmp_f, Array{arr_type}))
             for i in tmp_flat
-                # tmp = Flatten.flatten(i, Agtor.AgParameter)
                 set_params!(i, sample)
             end
         elseif isa(tmp_f, AgComponent) || isa(tmp_f, Dict)
@@ -365,16 +366,25 @@ function set_params!(comp, sample)
     end
 end
 
+
 function set_params!(comp::Dict, sample)
     for (k,v) in comp
         set_params!(v, sample)
     end
 end
 
+
 function set_params!(p::AgParameter, sample)
-    # p_name = Symbol(p.name)
     p_name::String = p.name
     if p_name in names(sample)
+        p.value = sample[p_name]
+    end
+end
+
+
+function set_params!(p::AgParameter, sample::Union{Dict,NamedTuple})
+    p_name::Symbol = Symbol(p.name)
+    if p_name in keys(sample)
         p.value = sample[p_name]
     end
 end
