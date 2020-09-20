@@ -1,4 +1,4 @@
-using YAML, JLD, HDF5
+using YAML, JLD2, HDF5, FileIO
 using Glob
 using Base.Threads
 import Agtor: generate_agparams
@@ -44,12 +44,39 @@ end
 """
 Save model run results to JLD.
 """
-function save_results(fn, results)
+function save_results!(fn, results)::Nothing
     jldopen(fn, "w") do file
         for (i, res) in enumerate(results)
-            g = HDF5.g_create(file, string(i))  # create a group
-            g["zone_results"] = res[1]  # zone_results
-            g["field_results"] = res[2]  # field_results
+            file["$(idx)/zone_results"] = results[1]  # zone_results
+            file["$(idx)/field_results"] = results[2]  # field_results
         end
     end
+
+    return
+end
+
+
+function save_results!(fn::String, idx::String, results::Tuple)::Nothing
+    jldopen(fn, "w") do file
+        file["$(idx)/zone_results"] = results[1]  # zone_results
+        file["$(idx)/field_results"] = results[2]  # field_results
+    end
+
+    return
+end
+
+
+function collate_results!(fn_pattern::String, main_fn::String)::Nothing
+    all_fns = glob(fn_pattern)
+    @info all_fns
+    jldopen(main_fn, "w") do file
+        for fn in all_fns
+            data = load(fn)
+            for (grp_id, grp) in data
+                file[grp_id] = grp
+            end
+        end
+    end
+
+    return
 end

@@ -1,14 +1,26 @@
-import Revise
-
-using Profile, BenchmarkTools, OwnTime, Logging
+"""
+Example usage of Agtor which distributes runs across available processors.
+"""
 
 using CSV
 using Dates
 using DataStructures, DataFrames
 using Agtor
 using Flatten
+using Distributed, FileIO, Glob
+using JLD2
 
-# import Base.Threads.@spawn
+using Profile, BenchmarkTools, OwnTime, Logging
+
+addprocs(3, exeflags="--project=.")
+
+
+@everywhere using CSV
+@everywhere using Dates
+@everywhere using DataStructures, DataFrames
+@everywhere using Agtor
+@everywhere using Flatten
+# @everywhere using FileIO
 
 # Assumes we are in top-level project dir
 # julia --project=.
@@ -23,9 +35,9 @@ using Flatten
 
 # Start month/day of growing season
 # Represents when water allocations start getting announced.
-const gs_start = (5, 1)
+@everywhere const gs_start = (5, 1)
 
-function setup_zone(data_dir::String="test/data/")
+@everywhere function setup_zone(data_dir::String="test/data/")
     zone_spec_dir::String = "$(data_dir)zones"
     # zone_specs::Dict{String, Dict} = load_yaml(zone_spec_dir)
     # zone_params = generate_agparams("", zone_specs["Zone_1"])
@@ -50,7 +62,12 @@ function setup_zone(data_dir::String="test/data/")
 end
 
 
-function run_model(farmer, zone)
+@everywhere function run_model(farmer, zone)
+    """
+    An example model run.
+
+    Per-time step interactions between other models should be defined here.
+    """
     time_sequence = zone.climate.time_steps
     @inbounds for dt_i in time_sequence
         run_timestep(farmer, zone, dt_i)
@@ -73,7 +90,7 @@ function run_model(farmer, zone)
 end
 
 
-function test_short_run(data_dir::String="test/data/")::Tuple
+function test_short_run(data_dir::String="test/data/")::Tuple{DataFrame,Dict}
     z1, agparams = setup_zone(data_dir)
 
     farmer = Manager("test")
@@ -83,7 +100,11 @@ function test_short_run(data_dir::String="test/data/")::Tuple
 end
 
 
-function test_scenario_run(data_dir::String="test/data/")::Nothing
+"""
+Run example scenarios by distributing these across available cores.
+Results are saved to a file on completion, based on scenario id.
+"""
+function test_scenario_run(data_dir::String="test/data/", result_dir::String="")::Nothing
     z1, agparams = setup_zone(data_dir)
 
     scen_data = joinpath(data_dir, "scenarios", "sampled_params.csv")
@@ -91,20 +112,24 @@ function test_scenario_run(data_dir::String="test/data/")::Nothing
 
     farmer = Manager("test")
 
-    # all_results = []
-    for (row_id, r) in enumerate(eachrow(samples))
-        tmp_z = update_model(z1, r)
+    @sync @distributed (hcat) for row_id in 1:nrow(samples)
+        tmp_z = update_model(z1, samples[row_id, :])
+        res = run_model(farmer, tmp_z)
 
-        results = run_model(farmer, tmp_z)
-        # push!(all_results, (zone_results, field_results))
-
-        # Save results as they complete
-        @async save_results("batch_run.jld", string(row_id), results)
+        pth = joinpath(result_dir, "sampled_params_batch_run_distributed_$(row_id).jld2")
+        save_results!(pth, string(row_id), res)
     end
+
+    fn_pattern = joinpath(result_dir, "sampled_params_batch_run_distributed_*.jld2")
+    collate_results!(fn_pattern, "dist_collated.jld2")
+
+    return
 end
 
-@btime test_short_run()
-@btime test_scenario_run()
+# @btime test_short_run()
 
-# x = @btime test_scenario_run()
-# save_results("batch_run.jld", x)
+@time test_scenario_run()
+
+
+# imported_res = load("dist_collated.jld2")
+# @info imported_res

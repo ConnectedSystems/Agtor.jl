@@ -32,6 +32,7 @@ export AgComponent, AgParameter, Infrastructure, Irrigation, Pump
 export WaterSource, Crop, FarmField, CropField, FarmZone, Manager, Climate, Basin
 export load_yaml, generate_agparams, load_spec, create, run_timestep, subtotal_costs, total_costs
 export collect_results, min_max, extract_values, param_info, extract_spec, AgUnion, add_prefix!, @def
-export set_params!, extract_agparams, collect_agparams!, collect_agparams, update_model, save_results
+export set_params!, extract_agparams, collect_agparams!, collect_agparams, update_model
+export aggregate_field_logs, save_results!, collate_results!
 
 end # module
