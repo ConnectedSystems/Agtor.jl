@@ -1,10 +1,13 @@
+"""
+Calibrating a component with Optim.jl
+"""
+
 using Agtor
 using Optim, CSV, DataFrames, Dates
 using Statistics
 using Infiltrator
 
 gs_start = (5, 1)
-# # calc_potential_crop_yield(ssm_mm::Float64, gsr_mm::Float64, crop::AgComponent)
 
 function run_model(farmer, zone)
     time_sequence = zone.climate.time_steps
@@ -29,6 +32,9 @@ function run_model(farmer, zone)
 end
 
 
+"""
+Generate an objective function
+"""
 function create_obj_func(tgt_spec, pars)
     
     # Loading climate data
@@ -96,7 +102,7 @@ initial_x = crop_params.default
 
 obj_func = create_obj_func(tgt_spec, crop_params)
 
-res = optimize(obj_func, lower, upper, initial_x, SAMIN())
+res = optimize(obj_func, lower, upper, initial_x, SAMIN(), Optim.Options(iterations=10^4))
 # 8.770169e-01 (0.877) w/ SAMIN(), no convergence - took 3055 seconds (~51 mins)
 
 
@@ -152,3 +158,30 @@ summary(res)
 # └     ∇f(x) calls:   2507
 # [ Info: [380.4056132641329, 100.00000000000001, 7.703705039894828, 0.31532465148791083]
 # [ Info: (Zone__CalibZone___CropField__field1___Crop__uncalibrated_wheat~rainfall_threshold = 380.4056132641329, Zone__CalibZone___CropField__field1___Crop__uncalibrated_wheat~et_coef = 100.00000000000001, Zone__CalibZone___CropField__field1___Crop__uncalibrated_wheat~wue_coef = 7.703705039894828, Zone__CalibZone___CropField__field1___Crop__uncalibrated_wheat~ssm_coef = 0.31532465148791083)
+
+
+# ┌ Info:  * Status: success
+# │
+# │  * Candidate solution
+# │     Final objective value:     6.609913e-01
+# │
+# │  * Found with
+# │     Algorithm:     Fminbox with L-BFGS
+# │
+# │  * Convergence measures
+# │     |x - x'|               = 0.00e+00 ≤ 0.0e+00
+# │     |x - x'|/|x'|          = 0.00e+00 ≤ 0.0e+00
+# │     |f(x) - f(x')|         = 0.00e+00 ≤ 0.0e+00
+# │     |f(x) - f(x')|/|f(x')| = 0.00e+00 ≤ 0.0e+00
+# │     |g(x)|                 = 1.07e-01 ≰ 1.0e-08
+# │
+# │  * Work counters
+# │     Seconds run:   353  (vs limit Inf)
+# │     Iterations:    6
+# │     f(x) calls:    2667
+# └     ∇f(x) calls:   2667
+# [ Info: [371.4033677239416, 100.00000000000004, 8.97837123677021, 0.39999999999999986]
+# [ Info: (Zone__CalibZone___CropField__field1___Crop__uncalibrated_wheat~rainfall_threshold = 371.4033677239416, 
+#    Zone__CalibZone___CropField__field1___Crop__uncalibrated_wheat~et_coef = 100.00000000000004, 
+#    Zone__CalibZone___CropField__field1___Crop__uncalibrated_wheat~wue_coef = 8.97837123677021, 
+#    Zone__CalibZone___CropField__field1___Crop__uncalibrated_wheat~ssm_coef = 0.39999999999999986)
