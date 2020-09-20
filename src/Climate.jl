@@ -119,11 +119,7 @@ numeric, representing seasonal rainfall
 """
 function get_seasonal_rainfall(c::Climate, season_range::Array{Date}, partial_name::String)::Float64
     s::Date, e::Date = season_range
-    rain_cols::Array{String,1} = [rc for rc in names(c.data) 
-                                  if occursin("rainfall", String(rc)) && occursin(partial_name, String(rc))
-                                ]
-
-    subset::DataFrame = get_season_range(c, s, e)[!, rain_cols]
+    subset::DataFrame = get_season_range(c, s, e)[!, Regex("rainfall")][!, Regex(partial_name)]
     return sum.(eachcol(subset))[1]
 end
 
@@ -141,9 +137,6 @@ numeric of seasonal rainfall
 """
 function get_seasonal_et(c::Climate, season_range::Array{Date}, partial_name::String)::DataFrame
     s::Date, e::Date = season_range
-    et_cols::Array{Symbol,1} = [ec for ec in names(c.data) 
-               if occursin("ET", String(ec)) && occursin(partial_name, String(ec))]
-
-    subset::DataFrame = get_season_range(c, s, e)[!, et_cols]
+    subset::DataFrame = get_season_range(c, s, e)[!, Regex("ET")][!, Regex(partial_name)]
     return sum.(eachcol(subset))[1]
 end
