@@ -68,7 +68,6 @@ end
 
 function collate_results!(fn_pattern::String, main_fn::String)::Nothing
     all_fns = glob(fn_pattern)
-    @info all_fns
     jldopen(main_fn, "w") do file
         for fn in all_fns
             data = load(fn)

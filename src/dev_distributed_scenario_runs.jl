@@ -121,14 +121,14 @@ function test_scenario_run(data_dir::String="test/data/", result_dir::String="")
     end
 
     fn_pattern = joinpath(result_dir, "sampled_params_batch_run_distributed_*.jld2")
-    collate_results!(fn_pattern, "dist_collated.jld2")
+    @time collate_results!(fn_pattern, "dist_collated.jld2")
 
     return
 end
 
 # @btime test_short_run()
 
-@time test_scenario_run()
+@btime test_scenario_run()
 
 
 # imported_res = load("dist_collated.jld2")
