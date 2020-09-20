@@ -181,8 +181,7 @@ end
 
 
 function aggregate_field_logs(field_logs::DataFrame)::DataFrame
-    grouped = groupby(field_logs, :Date)
-    collated::DataFrame = combine(grouped, valuecols(grouped) .=> sum)
+    collated::DataFrame = aggregate(groupby(field_logs, :Date), sum)
 
     collated[:, Symbol("Dollar per ML")] = collated[:, :income_sum] ./ collated[:, :irrigated_volume_sum]
     collated[:, Symbol("ML per Irrigated Yield")] = collated[:, :irrigated_volume_sum] ./ collated[:, :irrigated_yield_sum]
@@ -227,10 +226,9 @@ function collect_results(zone::FarmZone; last=false)::Tuple{DataFrame,Dict}
     collated = collate_field_logs(field_logs)
 
     ws_irrig = zone._irrigation_volume_by_source
-    irrig_group = groupby(ws_irrig, :Date)
-    irrig_ws::DataFrame = combine(irrig_group, valuecols(irrig_group) .=> sum)
+    irrig_ws::DataFrame = aggregate(groupby(ws_irrig, :Date), sum)
 
-    collated_res = hcat(collated, irrig_ws[:, setdiff(names(irrig_ws), ["Date"])])
+    collated_res = hcat(collated, irrig_ws[:, setdiff(names(irrig_ws), [:Date])])
 
     return collated_res, field_logs
 end
