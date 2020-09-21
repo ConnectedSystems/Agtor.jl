@@ -47,8 +47,8 @@ Save model run results to JLD.
 function save_results!(fn, results)::Nothing
     jldopen(fn, "w") do file
         for (i, res) in enumerate(results)
-            file["$(idx)/zone_results"] = results[1]  # zone_results
-            file["$(idx)/field_results"] = results[2]  # field_results
+            file["$(i)/zone_results"] = results[1]  # zone_results
+            file["$(i)/field_results"] = results[2]  # field_results
         end
     end
 
