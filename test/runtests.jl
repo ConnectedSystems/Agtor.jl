@@ -1,6 +1,7 @@
 import Agtor: set_next_crop!, update_stages!, in_season, load_yaml
 using Agtor, Dates, CSV
 using Test
+using DataFrames
 
 import Flatten
 
@@ -153,8 +154,6 @@ end
 
     test_parameter_extraction()
 
-
-    
     test_in_season()
     test_out_of_season()
 
