@@ -2,11 +2,8 @@
 Example usage of Agtor which distributes runs across available processors.
 """
 
-using CSV
-using Dates
-using DataStructures, DataFrames
+using Dates, DataFrames, CSV
 using Agtor
-using Flatten
 using Distributed, FileIO, Glob
 using JLD2
 
@@ -14,33 +11,16 @@ using Profile, BenchmarkTools, OwnTime, Logging
 
 addprocs(3, exeflags="--project=.")
 
-
-@everywhere using CSV
-@everywhere using Dates
-@everywhere using DataStructures, DataFrames
+@everywhere using Dates, DataFrames, CSV
 @everywhere using Agtor
-@everywhere using Flatten
-# @everywhere using FileIO
-
-# Assumes we are in top-level project dir
-# julia --project=.
-
-# Start with the environment variable set for multi-threading
-# $ JULIA_NUM_THREADS=4 ./julia
-
-# Windows:
-# $ set JULIA_NUM_THREADS=4 && julia dev.jl
-# $ set JULIA_NUM_THREADS=4 && julia --project=.
 
 
 # Start month/day of growing season
-# Represents when water allocations start getting announced.
+# Represents when water allocations are announced.
 @everywhere const gs_start = (5, 1)
 
 @everywhere function setup_zone(data_dir::String="test/data/")
     zone_spec_dir::String = "$(data_dir)zones"
-    # zone_specs::Dict{String, Dict} = load_yaml(zone_spec_dir)
-    # zone_params = generate_agparams("", zone_specs["Zone_1"])
     zone_params::Dict{Symbol, Dict} = load_spec(zone_spec_dir)
 
     collated_specs::Array = []
@@ -90,16 +70,6 @@ end
 end
 
 
-function test_short_run(data_dir::String="test/data/")::Tuple{DataFrame,Dict}
-    z1, agparams = setup_zone(data_dir)
-
-    farmer = Manager("test")
-    zone_results, field_results = run_model(farmer, z1)
-
-    return zone_results, field_results
-end
-
-
 """
 Run example scenarios by distributing these across available cores.
 Results are saved to a file on completion, based on scenario id.
@@ -112,24 +82,29 @@ function test_scenario_run(data_dir::String="test/data/", result_dir::String="")
 
     farmer = Manager("test")
 
+    # Each row represents a scenario to run.
+    # We distribute these across available cores.
+    tmp_z = deepcopy(z1)
     @sync @distributed (hcat) for row_id in 1:nrow(samples)
-        tmp_z = update_model(z1, samples[row_id, :])
+        update_model!(tmp_z, samples[row_id, :])
         res = run_model(farmer, tmp_z)
 
         pth = joinpath(result_dir, "sampled_params_batch_run_distributed_$(row_id).jld2")
         save_results!(pth, string(row_id), res)
     end
 
+    # Collate all results into a single JLD2 file
     fn_pattern = joinpath(result_dir, "sampled_params_batch_run_distributed_*.jld2")
     collate_results!(fn_pattern, "dist_collated.jld2")
 
     return
 end
 
-# @btime test_short_run()
 
+# @btime test_short_run()
 @btime test_scenario_run()
 
 
-# imported_res = load("dist_collated.jld2")
-# @info imported_res
+# Loading and displaying results
+saved_results = load("dist_collated.jld2")
+@info saved_results

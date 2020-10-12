@@ -58,7 +58,7 @@ function create_obj_func(tgt_spec, pars)
     function run_func(params=nothing)
         if !isnothing(params)
             tmp = (; zip(map(Symbol, pars[!, :name]), params)...)
-            tmp_zone = update_model(zone, tmp)
+            tmp_zone = update_model!(zone, tmp)
         else
             tmp_zone = zone
         end
