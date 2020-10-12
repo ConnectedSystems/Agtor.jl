@@ -157,15 +157,15 @@ function generate_agparams(prefix::Union{String, Symbol}, dataset::Dict)::Dict{S
         comp = dataset["component"]
         comp_name = dataset["name"]
         if prefix === ""
-            prefix *= "$(comp)__$(comp_name)"
+            prefix *= "$(comp)-$(comp_name)"
         else
-            prefix *= "___$(comp)__$(comp_name)"
+            prefix *= "___$(comp)-$(comp_name)"
         end
     end
 
     created::Dict{Any, Any} = deepcopy(dataset)
     for (n, vals) in dataset
-        var_id = prefix * "~$n"
+        var_id = "$(prefix)~$n"
 
         s = Symbol(n)
         pop!(created, n)
@@ -349,7 +349,6 @@ Usage:
     set_params!(z1, samples[1])
 """
 function set_params!(comp, sample)
-    # entries = map(ap -> param_info(ap), Flatten.flatten(test_irrig, Agtor.AgParameter))
     for f_name in fieldnames(typeof(comp))
         tmp_f = getfield(comp, f_name)
         if tmp_f isa Array
@@ -358,9 +357,7 @@ function set_params!(comp, sample)
             for i in tmp_flat
                 set_params!(i, sample)
             end
-        elseif isa(tmp_f, AgComponent) || isa(tmp_f, Dict)
-            set_params!(tmp_f, sample)
-        elseif tmp_f isa AgParameter
+        elseif isa(tmp_f, AgComponent) || isa(tmp_f, AgParameter) || isa(tmp_f, Dict)
             set_params!(tmp_f, sample)
         end
     end
@@ -375,24 +372,30 @@ end
 
 
 function set_params!(p::AgParameter, sample)
-    p_name::String = p.name
+    p_name::Symbol = Symbol(p.name)
     if p_name in names(sample)
-        p.value = sample[p_name]
+        setfield!(p, :value, sample[p_name])
     end
+end
+
+
+function set_params!(p::AgParameter, sample::Union{Number, String})
+    setfield!(p, :value, sample)
 end
 
 
 function set_params!(p::AgParameter, sample::Union{Dict,NamedTuple})
     p_name::Symbol = Symbol(p.name)
     if p_name in keys(sample)
-        p.value = sample[p_name]
+        setfield!(p, :value, sample[p_name])
     end
+
+    return
 end
 
 
-function update_model(comp, sample)
-    comp = deepcopy(comp)
+function update_model!(comp, sample)
     set_params!(comp, sample)
 
-    return comp
+    return
 end
