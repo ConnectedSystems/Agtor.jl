@@ -20,38 +20,28 @@ end
 end
 
 
-# macro create(cls, comp_spec, id_prefix, collated=nothing, other=nothing)
-
-#     return :(begin
-#         local cls_name = Base.typename($cls) 
-#         local spec = copy($(esc(comp_spec)))
-#         local name = spec["name"]
-#         local prefix = String($id_prefix)
-#         prefix = prefix * "$(cls_name)___$name"
-#         local props = generate_agparams(prefix, pop!(spec, "properties"))
-
-#         local tmp = extract_spec(props)
-
-#         if !isnothing($(esc(collated)))
-#             append!($(esc(collated)), tmp)
-#         end
-
-#         spec = Dict(Symbol(s) => v for (s, v) in spec)
-
-#         local op = $(esc(other))
-#         if !isnothing(op)
-#             return create($cls, spec, props; id_prefix=prefix, op...)
-#         else
-#             return create($cls, spec, props; id_prefix=prefix)
-#         end
-#     end)
-# end
-
-
 function create(spec::Dict)
     dt = deepcopy(spec)
     cls_name = pop!(dt, :component)
     cls = eval(Symbol(cls_name))
+
+    if cls_name == "FarmZone"
+        cd_fn::Union{String, Nothing} = get(spec, :climate_data, nothing)
+        if isnothing(cd_fn)
+            error("Climate data not found in Zone spec.")
+        end
+
+        # Expect only CSV for now...
+        if endswith(cd_fn, ".csv")
+            use_threads = Threads.nthreads() > 1
+            climate_seq = DataFrame!(CSV.File(cd_fn, threaded=use_threads, dateformat="dd-mm-YYYY"))
+            climate_data = Climate(climate_seq)
+        else
+            error("Currently, climate data can only be provided in CSV format")
+        end
+
+        return create(dt, climate_data)
+    end
 
     return cls(; dt...)
 end
