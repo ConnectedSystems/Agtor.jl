@@ -19,7 +19,7 @@ abstract type FarmField <: AgComponent end
     # next crop will be 2nd item in crop_rotation and this
     # counter will increment and reset as the seasons go by
     _next_crop_idx::Int64 = 2
-    _fname::String = replace("$(name)__", " " => "_")
+    _fname::String = replace("$(name)-", " " => "_")
 
     _seasonal_log::DataFrame = DataFrame([Date, Float64, Float64, Float64, Float64, Float64, Float64, Float64], 
                                          [:Date, :income, :irrigated_volume, :irrigated_yield, :dryland_yield, :growing_season_rainfall, :irrigated_area, :dryland_area])

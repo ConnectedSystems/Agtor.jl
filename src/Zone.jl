@@ -236,12 +236,12 @@ end
 
 function create(data::Dict{Symbol}, climate_data::Climate)::FarmZone
     spec = deepcopy(data)
-    _ = pop!(spec, :component)
+
+    if haskey(spec, :component)
+        _ = pop!(spec, :component)
+    end
 
     name = spec[:name]
-
-    tmp_prefix::String = "$(name)___"
-
     water_specs::Dict{Symbol, Dict} = spec[:water_source_spec]
     pump_specs::Dict{Symbol, Dict} = spec[:pump_spec]
 

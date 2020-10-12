@@ -42,7 +42,7 @@ function optimize_irrigated_area(m::Manager, zone::FarmZone)::OrderedDict{String
 
     @inbounds for f::FarmField in zone.fields
         area_to_consider::Float64 = f.total_area_ha
-        did::String = f._fname  # replace("$(f.name)__", " " => "_")
+        did::String = f._fname
         f_name = Symbol(f.name)
 
         naive_crop_income::Float64 = estimate_income_per_ha(f.crop)
@@ -159,7 +159,7 @@ function optimize_irrigation(m::Manager, zone::FarmZone, dt::Date)::Tuple{Ordere
     max_ws_area::LittleDict{Symbol, LittleDict} = LittleDict{Symbol, LittleDict{Symbol, Float64}}()
     @inbounds for f::FarmField in zone.fields
         f_name::Symbol = Symbol(f.name)
-        did::String = f._fname  # replace("$(f.name)__", " " => "_")
+        did::String = f._fname
 
         req_water_ML_ha::Float64 = calc_required_water(f, dt) / mm_to_ML
         push!(req_water, req_water_ML_ha)
@@ -210,7 +210,7 @@ function optimize_irrigation(m::Manager, zone::FarmZone, dt::Date)::Tuple{Ordere
         app_cost_per_ML::LittleDict{Symbol, Float64} = ML_water_application_cost(m, zone, f, req_water_ML_ha)
 
         tmp_d::LittleDict{String, Float64} = LittleDict{String, Float64}(
-            "$(did)$(k)" => v
+            "$(did)-$(k)" => v
             for (k, v) in app_cost_per_ML
         )
         app_cost = merge!(app_cost, tmp_d)
@@ -402,7 +402,7 @@ function run_timestep(farmer::Manager, zone::FarmZone, dt::Date)::Nothing
             water_to_apply_mm = calc_required_water(f, dt)
             for ws in zone.water_sources
                 ws_name::String = ws.name
-                did::String = replace("$(f_name)__$(ws_name)", " " => "_")
+                did::String = replace("$(f_name)-$(ws_name)", " " => "_")
                 area_to_apply::Float64 = irrigation[did]
 
                 if area_to_apply == 0.0

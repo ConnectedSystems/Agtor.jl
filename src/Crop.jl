@@ -37,7 +37,7 @@ using Dates
         effective_root_zone = props[:effective_root_zone]
 
         start_year = year(start_dt)
-        sow_date = Date("$(start_year)-" * plant_date)
+        sow_date = Date("$(start_year)-$(plant_date)")
 
         h_day = 0
         offset = 0
