@@ -1,4 +1,4 @@
-# create_salib_problem
+"""Generate example parameter sets for Agtor"""
 
 import SALib
 from SALib.sample.latin import sample as latin_sampler
