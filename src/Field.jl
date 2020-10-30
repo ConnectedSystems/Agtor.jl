@@ -34,11 +34,15 @@ function Base.getproperty(f::FarmField, v::Symbol)
         return f._irrigated_volume
 
     elseif v == :irrigated_vol_mm
-        if f.irrigated_area == 0.0
+        irrig_area = f.irrigated_area
+        if irrig_area == 0.0
             @assert f.irrigated_volume == 0.0 "Irrigation occured but irrigated area is 0!"
             return 0.0
         end
-        return (f.irrigated_volume / f.irrigated_area) * ML_to_mm
+
+        val::Float64 = (f.irrigated_volume / irrig_area) * ML_to_mm
+
+        return val
 
     elseif v == :irrigation_cost
         return f._irrigation_cost
@@ -215,29 +219,6 @@ function set_next_crop!(f::FarmField)::Nothing
 end
 
 
-function set_next_crop!(f::FarmField, dt::Date)::Nothing
-    set_next_crop!(f)
-
-    cy, cm = yearmonth(dt)
-    pm::Int64, pd::Int64 = monthday(f.plant_date)
-
-    # Determine if planting will occur this year or next
-    if cm <= pm
-        sowing_date::Date = Date(cy, pm, pd)
-    else
-        sowing_date = Date(cy+1, pm, pd)
-    end
-
-    f.plant_date = sowing_date
-    f.harvest_date = f.plant_date + f.crop.harvest_offset
-
-    # Update growth stages with corresponding dates
-    update_stages!(f.crop, sowing_date)
-
-    return nothing
-end
-
-
 function reset_state!(f::FarmField)::Nothing
     f.sowed = false
 
@@ -245,7 +226,7 @@ function reset_state!(f::FarmField)::Nothing
         f.irrigated_area = f.total_area_ha
     end
 
-    f.irrigated_volume = 0.0  # TODO: This clears the underlying log as well.
+    f.irrigated_volume = 0.0  # This clears the underlying log as well.
     f.irrigated_area = 0.0
     f._irrigation_cost = 0.0
     f._num_irrigation_events = 0
@@ -255,36 +236,84 @@ function reset_state!(f::FarmField)::Nothing
 end
 
 
+"""
+Potential crop yield calculation based on a modified French-Schultz equation.
+The implemented method is the farmer-friendly version as described by 
+Oliver et al., (2008) (see [1]).
+
+``YP = (SSM + GSR - E) * WUE``
+
+where
+
+* ``YP`` is yield potential in tonnes per hectare
+* ``SSM`` is Stored Soil Moisture (at start of season) in mm, assumed to be 30% of summer rainfall
+* ``GSR`` is Growing Season Rainfall in mm
+* ``E`` is Crop Evaporation coefficient in mm, the amount of rainfall required before the crop will start
+    to grow, commonly 110mm, but can range from 30-170mm (see [2]),
+* ``WUE`` is Water Use Efficiency coefficient in kg/mm
+
+
+References
+----------
+.. [1] [Oliver et al. 2008 (Equation 1)](http://www.regional.org.au/au/asa/2008/concurrent/assessing-yield-potential/5827_oliverym.htm)
+
+.. [2] [Whitbread and Hancock 2008](http://www.regional.org.au/au/asa/2008/concurrent/assessing-yield-potential/5803_whitbreadhancock.htm)
+
+
+Parameters
+----------
+* ssm_mm : float, Stored Soil Moisture (mm) at start of season.
+* gsr_mm : float, Growing Season Rainfall (mm)
+* crop : object, Crop component object
+
+Returns
+-----------
+* Potential yield in tonnes/Ha
+"""
+function calc_potential_crop_yield(ssm_mm::Float64, gsr_mm::Float64, 
+                                   crop::AgComponent)::Float64
+    
+    evap_coef_mm::Float64 = crop.et_coef  # Crop evapotranspiration coefficient (mm)
+    wue_coef_mm::Float64 = crop.wue_coef  # Water Use Efficiency coefficient (kg/mm)
+
+    # maximum rainfall threshold in mm
+    # water above this amount does not contribute to crop yield
+    max_thres::Float64 = crop.rainfall_threshold  
+
+    gsr_mm::Float64 = min(gsr_mm, max_thres)
+    return max(0.0, ((ssm_mm + gsr_mm - evap_coef_mm) * wue_coef_mm) / 1000.0)
+end
+
+
 """Calculate net income considering crop yield and costs incurred.
 
 Parameters
 ----------
     yield_func : function, used to calculate crop yield.
-    ssm : float, stored soil moisture at season start
-    gsr : float, growing season rainfall.
+    ssm : float, stored soil moisture at season start (in mm)
+    gsr : float, growing season rainfall (in mm)
     irrig : float, volume (in mm) of irrigation water applied
     comps : list-like : (current datetime, water sources considered)
 
 Returns
-----------
+-------
     Tuple:
         * float : net income
         * float : irrigated crop yield, tonnes/Ha
         * float : dryland crop yield, tonnes/Ha
 """
-function total_income(f::FarmField, yield_func::Function, 
-                      ssm::Float64, gsr::Float64, 
+function total_income(f::FarmField, ssm::Float64, gsr::Float64, 
                       irrig::Float64, comps)::Tuple
-    inc::Float64, irrigated::Float64, dryland::Float64 = gross_income(f, yield_func, ssm, gsr, irrig)
+    inc::Float64, irrigated::Float64, dryland::Float64 = gross_income(f, ssm, gsr, irrig)
     return inc - total_costs(f, comps...), irrigated, dryland
-end
+end 
 
 
-function gross_income(f::FarmField, yield_func::Function, ssm::Float64, 
-                      gsr::Float64, irrig::Float64)::Tuple
+function gross_income(f::FarmField, ssm::Float64, gsr::Float64, 
+                      irrig::Float64)::Tuple
     crop::Crop = f.crop
-    irrigated_yield::Float64 = yield_func(ssm, gsr+irrig, crop)
-    dryland_yield::Float64 = yield_func(ssm, gsr, crop)
+    irrigated_yield::Float64 = calc_potential_crop_yield(ssm, gsr+irrig, crop)
+    dryland_yield::Float64 = calc_potential_crop_yield(ssm, gsr, crop)
 
     total_irrig_yield::Float64 = irrigated_yield * f.irrigated_area
     total_dry_yield::Float64 = dryland_yield * f.dryland_area

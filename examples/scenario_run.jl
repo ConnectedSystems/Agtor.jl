@@ -6,6 +6,8 @@ using DataFrames, CSV, FileIO, Dates
 using BenchmarkTools
 using Agtor
 
+import OrderedCollections: LittleDict
+
 
 # Start month/day of growing season
 # Represents when water allocations are announced.
@@ -18,25 +20,19 @@ function setup_zone(data_dir::String="test/data/")
     # collated_specs::Array = []
     # agparams = collect_agparams!(zone_params[:Zone_1], collated_specs; ignore=[:crop_spec])
 
-    # return create(zone_params[:Zone_1]), agparams
     return create(zone_params[:Zone_1])
 end
 
 
 function run_model(farmer, zone)
     time_sequence = zone.climate.time_steps
+    allocs = LittleDict("surface_water"=> 150.0, "groundwater" => 40.0)
     @inbounds for dt_i in time_sequence
         run_timestep(farmer, zone, dt_i)
 
         # Resetting allocations for example run
         if monthday(dt_i) == gs_start
-            for ws in zone.water_sources
-                if ws.name == "surface_water"
-                    ws.allocation = 150.0
-                elseif ws.name == "groundwater"
-                    ws.allocation = 40.0
-                end
-            end
+            update_available_water!(zone, allocs)
         end
     end
 
@@ -58,7 +54,7 @@ function example_scenario_run(data_dir::String="test/data/")::Nothing
     scen_data = joinpath(data_dir, "scenarios", "sampled_params.csv")
     samples = DataFrame!(CSV.File(scen_data))
 
-    farmer = Manager("test")
+    farmer = BaseManager("test")
 
     tmp_z = deepcopy(z1)
     @sync for (row_id, r) in enumerate(eachrow(samples))
@@ -84,15 +80,15 @@ function example_batch_save(data_dir::String="test/data/")::Nothing
     scen_data = joinpath(data_dir, "scenarios", "sampled_params.csv")
     samples = DataFrame!(CSV.File(scen_data))
 
-    farmer = Manager("test")
+    farmer = BaseManager("test")
 
-    all_results = []
+    all_results = Dict()
     tmp_z = deepcopy(z1)
     for (row_id, r) in enumerate(eachrow(samples))
         update_model!(tmp_z, r)
 
         zone_results, field_results = run_model(farmer, tmp_z)
-        push!(all_results, (zone_results, field_results))
+        all_results[row_id] = (zone_results, field_results)
     end
 
     save_results!("batch_run.jld2", all_results)

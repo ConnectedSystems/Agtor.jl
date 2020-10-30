@@ -44,7 +44,7 @@ function create_obj_func(tgt_spec, pars)
 
     # Create example zone
     climate = Climate(climate_seq)
-    farmer = Manager("Calibration")
+    farmer = BaseManager("Calibration")
     zone = create(tgt_spec, climate)
 
     # Load observed wheat production
