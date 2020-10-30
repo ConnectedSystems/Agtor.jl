@@ -1,4 +1,3 @@
-import Agtor: set_next_crop!, update_stages!, in_season, load_yaml
 using Agtor, Dates, CSV
 using Test
 
@@ -11,18 +10,11 @@ function setup_zone(data_dir::String="test/data/")
     zone_spec_dir::String = "$(data_dir)zones/"
     zone_specs::Dict{String, Dict} = load_yaml(zone_spec_dir)
 
-    climate_data::String = "$(data_dir)climate/farm_climate_data.csv"
+    # climate_fn::String = "$(data_dir)climate/farm_climate_data.csv"
+    # climate::Climate = load_climate(climate_fn)
 
-    # Expect only CSV for now...
-    if endswith(climate_data, ".csv")
-        use_threads = Threads.nthreads() > 1
-        climate_seq = DataFrame!(CSV.File(climate_data, threaded=use_threads, dateformat="dd-mm-YYYY"))
-    else
-        error("Currently, climate data can only be provided in CSV format")
-    end
-
-    climate::Climate = Climate(climate_seq)
-    return [create(z_spec, climate) for (z_name, z_spec) in zone_specs]
+    # return [create(z_spec, climate) for (z_name, z_spec) in zone_specs]
+    return [create(z_spec) for (z_name, z_spec) in zone_specs]
 end
 
 

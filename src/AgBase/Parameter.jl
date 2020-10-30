@@ -329,15 +329,8 @@ Usage:
     collect_agparams!(zone_params, collated_specs; ignore=["crop_spec"])
     
     # Expect only CSV for now...
-    climate_data::String = "data/climate/farm_climate_data.csv"
-    if endswith(climate_data, ".csv")
-        use_threads = Threads.nthreads() > 1
-        climate_seq = DataFrame!(CSV.File(climate_data, threaded=use_threads, dateformat="dd-mm-YYYY"))
-    else
-        error("Currently, climate data can only be provided in CSV format")
-    end
-
-    climate::Climate = Climate(climate_seq)
+    climate_fn::String = "data/climate/farm_climate_data.csv"
+    climate::Climate = load_climate(climate_fn)
     z1 = create(zone_params, climate)
 
     param_info = DataFrame(collated_specs)

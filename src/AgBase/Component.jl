@@ -31,16 +31,9 @@ function create(spec::Dict)
             error("Climate data not found in Zone spec.")
         end
 
-        # Expect only CSV for now...
-        if endswith(cd_fn, ".csv")
-            use_threads = Threads.nthreads() > 1
-            climate_seq = DataFrame!(CSV.File(cd_fn, threaded=use_threads, dateformat="dd-mm-YYYY"))
-            climate_data = Climate(climate_seq)
-        else
-            error("Currently, climate data can only be provided in CSV format")
-        end
+        climate::Climate = load_climate(cd_fn)
 
-        return create(dt, climate_data)
+        return create(dt, climate)
     end
 
     return cls(; dt...)
@@ -53,8 +46,8 @@ function create(spec::Dict, climate_data::String)
     cls = eval(Symbol(cls_name))
 
     if cls_name == "Basin"
-        return cls(dt[:name], dt[:zone_spec]; 
-                   climate_data=climate_data)
+        return cls(; name=dt[:name], zone_specs=dt[:zone_spec], 
+                   climate_data=dt[:climate_data])
     end
 
     error("Unknown component: $(cls_name), with additional parameter '$(climate_data)'")

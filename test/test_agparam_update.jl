@@ -19,20 +19,8 @@ function setup_zone(data_dir::String="test/data/")
 
     zone_params = generate_agparams("", zone_specs["Zone_1"])
 
-    collated_specs::Array = []
-    agparams = collect_agparams!(zone_params, collated_specs; ignore=["crop_spec"])
-
-    climate_data::String = "$(data_dir)climate/farm_climate_data.csv"
-
-    # Expect only CSV for now...
-    if endswith(climate_data, ".csv")
-        use_threads = Threads.nthreads() > 1
-        climate_seq = DataFrame!(CSV.File(climate_data, threaded=use_threads, dateformat="dd-mm-YYYY"))
-    else
-        error("Currently, climate data can only be provided in CSV format")
-    end
-
-    climate::Climate = Climate(climate_seq)
+    climate_fn::String = "$(data_dir)climate/farm_climate_data.csv"
+    climate::Climate = load_climate(climate_fn)
 
     return create(zone_params, climate), agparams
 end
@@ -47,7 +35,7 @@ set_params!(test, 0.75)
 
 data_dir = "test/data/"
 
-z1, collated = setup_zone(data_dir)
+z1 = setup_zone(data_dir)
 tc_z1 = deepcopy(z1)  # test copy
 
 samples = DataFrame!(CSV.File("test/data/scenarios/sampled_params.csv"))

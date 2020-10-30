@@ -27,16 +27,7 @@ addprocs(3, exeflags="--project=.")
     agparams = collect_agparams!(zone_params[:Zone_1], collated_specs; ignore=[:crop_spec])
 
     climate_data::String = "$(data_dir)climate/farm_climate_data.csv"
-
-    # Expect only CSV for now...
-    if endswith(climate_data, ".csv")
-        use_threads = Threads.nthreads() > 1
-        climate_seq = DataFrame!(CSV.File(climate_data, threaded=use_threads, dateformat="dd-mm-YYYY"))
-    else
-        error("Currently, climate data can only be provided in CSV format")
-    end
-
-    climate::Climate = Climate(climate_seq)
+    climate::Climate = load_climate(climate_data)
 
     return create(zone_params[:Zone_1], climate), agparams
 end
@@ -80,7 +71,7 @@ function test_scenario_run(data_dir::String="test/data/", result_dir::String="")
     scen_data = joinpath(data_dir, "scenarios", "sampled_params.csv")
     samples = DataFrame!(CSV.File(scen_data))
 
-    farmer = Manager("test")
+    farmer = BaseManager("test")
 
     # Each row represents a scenario to run.
     # We distribute these across available cores.

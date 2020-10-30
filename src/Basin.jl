@@ -1,24 +1,16 @@
-import Agtor: Climate, FarmZone
-
 
 mutable struct Basin <: AgComponent
     name::String
     zones::Dict{Symbol, FarmZone}
+    managers::Dict{Symbol, Manager}
 
-    function Basin(name, zone_specs; climate_data)
+    function Basin(; name, zone_spec, climate_data)
         basin = new()
         basin.name = name
 
-        # Expect only CSV for now...
-        if endswith(climate_data, ".csv")
-            use_threads = Threads.nthreads() > 1
-            climate_seq = DataFrame!(CSV.File(climate_data, threaded=use_threads, dateformat="dd-mm-YYYY"))
-        else
-            error("Currently, climate data can only be provided in CSV format")
-        end
-
-        climate::Climate = Climate(climate_seq)
-        basin.zones = Dict(k => create(v, climate) for (k, v) in zone_specs)
+        climate::Climate = load_climate(climate_data)
+        basin.zones = Dict(k => create(v, climate) for (k, v) in zone_spec)
+        managers = nothing
 
         return basin
     end

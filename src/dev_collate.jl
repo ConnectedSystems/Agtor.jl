@@ -1,5 +1,4 @@
 import Revise
-import Agtor
 
 using Profile, BenchmarkTools, OwnTime, Logging, Infiltrator
 
@@ -30,17 +29,8 @@ function setup_zone(data_dir::String="test/data/")
     collated_specs::Array = []
     agparams = collect_agparams!(tgt_zone, collated_specs; ignore=[:crop_spec])
 
-    climate_data::String = "$(data_dir)climate/farm_climate_data.csv"
-
-    # Expect only CSV for now...
-    if endswith(climate_data, ".csv")
-        use_threads = Threads.nthreads() > 1
-        climate_seq = DataFrame!(CSV.File(climate_data, threaded=use_threads, dateformat="dd-mm-YYYY"))
-    else
-        error("Currently, climate data can only be provided in CSV format")
-    end
-
-    climate::Climate = Climate(climate_seq)
+    climate_fn::String = "$(data_dir)climate/farm_climate_data.csv"
+    climate::Climate = load_climate(climate_fn)
 
     return create(tgt_zone, climate), agparams
 end
