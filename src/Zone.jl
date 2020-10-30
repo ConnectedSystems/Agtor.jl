@@ -6,8 +6,6 @@ using DataStructures
 using Statistics
 using OrderedCollections
 
-import Agtor: Climate
-
 
 @with_kw mutable struct FarmZone <: AgComponent
     name::String
@@ -130,6 +128,26 @@ function apply_rainfall!(zone::FarmZone, dt::Date)::Nothing
 
     return nothing
 end
+
+
+"""Update water allocations"""
+function update_available_water!(zone::FarmZone, allocations::LittleDict)::Nothing
+    for (k, v) in allocations
+        for ws in zone.water_sources
+            if ws.name == k
+                ws.allocation = v
+            end
+        end
+    end
+    # for ws in zone.water_sources
+    #     if ws.name == "surface_water"
+    #         ws.allocation = 150.0
+    #     elseif ws.name == "groundwater"
+    #         ws.allocation = 40.0
+    #     end
+    # end
+end
+    
 
 
 function log_irrigation_by_water_source(zone::FarmZone, f::FarmField, dt::Date)::Nothing

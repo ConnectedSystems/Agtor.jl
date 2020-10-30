@@ -1,15 +1,20 @@
 
 using JuMP, GLPK, Statistics
 using OrderedCollections
-import Base.Threads
+
+abstract type Manager <: AgComponent end
 
 
-"""An 'economically rational' crop farm manager."""
-struct Manager <: AgComponent
+"""An 'economically rational' crop farm manager.
+
+Water is applied for optimal farm profitability based on soil water deficit,
+crop water requirements, and cost of water application.
+"""
+struct BaseManager <: Manager
     name::String
     opt::DataType
 
-    function Manager(name::String)::Agtor.Manager
+    function BaseManager(name::String)::Agtor.Manager
         return new(name, GLPK.Optimizer)
     end
 end
@@ -210,7 +215,7 @@ function optimize_irrigation(m::Manager, zone::FarmZone, dt::Date)::Tuple{Ordere
         app_cost_per_ML::LittleDict{Symbol, Float64} = ML_water_application_cost(m, zone, f, req_water_ML_ha)
 
         tmp_d::LittleDict{String, Float64} = LittleDict{String, Float64}(
-            "$(did)-$(k)" => v
+            "$(did)$(k)" => v
             for (k, v) in app_cost_per_ML
         )
         app_cost = merge!(app_cost, tmp_d)
@@ -321,50 +326,6 @@ function calc_ML_pump_costs(m::Manager, zone::FarmZone,
 end
 
 
-"""
-Uses French-Schultz equation, taken from [Oliver et al. 2008 (Equation 1)](<http://www.regional.org.au/au/asa/2008/concurrent/assessing-yield-potential/5827_oliverym.htm>)
-
-The method here uses the farmer friendly modified version as given in the above.
-
-Represents Readily Available Water - (Crop evapotranspiration * Crop Water Use Efficiency Coefficient)
-
-.. math::
-    YP = (SSM + GSR - E) * WUE
-
-where
-
-* :math:`YP` is yield potential in kg/Ha
-* :math:`SSM` is Stored Soil Moisture (at start of season) in mm, assumed to be 30% of summer rainfall
-* :math:`GSR` is Growing Season Rainfall in mm
-* :math:`E` is Crop Evaporation coefficient in mm, the amount of rainfall required before the crop will start
-    to grow, commonly 110mm, but can range from 30-170mm [Whitbread and Hancock 2008](http://www.regional.org.au/au/asa/2008/concurrent/assessing-yield-potential/5803_whitbreadhancock.htm),
-* :math:`WUE` is Water Use Efficiency coefficient in kg/mm
-
-Parameters
-----------
-* ssm_mm : float, Stored Soil Moisture (mm) at start of season.
-* gsr_mm : float, Growing Season Rainfall (mm)
-* crop : object, Crop component object
-
-Returns
------------
-* Potential yield in tonnes/Ha
-"""
-function calc_potential_crop_yield(ssm_mm::Float64, gsr_mm::Float64, 
-                                   crop::AgComponent)::Float64
-    
-    evap_coef_mm::Float64 = crop.et_coef  # Crop evapotranspiration coefficient (mm)
-    wue_coef_mm::Float64 = crop.wue_coef  # Water Use Efficiency coefficient (kg/mm)
-
-    # maximum rainfall threshold in mm
-    # water above this amount does not contribute to crop yield
-    max_thres::Float64 = crop.rainfall_threshold  
-
-    gsr_mm::Float64 = min(gsr_mm, max_thres)
-    return max(0.0, ((ssm_mm + gsr_mm - evap_coef_mm) * wue_coef_mm) / 1000.0)
-end
-
-
 """Check to see if given date is between start and end dates (exclusive of start and end)"""
 function in_season(dt::Date, s_start::Date, s_end::Date)::Bool
     return s_start < dt < s_end
@@ -374,6 +335,30 @@ end
 """Check to see if two dates are identical"""
 function matching_dates(dt::Date, s_start::Date)::Bool
     return dt == s_start
+end
+
+
+"""Sets next crop in rotation and updates sowing/planting dates."""
+function set_next_crop!(m::Manager, f::FarmField, dt::Date)::Nothing
+    set_next_crop!(f)
+
+    cy, cm = yearmonth(dt)
+    pm::Int64, pd::Int64 = monthday(f.plant_date)
+
+    # Determine if planting will occur this year or next
+    if cm <= pm
+        sowing_date::Date = Date(cy, pm, pd)
+    else
+        sowing_date = Date(cy+1, pm, pd)
+    end
+
+    f.plant_date = sowing_date
+    f.harvest_date = sowing_date + f.crop.harvest_offset
+
+    # Update growth stages with corresponding dates
+    update_stages!(f.crop, sowing_date)
+
+    return nothing
 end
 
 
@@ -389,43 +374,42 @@ function run_timestep(farmer::Manager, zone::FarmZone, dt::Date)::Nothing
 
         f_name::String = f.name
 
-        if within_season
+        if within_season || season_start
             apply_rainfall!(zone, dt)
 
-            if f.irrigated_area == 0.0 || f.irrigation.name == "dryland"
-                # no irrigation occurred!
-                continue
-            end
-
-            # Get percentage split between water sources
-            irrigation, cost_per_ML = optimize_irrigation(farmer, zone::FarmZone, dt)
-            water_to_apply_mm = calc_required_water(f, dt)
-            for ws in zone.water_sources
-                ws_name::String = ws.name
-                did::String = replace("$(f_name)-$(ws_name)", " " => "_")
-                area_to_apply::Float64 = irrigation[did]
-
-                if area_to_apply == 0.0
+            if within_season
+                if f.irrigated_area == 0.0 || f.irrigation.name == "dryland"
+                    # no irrigation occurred!
                     continue
                 end
 
-                vol_to_apply_ML_ha::Float64 = (water_to_apply_mm / mm_to_ML)
-                apply_irrigation!(f, ws, water_to_apply_mm, area_to_apply)
+                # Get percentage split between water sources
+                irrigation, cost_per_ML = optimize_irrigation(farmer, zone::FarmZone, dt)
+                water_to_apply_mm = calc_required_water(f, dt)
+                for ws in zone.water_sources
+                    ws_name::String = ws.name
+                    did::String = replace("$(f_name)-$(ws_name)", " " => "_")
+                    area_to_apply::Float64 = irrigation[did]
 
-                tmp::Float64 = sum([v for (k, v) in cost_per_ML if occursin(f_name, k) && occursin(ws_name, k)])
+                    if area_to_apply == 0.0
+                        continue
+                    end
 
-                log_irrigation_cost(f, (tmp * vol_to_apply_ML_ha * area_to_apply))
-            end 
-        elseif season_start
-            f.sowed = true
+                    vol_to_apply_ML_ha::Float64 = (water_to_apply_mm / mm_to_ML)
+                    apply_irrigation!(f, ws, water_to_apply_mm, area_to_apply)
 
-            apply_rainfall!(zone, dt)
+                    tmp::Float64 = sum([v for (k, v) in cost_per_ML if occursin(f_name, k) && occursin(ws_name, k)])
 
-            # cropping for this field begins
-            opt_field_area = optimize_irrigated_area(farmer, zone)
-            f.irrigated_area = get_optimum_irrigated_area(f, opt_field_area)
+                    log_irrigation_cost(f, (tmp * vol_to_apply_ML_ha * area_to_apply))
+                end 
+            elseif season_start
+                f.sowed = true
 
-            # zone.opt_field_area = opt_field_area
+                # cropping for this field begins
+                opt_field_area = optimize_irrigated_area(farmer, zone)
+                f.irrigated_area = get_optimum_irrigated_area(f, opt_field_area)
+
+            end
         elseif season_end
             # End of season
 
@@ -441,15 +425,10 @@ function run_timestep(farmer::Manager, zone::FarmZone, dt::Date)::Nothing
                 # The SSM coefficient is set as a crop parameter.
                 prev::Date = f.plant_date - Month(3)
                 prev_mm::Float64 = get_seasonal_rainfall(zone.climate, [prev, s_start], f_name)
-
-                # fs_ssm_assumption::Float64 = 0.3
                 ssm_mm::Float64 = prev_mm * f.crop.ssm_coef
 
                 income::Float64, irrigated_yield::Float64, dryland_yield::Float64 = 
-                    total_income(f, calc_potential_crop_yield, 
-                                ssm_mm,
-                                gsr_mm,
-                                irrig_mm,
+                    total_income(f, ssm_mm, gsr_mm, irrig_mm,
                                 (dt, zone.water_sources))
 
                 seasonal_field_log!(f, dt, income, f.irrigated_volume, irrigated_yield, dryland_yield, gsr_mm)
@@ -459,7 +438,7 @@ function run_timestep(farmer::Manager, zone::FarmZone, dt::Date)::Nothing
 
             log_irrigation_by_water_source(zone, f, dt)
 
-            set_next_crop!(f, dt)
+            set_next_crop!(farmer, f, dt)
             reset_state!(f)
         end
     end
