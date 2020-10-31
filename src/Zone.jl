@@ -6,6 +6,8 @@ using DataStructures
 using Statistics
 using OrderedCollections
 
+using Infiltrator
+
 
 @with_kw mutable struct FarmZone <: AgComponent
     name::String
@@ -57,12 +59,12 @@ end
 
 
 """Determine the possible irrigation area using water from each water source."""
-function possible_area_by_allocation(zone::FarmZone, field::FarmField, req_water_ML::Float64)::LittleDict{Symbol, Float64}
+function possible_area_by_allocation(zone::FarmZone, field::FarmField, req_water_ML::Float64)::NamedTuple
     @assert in(field.name, [f.name for f in zone.fields]) "Field must be in zone"
 
-    tmp::LittleDict{Symbol, Float64} = LittleDict{Symbol, Float64}(
-        Symbol(ws.name) => possible_irrigation_area(field, ws.allocation, req_water_ML)
-        for ws::WaterSource in zone.water_sources
+    zone_ws::Array{WaterSource} = zone.water_sources
+    tmp = NamedTuple{Tuple(Symbol(ws.name) for ws in zone_ws)}(
+        possible_irrigation_area(field, ws.allocation, req_water_ML) for ws in zone_ws
     )
 
     return tmp
@@ -118,10 +120,30 @@ function apply_rainfall!(zone::FarmZone, dt::Date)::Nothing
     @inbounds for f::FarmField in zone.fields
         # get rainfall and et for datetime
         zf_id::String = "$(z_name)_$(f.name)"
-        rain_col::Symbol = Symbol("$(zf_id)_rainfall")
-        et_col::Symbol = Symbol("$(zf_id)_ET")
+        rain_col::Symbol = Symbol(zf_id, "_rainfall")
+        et_col::Symbol = Symbol(zf_id, "_ET")
 
         rainfall::Float64, et::Float64 = subset[1, rain_col], subset[1, et_col]
+
+        update_SWD!(f, rainfall, et)
+    end
+
+    return nothing
+end
+
+
+"""Apply rainfall and ET to influence soil water deficit."""
+function apply_rainfall!(zone::FarmZone, dt_idx::Int64)::Nothing
+    data::DataFrame = zone.climate.data::DataFrame
+
+    z_name::String = zone.name::String
+    @inbounds for f::FarmField in zone.fields
+        # get rainfall and et for datetime
+        zf_id::String = "$(z_name)_$(f.name)"
+        rain_col::Symbol = Symbol(zf_id, "_rainfall")
+        et_col::Symbol = Symbol(zf_id, "_ET")
+
+        rainfall::Float64, et::Float64 = data[dt_idx, rain_col], data[dt_idx, et_col]
 
         update_SWD!(f, rainfall, et)
     end
@@ -139,13 +161,6 @@ function update_available_water!(zone::FarmZone, allocations::LittleDict)::Nothi
             end
         end
     end
-    # for ws in zone.water_sources
-    #     if ws.name == "surface_water"
-    #         ws.allocation = 150.0
-    #     elseif ws.name == "groundwater"
-    #         ws.allocation = 40.0
-    #     end
-    # end
 end
     
 
@@ -162,9 +177,9 @@ function log_irrigation_by_water_source(zone::FarmZone, f::FarmField, dt::Date):
 
         zone._irrigation_volume_by_source = DataFrame(; tmp_dict...)
     end
-
+    
     tmp::Array{Float64} = Float64[0.0 for ws in zone.water_sources]
-    for (i, ws::WaterSource) in enumerate(zone.water_sources)
+    for (i::Int64, ws::WaterSource) in enumerate(zone.water_sources)
         try
             tmp[i] += f.irrigation_from_source[ws.name]
         catch e
