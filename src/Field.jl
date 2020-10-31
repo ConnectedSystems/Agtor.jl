@@ -162,10 +162,10 @@ Returns
 """
 function nid(f::FarmField, dt::Date)::Float64
     crop::Crop = f.crop
-    coefs::Dict = get_stage_coefs(crop, dt)
+    coefs::NamedTuple = get_stage_coefs(crop, dt)
 
     e_rootzone_m::Float64 = crop.root_depth_m * crop.effective_root_zone
-    soil_RAW::Float64 = f.soil_TAW * coefs[:depletion_fraction] 
+    soil_RAW::Float64 = f.soil_TAW * coefs.depletion_fraction
 
     return (e_rootzone_m * soil_RAW)
 end
@@ -182,9 +182,8 @@ function calc_required_water(f::FarmField, dt::Date)::Float64
     if to_nid < 0.0
         return 0.0
     end
-    
-    tmp::Float64 = f.soil_SWD / f.irrigation.efficiency
-    return round(tmp, digits=4)
+
+    return (f.soil_SWD / f.irrigation.efficiency)
 end
 
 

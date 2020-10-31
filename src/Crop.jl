@@ -1,12 +1,14 @@
 using Dates
+using OrderedCollections
+
 
 @with_kw mutable struct Crop <: AgComponent
     name::String
     crop_type::String
 
     # Growth pattern
-    growth_stages::Dict{Symbol, Dict{Symbol, Union{Date, Int64, AgParameter}}}
-    coef_stages::Dict{Symbol, Dict{Symbol, Union{Float64, Int64, AgParameter}}}
+    growth_stages::LittleDict{Symbol, NamedTuple}
+    coef_stages::LittleDict{Symbol, NamedTuple}
 
     # Crop properties
     plant_date::Union{Date, AgParameter}
@@ -22,6 +24,7 @@ using Dates
     effective_root_zone::Union{Float64, AgParameter}
     harvest_date::Union{Date, AgParameter}
     harvest_offset::Union{Day, Int64, AgParameter}
+    naive_crop_yield::Float64
 
     function Crop(name::String, crop_type::String, growth_stages::Dict, start_dt::Date; props...)::Crop
         plant_date = props[:plant_date]
@@ -42,32 +45,36 @@ using Dates
         h_day = 0
         offset = 0
         start_date = sow_date
-        g_stages = Dict{Symbol, Dict{Symbol, Union{Date, Int64, AgParameter}}}()
-        coef_stages = Dict{Symbol, Dict{Symbol, Union{Int64, Float64, AgParameter}}}()
+        g_stages = LittleDict{Symbol, NamedTuple}()
+        coef_stages = LittleDict{Symbol, NamedTuple}()
+        
 
         @inbounds for (k, v) in growth_stages
             offset = v[:stage_length]
             end_of_stage = start_date + Dates.Day(offset)
-            g_stages[k] = Dict(
-                :start => start_date,
-                :end => end_of_stage,
-                :stage_length => offset
+            g_stages[k] = (
+                start = start_date,
+                var"end" = end_of_stage,
+                stage_length = offset
             )
 
-            h_day += offset
+            coef_stages[k] = NamedTuple{Tuple(keys(v))}(values(v))
 
+            h_day += offset
             start_date = end_of_stage + Dates.Day(offset+1)
-            coef_stages[k] = Dict(Symbol(s) => v for (s, v) in v)
+
         end
 
         harvest_offset = Dates.Day(h_day)
         harvest_date = sow_date + harvest_offset
 
-        return new(name, crop_type, g_stages, coef_stages, sow_date,
-            yield_per_ha, price_per_yield, variable_cost_per_ha, water_use_ML_per_ha,
-            root_depth_m, et_coef, wue_coef, rainfall_threshold, 
-            ssm_coef, effective_root_zone, harvest_date, harvest_offset)
+        c = new(name, crop_type, g_stages, coef_stages, sow_date,
+                yield_per_ha, price_per_yield, variable_cost_per_ha, water_use_ML_per_ha,
+                root_depth_m, et_coef, wue_coef, rainfall_threshold, 
+                ssm_coef, effective_root_zone, harvest_date, harvest_offset)
+        c.naive_crop_yield = (c.price_per_yield * c.yield_per_ha) - c.variable_cost_per_ha
 
+        return c
     end
 end
 
@@ -78,10 +85,10 @@ function update_stages!(c::Crop, dt::Date)::Nothing
     @inbounds for (k, v) in c.growth_stages
         offset::Int64 = v[:stage_length]
         end_of_stage = start_date + Dates.Day(offset)
-        stages[k] = Dict(
-            :start => start_date,
-            :end => end_of_stage,
-            :stage_length => offset
+        stages[k] = (
+            start = start_date,
+            var"end" = end_of_stage,
+            stage_length = offset
         )
 
         start_date = end_of_stage + Dates.Day(offset+1)
@@ -93,7 +100,7 @@ function update_stages!(c::Crop, dt::Date)::Nothing
 end
 
 
-function get_stage_coefs(c::Crop, dt::Date)::Dict
+function get_stage_coefs(c::Crop, dt::Date)::NamedTuple
     @inbounds for (k, v) in c.growth_stages
         s::Date, e::Date = v[:start], v[:end]
 
