@@ -1,5 +1,5 @@
 
-using JuMP, GLPK, Statistics
+using JuMP, GLPK, Clp, Statistics
 using OrderedCollections
 
 abstract type Manager <: AgComponent end
@@ -31,7 +31,11 @@ Parameters
 * zone : Agtor.FarmZone, representing a farm or a farming zone.
 """
 function optimize_irrigated_area(m::Manager, zone::FarmZone)::OrderedDict{String, Float64}
-    model::Model = Model(m.opt)
+    model::Model = Model(m.opt)  # disable output
+    # set_optimizer_attribute(model, "LogLevel", 0)  
+    # set_silent(model)  # disable output
+    # MOI.set(model, MOI.Silent(), true)
+    # set_parameter(model, "LogLevel", 0)
 
     num_fields::Int64 = length(zone.fields)
     profit_calc::Array = []
@@ -66,7 +70,6 @@ function optimize_irrigated_area(m::Manager, zone::FarmZone)::OrderedDict{String
             for w in zone_ws
         )
 
-        # total_pump_cost = sum([ws.pump.maintenance_cost(year_step) for ws in zone_ws])
         profits::Array{JuMP.GenericAffExpr{Float64,JuMP.VariableRef}} = [field_areas[f_name][Symbol(w.name)] * 
                             (naive_crop_income - app_cost_per_ML[Symbol(w.name)])
                           for w in zone_ws]
@@ -84,7 +87,6 @@ function optimize_irrigated_area(m::Manager, zone::FarmZone)::OrderedDict{String
 
     # Generate appropriate OptLang model
     @objective(model, Max, sum(profit_calc))
-    @objective(model, Max, sum(calc))
 
     JuMP.optimize!(model)
     state = termination_status(model)
@@ -96,13 +98,6 @@ function optimize_irrigated_area(m::Manager, zone::FarmZone)::OrderedDict{String
 
     opt_vals::OrderedDict{String, Float64} = OrderedDict(JuMP.name(v) => value(v) for v in all_variables(model))
     opt_vals["optimal_result"] = objective_value(model)
-    if state == MOI.OPTIMAL
-
-    elseif state == MOI.TIME_LIMIT && has_values(model)
-        @warn "Farm model optimization was sub-optimal"
-    else
-        error("Could not optimize farm water use.")
-    end
 
     return opt_vals
 end
@@ -145,25 +140,26 @@ Returns
 """
 function optimize_irrigation(m::Manager, zone::FarmZone, dt::Date)::Tuple{OrderedDict, Dict}
 
-    model::Model = Model(m.opt)
+    model::Model = Model(m.opt)  # disable output
+    # set_optimizer_attribute(model, "LogLevel", 0)
+    # set_silent(model)  # disable output
+    # MOI.set(model, MOI.Silent(), true)
+    # set_parameter(model, "LogLevel", 0)
 
     num_fields::Int64 = length(zone.fields)
     profit::Array = []
     sizehint!(profit, num_fields)
 
     app_cost::OrderedDict{String, Float64} = OrderedDict{String, Float64}()
-    sizehint!(app_cost, num_fields)
 
     zone_ws::Array{WaterSource} = zone.water_sources
     total_irrigated_area::Float64 = zone.total_irrigated_area
 
     field_area::LittleDict{Symbol, NamedTuple} = LittleDict{Symbol, NamedTuple}()
-    sizehint!(field_area, num_fields)
 
     req_water::Array{Float64} = Float64[]
     sizehint!(req_water, num_fields)
 
-    max_ws_area::LittleDict{Symbol, LittleDict} = LittleDict{Symbol, LittleDict{Symbol, Float64}}()
     @inbounds for f::FarmField in zone.fields
         f_name::Symbol = Symbol(f.name)
         did::String = f._fname
@@ -173,25 +169,14 @@ function optimize_irrigation(m::Manager, zone::FarmZone, dt::Date)::Tuple{Ordere
         total_pos_area::Float64 = min(sum(values(max_ws_area)), f.irrigated_area)
         crop_income_per_ha::Float64 = f.crop.naive_crop_yield  # estimate_income_per_ha(f.crop)
 
-        max_ws_area[f_name] = possible_area_by_allocation(zone, f, req_water_ML_ha)
-        total_pos_area::Float64 = min(sum(values(max_ws_area[f_name])), f.irrigated_area)
-        crop_income_per_ha::Float64 = estimate_income_per_ha(f.crop)
-
         # If no water available or required...
         if f.irrigation.name == "dryland" || req_water_ML_ha == 0.0 || total_pos_area == 0.0
             field_area[f_name] = NamedTuple{Tuple(Symbol(ws.name) for ws in zone_ws)}((@variable(model,
-                Symbol(ws.name) => @variable(model,
                                         base_name="$(did)$(ws.name)",
                                         lower_bound=0.0,
                                         upper_bound=0.0) for ws in zone_ws))
-                for ws in zone_ws
-            )
 
             push!(req_water, 0.0)
-                crop_income_per_ha * f.irrigated_area
-                for ws in zone_ws
-            ]
-            append!(profit, tmp_l)
             continue
         end
 
@@ -206,12 +191,9 @@ function optimize_irrigation(m::Manager, zone::FarmZone, dt::Date)::Tuple{Ordere
         # estimated gross income - variable costs per ha
         # Creating individual field area variables
         field_area[f_name] = NamedTuple{Tuple(Symbol(ws.name) for ws in zone_ws)}((@variable(model,
-            Symbol(ws.name) => @variable(model,
                                         base_name="$(did)$(ws.name)",
                                         lower_bound=0.0,
                                         upper_bound=max_ws_area[Symbol(ws.name)]) for ws in zone_ws))
-            for ws in zone_ws
-        )
 
         # (field_n_gw + field_n_sw) <= possible area
         irrig_area = sum(values(field_area[f_name]))
@@ -257,13 +239,8 @@ function optimize_irrigation(m::Manager, zone::FarmZone, dt::Date)::Tuple{Ordere
     @objective(model, Max, sum(profit))
     optimize!(model)
 
-    opt_vals::OrderedDict{String, Float64} = OrderedDict(JuMP.name(v) => value(v) for v in JuMP.all_variables(model))
-    opt_vals["optimal_result"] = objective_value(model)
-
     state = termination_status(model)
     if state == MOI.TIME_LIMIT && has_values(model)
-        
-    elseif state == MOI.TIME_LIMIT && has_values(model)
         @warn "Farm model optimization was sub-optimal"
     elseif state != MOI.OPTIMAL
         error("Could not optimize farm water use.")
