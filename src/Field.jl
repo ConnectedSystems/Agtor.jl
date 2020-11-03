@@ -8,7 +8,7 @@ abstract type FarmField <: AgComponent end
     # crop_choices::Array{Crop}  # This can be the unique values in crop_rotation
     crop_rotation::Array{Crop}
     soil_TAW::Union{Float64, AgParameter}
-    soil_SWD::Union{Float64, AgParameter}
+    soil_SWD::Union{Float64, AgParameter}  # soil water deficit
     ssm::Union{Float64, AgParameter} = 0.0
     irrigated_area::Union{Nothing, Float64} = nothing
     sowed::Bool = false
@@ -158,14 +158,14 @@ As an example, if a crop has a root depth (:math:`RD_{r}`) of 1m, an effective r
 
 Returns
 -------
-    * float : net irrigation depth as negative value
+    * float : net irrigation depth
 """
 function nid(f::FarmField, dt::Date)::Float64
     crop::Crop = f.crop
     coefs::NamedTuple = get_stage_coefs(crop, dt)
 
-    e_rootzone_m::Float64 = crop.root_depth_m * crop.effective_root_zone
-    soil_RAW::Float64 = f.soil_TAW * coefs.depletion_fraction
+    e_rootzone_m::Float64 = crop.root_depth_m::Float64 * crop.effective_root_zone::Float64
+    soil_RAW::Float64 = f.soil_TAW::Float64 * coefs.depletion_fraction::Float64
 
     return (e_rootzone_m * soil_RAW)
 end
@@ -178,12 +178,13 @@ Factors in irrigation efficiency.
 Values are given in mm.
 """
 function calc_required_water(f::FarmField, dt::Date)::Float64
-    to_nid::Float64 = f.soil_SWD - nid(f, dt)
+    soil_SWD::Float64 = f.soil_SWD
+    to_nid::Float64 = soil_SWD - nid(f, dt)
     if to_nid < 0.0
         return 0.0
     end
 
-    return (f.soil_SWD / f.irrigation.efficiency)
+    return (soil_SWD / f.irrigation.efficiency)
 end
 
 
