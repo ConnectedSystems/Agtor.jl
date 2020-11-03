@@ -25,8 +25,6 @@ include("RigidManager.jl")
 include("Basin.jl")
 
 
-
-
 AgUnion = Union{Int64, Float64, Agtor.AgParameter}
 
 export load_yaml, generate_agparams, load_spec, create, AgUnion
