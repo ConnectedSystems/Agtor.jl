@@ -1,7 +1,7 @@
 using Mixers
 using Agtor
 using DataFrames
-import Flatten
+import Flatten: flatten
 import Dates
 
 
@@ -312,7 +312,7 @@ end
 
 """Modify AgParameter name in place by adding a prefix."""
 function add_prefix!(prefix::String, component)
-    params = Flatten.flatten(component, AgParameter)
+    params = flatten(component, AgParameter)
     for pr in params
         pr.name = prefix*pr.name
     end
@@ -341,30 +341,34 @@ Usage:
     # Update z1 components with values found in first row
     set_params!(z1, samples[1])
 """
-function set_params!(comp, sample)
+function set_params!(comp, sample)::Nothing
     for f_name in fieldnames(typeof(comp))
         tmp_f = getfield(comp, f_name)
-        if tmp_f isa Array
-            arr_type = eltype(tmp_f)
-            tmp_flat = reduce(vcat, Flatten.flatten(tmp_f, Array{arr_type}))
-            for i in tmp_flat
-                set_params!(i, sample)
-            end
-        elseif isa(tmp_f, AgComponent) || isa(tmp_f, AgParameter) || isa(tmp_f, Dict)
+
+        if typeof(tmp_f) in (Array, Dict, AgComponent, AgParameter)
             set_params!(tmp_f, sample)
         end
     end
 end
 
 
-function set_params!(comp::Dict, sample)
+function set_params!(comp::Array, sample)::Nothing
+    arr_type = eltype(comp)
+    tmp_flat = reduce(vcat, Flatten.flatten(comp, Array{arr_type}))
+    for i in tmp_flat
+        set_params!(i, sample)
+    end
+end
+
+
+function set_params!(comp::Dict, sample)::Nothing
     for (k,v) in comp
         set_params!(v, sample)
     end
 end
 
 
-function set_params!(p::AgParameter, sample)
+function set_params!(p::AgParameter, sample)::Nothing
     p_name::Symbol = Symbol(p.name)
     if p_name in names(sample)
         setfield!(p, :value, sample[p_name])
