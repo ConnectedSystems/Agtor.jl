@@ -1,5 +1,6 @@
 using Dates
 using OrderedCollections
+using Setfield
 
 
 @with_kw mutable struct Crop <: AgComponent
@@ -7,8 +8,8 @@ using OrderedCollections
     crop_type::String
 
     # Growth pattern
-    growth_stages::LittleDict{Symbol, NamedTuple}
-    coef_stages::LittleDict{Symbol, NamedTuple}
+    growth_stages::NamedTuple
+    coef_stages::NamedTuple
 
     # Crop properties
     plant_date::Union{Date, AgParameter}
@@ -45,20 +46,20 @@ using OrderedCollections
         h_day = 0
         offset = 0
         start_date = sow_date
-        g_stages = LittleDict{Symbol, NamedTuple}()
-        coef_stages = LittleDict{Symbol, NamedTuple}()
+        g_stages = NamedTuple()
+        coef_stages = NamedTuple()
         
 
         @inbounds for (k, v) in growth_stages
             offset = v[:stage_length]
             end_of_stage = start_date + Dates.Day(offset)
-            g_stages[k] = (
+            @set! g_stages[Symbol(k)] = (
                 start = start_date,
                 var"end" = end_of_stage,
                 stage_length = offset
             )
 
-            coef_stages[k] = NamedTuple{Tuple(keys(v))}(values(v))
+            @set! coef_stages[k] = NamedTuple{Tuple(keys(v))}(values(v))
 
             h_day += offset
             start_date = end_of_stage + Dates.Day(offset+1)
@@ -80,12 +81,12 @@ end
 
 """Update growth stages with corresponding dates from given sowing date."""
 function update_stages!(c::Crop, dt::Date)::Nothing
-    stages = c.growth_stages
+    stages::NamedTuple = c.growth_stages::NamedTuple
     start_date::Date = Date(yearmonthday(dt)...)
-    @inbounds for (k, v) in c.growth_stages
+    @inbounds for (k, v) in pairs(c.growth_stages)
         offset::Int64 = v[:stage_length]
         end_of_stage = start_date + Dates.Day(offset)
-        stages[k] = (
+        @set! stages[k] = (
             start = start_date,
             var"end" = end_of_stage,
             stage_length = offset
@@ -101,8 +102,9 @@ end
 
 
 function get_stage_coefs(c::Crop, dt::Date)::NamedTuple
-    @inbounds for (k, v) in c.growth_stages
-        s::Date, e::Date = v[:start], v[:end]
+    @inbounds for (k, v) in pairs(c.growth_stages)
+        s::Date = v[:start]
+        e::Date = v[:end]
 
         # if in season...
         if (s <= dt <= e)

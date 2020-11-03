@@ -6,7 +6,7 @@ using DataStructures
 using Statistics
 using OrderedCollections
 
-using Infiltrator
+using Setfield
 
 
 @with_kw mutable struct FarmZone <: AgComponent
@@ -63,9 +63,10 @@ function possible_area_by_allocation(zone::FarmZone, field::FarmField, req_water
     @assert in(field.name, [f.name for f in zone.fields]) "Field must be in zone"
 
     zone_ws::Array{WaterSource} = zone.water_sources
-    tmp = NamedTuple{Tuple(Symbol(ws.name) for ws in zone_ws)}(
-        possible_irrigation_area(field, ws.allocation, req_water_ML) for ws in zone_ws
-    )
+    tmp = NamedTuple()
+    for ws::WaterSource in zone_ws
+        @set! tmp[Symbol(ws.name)] = possible_irrigation_area(field, ws.allocation, req_water_ML)
+    end
 
     return tmp
 end
