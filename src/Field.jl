@@ -172,19 +172,21 @@ end
 
 
 """
-Volume of water to maintain moisture at net irrigation depth.
+Volume of water to maintain moisture above net irrigation depth (`nid`).
 
-Factors in irrigation efficiency.
+Calculates volume of water needed to replenish soil water deficit (`swd`)
+when SWD falls below `nid`, considering irrigation efficiency.
+
 Values are given in mm.
 """
 function calc_required_water(f::FarmField, dt::Date)::Float64
-    soil_SWD::Float64 = f.soil_SWD
-    to_nid::Float64 = soil_SWD - nid(f, dt)
+    swd::Float64 = f.soil_SWD::Float64
+    to_nid::Float64 = swd - nid(f, dt)
     if to_nid < 0.0
         return 0.0
     end
 
-    return (soil_SWD / f.irrigation.efficiency)
+    return (swd / f.irrigation.efficiency)
 end
 
 
