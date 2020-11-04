@@ -102,7 +102,7 @@ end
 
 
 function get_stage_coefs(c::Crop, dt::Date)::NamedTuple
-    @inbounds for (k, v) in pairs(c.growth_stages)
+    @inbounds for (k::Symbol, v::NamedTuple) in pairs(c.growth_stages::NamedTuple)
         s::Date = v[:start]
         e::Date = v[:end]
 

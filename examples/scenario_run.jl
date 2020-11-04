@@ -98,9 +98,9 @@ end
 @btime example_scenario_run()
 @btime example_batch_save()
 
-using ProfileView
-@profview example_scenario_run()
-@profview example_scenario_run()
+# using ProfileView
+# @profview example_scenario_run()
+# @profview example_scenario_run()
 
 
 # Loading and displaying results

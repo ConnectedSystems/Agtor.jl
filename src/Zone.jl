@@ -60,13 +60,12 @@ end
 
 """Determine the possible irrigation area using water from each water source."""
 function possible_area_by_allocation(zone::FarmZone, field::FarmField, req_water_ML::Float64)::NamedTuple
-    @assert in(field.name, [f.name for f in zone.fields]) "Field must be in zone"
+    @assert in(field.name, [f.name for f::FarmField in zone.fields]) "Field must be in zone"
 
-    zone_ws::Array{WaterSource} = zone.water_sources
-    tmp = NamedTuple()
-    for ws::WaterSource in zone_ws
-        @set! tmp[Symbol(ws.name)] = possible_irrigation_area(field, ws.allocation, req_water_ML)
-    end
+    zone_ws::Tuple = Tuple(zone.water_sources)
+    tmp = NamedTuple{Tuple(Symbol(ws.name) for ws::WaterSource in zone_ws)}(
+        possible_irrigation_area(field, ws.allocation, req_water_ML) for ws::WaterSource in zone_ws
+    )
 
     return tmp
 end
