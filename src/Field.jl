@@ -20,9 +20,8 @@ abstract type FarmField <: AgComponent end
     # counter will increment and reset as the seasons go by
     _next_crop_idx::Int64 = 2
     _fname::String = replace("$(name)-", " " => "_")
+    _seasonal_log::DataFrame = setup_log()
 
-    _seasonal_log::DataFrame = DataFrame([Date, Float64, Float64, Float64, Float64, Float64, Float64, Float64], 
-                                         [:Date, :income, :irrigated_volume, :irrigated_yield, :dryland_yield, :growing_season_rainfall, :irrigated_area, :dryland_area])
 end
 
 """Getter for Field"""
@@ -110,6 +109,7 @@ function seasonal_field_log!(f::FarmField, dt::Date, income::Float64,
                              irrig_vol::Float64, irrig_yield::Float64, 
                              dry_yield::Float64, seasonal_rainfall::Float64)::Nothing
     push!(f._seasonal_log, [dt, income, irrig_vol, irrig_yield, dry_yield, seasonal_rainfall, f.irrigated_area, f.dryland_area])
+
     return nothing
 end
 
@@ -361,3 +361,19 @@ function total_costs(f::FarmField, dt::Date, water_sources::Array{WaterSource}, 
 
     return total_costs
 end
+
+
+function setup_log()::DataFrame
+    return DataFrame([Date, Float64, Float64, Float64, Float64, Float64, Float64, Float64], 
+                     [:Date, :income, :irrigated_volume, :irrigated_yield, :dryland_yield, 
+                      :growing_season_rainfall, :irrigated_area, :dryland_area])
+end
+
+function reset!(f::FarmField)::Nothing
+    f._seasonal_log = setup_log()
+
+    reset_state!(f)
+
+    return
+end
+
