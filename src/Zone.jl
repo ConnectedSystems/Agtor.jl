@@ -36,7 +36,7 @@ function use_allocation!(ws::WaterSource, vol_ML::Float64)::Nothing
         msg = "Allocation cannot be below 0 ML! Currently: $(ws.allocation)ML\n"
         msg *= "Tried to use: $(vol_ML)ML\n"
         msg *= "From: $ws_name\n"
-        error(msg)
+        throw(ArgumentError(msg))
     end
 
     return nothing

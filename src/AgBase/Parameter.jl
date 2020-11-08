@@ -73,12 +73,12 @@ function Base.setproperty!(cat::CategoricalParameter, v::Symbol, value)::Nothing
         elseif value isa String
             pos = cat.cat_val(findfirst(x-> x == value, cat.cat_val))
             if isnothing(pos)
-                error("$(pos) is not a valid option for $(cat.name)")
+                throw(ArgumentError("$(pos) is not a valid option for $(cat.name)"))
             end
 
             cat.value = cat.cat_val[pos]
         else
-            error("Type $(typeof(value)) is not a valid type option for $(cat.name), has to be Integer, Float or String")
+            throw(ArgumentError("Type $(typeof(value)) is not a valid type option for $(cat.name), has to be Integer, Float or String"))
         end
     else
         setfield!(f, Symbol(v), value)
@@ -280,7 +280,7 @@ end
 function collect_agparams!(dataset::Dict, mainset::Dict)::Nothing
     for (k, v) in dataset
         if Symbol(v.name) in mainset
-            error("$(v.name) is already set!")
+            throw(ArgumentError("$(v.name) is already set!"))
         end
 
         if v isa AgParameter && !is_const(v)

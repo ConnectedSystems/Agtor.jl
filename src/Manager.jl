@@ -82,7 +82,7 @@ function optimize_irrigated_area(m::Manager, zone::FarmZone)::OrderedDict{String
     if state == MOI.TIME_LIMIT && has_values(model)
         @warn "Farm model optimization was sub-optimal"
     elseif state != MOI.OPTIMAL
-        error("Could not optimize farm water use.")
+        throw(ArgumentError("Could not optimize farm water use."))
     end
 
     opt_vals::OrderedDict{String, Float64} = OrderedDict(JuMP.name(v) => value(v) for v in all_variables(model))
@@ -221,7 +221,7 @@ function optimize_irrigation(m::Manager, zone::FarmZone, dt::Date)::Tuple{Ordere
     if state == MOI.TIME_LIMIT && has_values(model)
         @warn "Farm model optimization was sub-optimal"
     elseif state != MOI.OPTIMAL
-        error("Could not optimize farm water use.")
+        throw(ArgumentError("Could not optimize farm water use."))
     end
 
     opt_vals = OrderedDict(JuMP.name(v) => value(v) for v in JuMP.all_variables(model))

@@ -9,7 +9,7 @@ function load_yaml(data_dir::String, ext::String=".yml")::Dict{String, Dict}
 
     if !endswith(data_dir, ext)
         if startswith(ext, ".") == false
-            error("Extension must include period, e.g. '.yml'")
+            throw(ArgumentError("Extension must include period, e.g. '.yml'"))
         end
 
         if endswith(data_dir, "/") == false || endswith(data_dir, "\\") == false
@@ -48,11 +48,12 @@ function load_climate(data_fn::String)
         use_threads = Threads.nthreads() > 1
         climate_seq = DataFrame!(CSV.File(data_fn, threaded=use_threads, dateformat="dd-mm-YYYY"))
     else
-        error("Currently, climate data can only be provided in CSV format")
+        throw(ArgumentError("Currently, climate data can only be provided in CSV format"))
     end
 
     return Climate(climate_seq)
 end
+
 
 """Save results for a single zone to JLD."""
 function save_results!(fn, results::Dict)::Nothing
