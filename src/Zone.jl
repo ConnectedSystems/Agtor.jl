@@ -2,19 +2,42 @@ using Dates
 
 using Base.Threads
 using Formatting
-using DataStructures
-using Statistics
 using OrderedCollections
+using Statistics
 
 
 @with_kw mutable struct FarmZone <: AgComponent
     name::String
     climate::Any
     fields::Array{FarmField}
-
     water_sources::Array{WaterSource}
     _irrigation_volume_by_source::DataFrame = DataFrame()
+    manager = nothing
 end
+
+
+# function Base.show(io::IO, z::FarmZone)
+#     compact = get(io, :compact, false)
+
+#     name = z.name
+#     fields = Tuple((f.name, f.total_area_ha) for f in z.fields) 
+#     zone_ws = Tuple(ws.name for ws in z.water_sources) 
+#     manager = z.manager.name
+
+#     if compact
+#         print(z, " ($name)")
+#     else
+#         println("""
+#         FarmZone ($name):
+
+#         Fields: $(length(fields))
+
+#         Water Sources: $(zone_ws)
+
+#         Manager: $(manager)
+#         """)
+#     end
+# end
 
 
 """Use allocation volume from a particular water source.
@@ -34,7 +57,7 @@ function use_allocation!(ws::WaterSource, vol_ML::Float64)::Nothing
         msg = "Allocation cannot be below 0 ML! Currently: $(ws.allocation)ML\n"
         msg *= "Tried to use: $(vol_ML)ML\n"
         msg *= "From: $ws_name\n"
-        error(msg)
+        throw(ArgumentError(msg))
     end
 
     return nothing
@@ -57,12 +80,12 @@ end
 
 
 """Determine the possible irrigation area using water from each water source."""
-function possible_area_by_allocation(zone::FarmZone, field::FarmField, req_water_ML::Float64)::LittleDict{Symbol, Float64}
-    @assert in(field.name, [f.name for f in zone.fields]) "Field must be in zone"
+function possible_area_by_allocation(zone::FarmZone, field::FarmField, req_water_ML::Float64)::NamedTuple
+    @assert in(field.name, [f.name for f::FarmField in zone.fields]) "Field must be in zone"
 
-    tmp::LittleDict{Symbol, Float64} = LittleDict{Symbol, Float64}(
-        Symbol(ws.name) => possible_irrigation_area(field, ws.allocation, req_water_ML)
-        for ws::WaterSource in zone.water_sources
+    zone_ws::Tuple = Tuple(zone.water_sources)
+    tmp = NamedTuple{Tuple(Symbol(ws.name) for ws::WaterSource in zone_ws)}(
+        possible_irrigation_area(field, ws.allocation, req_water_ML) for ws::WaterSource in zone_ws
     )
 
     return tmp
@@ -92,6 +115,7 @@ end
 # end
 
 
+"""Apply irrigation water to field"""
 function apply_irrigation!(field::CropField, 
                           ws::WaterSource, water_to_apply_mm::Float64,
                           area_to_apply::Float64)::Nothing
@@ -118,8 +142,8 @@ function apply_rainfall!(zone::FarmZone, dt::Date)::Nothing
     @inbounds for f::FarmField in zone.fields
         # get rainfall and et for datetime
         zf_id::String = "$(z_name)_$(f.name)"
-        rain_col::Symbol = Symbol("$(zf_id)_rainfall")
-        et_col::Symbol = Symbol("$(zf_id)_ET")
+        rain_col::Symbol = Symbol(zf_id, "_rainfall")
+        et_col::Symbol = Symbol(zf_id, "_ET")
 
         rainfall::Float64, et::Float64 = subset[1, rain_col], subset[1, et_col]
 
@@ -130,26 +154,39 @@ function apply_rainfall!(zone::FarmZone, dt::Date)::Nothing
 end
 
 
+"""Apply rainfall and ET to influence soil water deficit."""
+function apply_rainfall!(zone::FarmZone, dt_idx::Int64)::Nothing
+    data::DataFrame = zone.climate.data::DataFrame
+
+    z_name::String = zone.name::String
+    @inbounds for f::FarmField in zone.fields
+        # get rainfall and et for datetime
+        zf_id::String = "$(z_name)_$(f.name)"
+        rain_col::Symbol = Symbol(zf_id, "_rainfall")
+        et_col::Symbol = Symbol(zf_id, "_ET")
+
+        rainfall::Float64, et::Float64 = data[dt_idx, rain_col], data[dt_idx, et_col]
+
+        update_SWD!(f, rainfall, et)
+    end
+
+    return nothing
+end
+
+
 """Update water allocations"""
-function update_available_water!(zone::FarmZone, allocations::LittleDict)::Nothing
-    for (k, v) in allocations
+function update_available_water!(zone::FarmZone, allocations::NamedTuple)::Nothing
+    for (k, v) in pairs(allocations)
         for ws in zone.water_sources
-            if ws.name == k
+            if ws.name == string(k)
                 ws.allocation = v
             end
         end
     end
-    # for ws in zone.water_sources
-    #     if ws.name == "surface_water"
-    #         ws.allocation = 150.0
-    #     elseif ws.name == "groundwater"
-    #         ws.allocation = 40.0
-    #     end
-    # end
 end
     
 
-
+"""Log irrigation volumes from water sources"""
 function log_irrigation_by_water_source(zone::FarmZone, f::FarmField, dt::Date)::Nothing
     
     # Construct log structure if needed
@@ -162,9 +199,9 @@ function log_irrigation_by_water_source(zone::FarmZone, f::FarmField, dt::Date):
 
         zone._irrigation_volume_by_source = DataFrame(; tmp_dict...)
     end
-
+    
     tmp::Array{Float64} = Float64[0.0 for ws in zone.water_sources]
-    for (i, ws::WaterSource) in enumerate(zone.water_sources)
+    for (i::Int64, ws::WaterSource) in enumerate(zone.water_sources)
         try
             tmp[i] += f.irrigation_from_source[ws.name]
         catch e
@@ -203,15 +240,14 @@ function aggregate_field_logs(field_logs::DataFrame)::DataFrame
 
     collated[:, Symbol("Dollar per ML")] = collated[:, :income_sum] ./ collated[:, :irrigated_volume_sum]
     collated[:, Symbol("ML per Irrigated Yield")] = collated[:, :irrigated_volume_sum] ./ collated[:, :irrigated_yield_sum]
-    collated[:, Symbol("Dollar per Ha")] = collated[:, :income_sum] ./ (collated[:, :dryland_area_sum] + collated[:, :irrigated_area_sum])
+    collated[:, Symbol("Dollar per Ha")] = collated[:, :income_sum] ./ (collated[:, :dryland_area_sum] .+ collated[:, :irrigated_area_sum])
     collated[:, Symbol("Mean Irrigated Yield")] = collated[:, :irrigated_yield_sum] ./ collated[:, :irrigated_area_sum]
     collated[:, Symbol("Mean Dryland Yield")] = collated[:, :dryland_yield_sum] ./ collated[:, :dryland_area_sum]
 
+    collated[isnan.(collated[!,Symbol("Mean Dryland Yield")]), Symbol("Mean Dryland Yield")] .= 0
+    collated[isnan.(collated[!,Symbol("Mean Irrigated Yield")]), Symbol("Mean Irrigated Yield")] .= 0
+
     return collated
-end
-
-
-function calculate_metrics(collated_logs::DataFrame)
 end
 
 
@@ -293,4 +329,18 @@ function create(data::Dict{Symbol}, climate_data::Climate)::FarmZone
     zone = FarmZone(; zone_spec...)
 
     return zone
+end
+
+function reset!(z::FarmZone)::Nothing
+    for f in z.fields
+        reset!(f)
+
+        initial_dt = z.climate.time_steps[1]
+
+        f._next_crop_idx = 1
+        set_next_crop!(z.manager, f, initial_dt)
+        
+    end
+
+    return
 end

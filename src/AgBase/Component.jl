@@ -23,12 +23,23 @@ end
 function create(spec::Dict)
     dt = deepcopy(spec)
     cls_name = pop!(dt, :component)
-    cls = eval(Symbol(cls_name))
+
+    cls = nothing
+    try
+        cls = eval(Symbol(cls_name))
+    catch e
+        if e isa UndefVarError
+            println("$(cls_name) is not a valid Agtor component name")
+            println("Error in specification for '$(dt[:name])'")
+        end
+
+        throw(e)
+    end
 
     if cls_name == "FarmZone"
-        cd_fn::Union{String, Nothing} = get(spec, :climate_data, nothing)
+        cd_fn::Union{String, Nothing} = get(dt, :climate_data, nothing)
         if isnothing(cd_fn)
-            error("Climate data not found in Zone spec.")
+            throw(ArgumentError("Climate data not found in Zone spec."))
         end
 
         climate::Climate = load_climate(cd_fn)
@@ -50,7 +61,7 @@ function create(spec::Dict, climate_data::String)
                    climate_data=dt[:climate_data])
     end
 
-    error("Unknown component: $(cls_name), with additional parameter '$(climate_data)'")
+    throw(ArgumentError("Unknown component: $(cls_name), with additional parameter '$(climate_data)'"))
 end
 
 

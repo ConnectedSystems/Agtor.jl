@@ -1,7 +1,7 @@
 using Mixers
 using Agtor
-using DataFrames
-import Flatten
+import DataFrames: DataFrame, DataFrameRow
+import Flatten: flatten
 import Dates
 
 
@@ -25,6 +25,7 @@ end
     default_val::Float64
     value::Float64
 
+    RealParameter(name, min_val, max_val, d_val, value) = new(name, min_val, max_val, d_val, value)
     RealParameter(name, min_val, max_val, value) = new(name, min_val, max_val, value, value)
     RealParameter(name, range_vals::Array, value) = new(name, range_vals..., value, value)
 end
@@ -73,12 +74,12 @@ function Base.setproperty!(cat::CategoricalParameter, v::Symbol, value)::Nothing
         elseif value isa String
             pos = cat.cat_val(findfirst(x-> x == value, cat.cat_val))
             if isnothing(pos)
-                error("$(pos) is not a valid option for $(cat.name)")
+                throw(ArgumentError("$(pos) is not a valid option for $(cat.name)"))
             end
 
             cat.value = cat.cat_val[pos]
         else
-            error("Type $(typeof(value)) is not a valid type option for $(cat.name), has to be Integer, Float or String")
+            throw(ArgumentError("Type $(typeof(value)) is not a valid type option for $(cat.name), has to be Integer, Float or String"))
         end
     else
         setfield!(f, Symbol(v), value)
@@ -247,14 +248,16 @@ function collect_agparams!(dataset::Dict, store::Array; ignore::Union{Array, Not
 end
 
 
-function collect_agparams!(dataset::Array, store::Array; ignore::Union{Array, Nothing}=nothing)
+function collect_agparams!(dataset::Union{Array, Tuple}, store::Array; ignore::Union{Array, Nothing}=nothing)::Nothing
     for v in dataset
         if v isa AgParameter && !is_const(v)
             push!(store, extract_values(v))
-        elseif v isa Dict || v isa Array
+        elseif v isa Dict || v isa Array || v isa AgComponent || v isa Tuple
             collect_agparams!(v, store; ignore=ignore)
         end
     end
+
+    return
 end
 
 
@@ -276,17 +279,36 @@ function collect_agparams(dataset::Dict; prefix::Union{String, Nothing}=nothing)
 end
 
 
+"""Extract parameter values from AgComponent."""
+function collect_agparams!(dataset::Union{AgComponent, AgParameter}, store::Union{Array, Nothing}=nothing; ignore=nothing)::DataFrame
+    match = (Array, Tuple, Dict, AgComponent, AgParameter)
+
+    for fn in fieldnames(typeof(dataset))
+        fv = getfield(dataset, fn)
+        if fv isa AgParameter && !is_const(fv)
+            push!(store, extract_values(fv))
+        elseif any(map(x -> fv isa x, match))
+            collect_agparams!(fv, store)
+        end
+    end
+
+    return DataFrame(store)
+end
+
+
 # """Extract parameter values from Dict specification and store in a common Dict."""
 function collect_agparams!(dataset::Dict, mainset::Dict)::Nothing
     for (k, v) in dataset
         if Symbol(v.name) in mainset
-            error("$(v.name) is already set!")
+            throw(ArgumentError("$(v.name) is already set!"))
         end
 
         if v isa AgParameter && !is_const(v)
             mainset[Symbol(v.name)] = extract_values(v)
         end
     end
+
+    return
 end
 
 
@@ -311,11 +333,13 @@ end
 
 
 """Modify AgParameter name in place by adding a prefix."""
-function add_prefix!(prefix::String, component)
-    params = Flatten.flatten(component, AgParameter)
+function add_prefix!(prefix::String, component)::Nothing
+    params = flatten(component, AgParameter)
     for pr in params
-        pr.name = prefix*pr.name
+        setfield!(pr, :name, prefix*pr.name)
     end
+
+    return
 end
 
 
@@ -341,45 +365,42 @@ Usage:
     # Update z1 components with values found in first row
     set_params!(z1, samples[1])
 """
-function set_params!(comp, sample)
+function set_params!(comp, sample)::Nothing
+    match = (Array, Tuple, Dict, AgComponent, AgParameter)
     for f_name in fieldnames(typeof(comp))
         tmp_f = getfield(comp, f_name)
-        if tmp_f isa Array
-            arr_type = eltype(tmp_f)
-            tmp_flat = reduce(vcat, Flatten.flatten(tmp_f, Array{arr_type}))
-            for i in tmp_flat
-                set_params!(i, sample)
-            end
-        elseif isa(tmp_f, AgComponent) || isa(tmp_f, AgParameter) || isa(tmp_f, Dict)
+
+        if any(map(x -> isa(tmp_f, x), match))
             set_params!(tmp_f, sample)
         end
     end
+
+    return
 end
 
 
-function set_params!(comp::Dict, sample)
+function set_params!(comp::Array, sample)::Nothing
+    arr_type = eltype(comp)
+    tmp_flat = reduce(vcat, Flatten.flatten(comp, Array{arr_type}))
+    for i in tmp_flat
+        set_params!(i, sample)
+    end
+
+    return
+end
+
+
+function set_params!(comp::Dict, sample)::Nothing
     for (k,v) in comp
         set_params!(v, sample)
     end
+
+    return
 end
 
-
-function set_params!(p::AgParameter, sample)
+function set_params!(p::AgParameter, sample::Union{DataFrame, DataFrameRow})::Nothing
     p_name::Symbol = Symbol(p.name)
     if p_name in names(sample)
-        setfield!(p, :value, sample[p_name])
-    end
-end
-
-
-function set_params!(p::AgParameter, sample::Union{Number, String})
-    setfield!(p, :value, sample)
-end
-
-
-function set_params!(p::AgParameter, sample::Union{Dict,NamedTuple})
-    p_name::Symbol = Symbol(p.name)
-    if p_name in keys(sample)
         setfield!(p, :value, sample[p_name])
     end
 
@@ -387,7 +408,24 @@ function set_params!(p::AgParameter, sample::Union{Dict,NamedTuple})
 end
 
 
-function update_model!(comp, sample)
+function set_params!(p::AgParameter, sample::Union{Number, String})::Nothing
+    setfield!(p, :value, sample)
+
+    return
+end
+
+
+function set_params!(p::AgParameter, sample::Union{Dict, NamedTuple})::Nothing
+    p_name::Symbol = Symbol(p.name)
+    if p_name in keys(sample)
+        setfield!(p, :value, sample)
+    end
+
+    return
+end
+
+
+function update_model!(comp, sample)::Nothing
     set_params!(comp, sample)
 
     return

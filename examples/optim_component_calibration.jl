@@ -5,24 +5,22 @@ Calibrating a component with Optim.jl
 using Agtor
 using Optim, CSV, DataFrames, Dates
 using Statistics
-using Infiltrator
+
 
 gs_start = (5, 1)
 
-function run_model(farmer, zone)
+function run_model(zone)
     time_sequence = zone.climate.time_steps
-    @inbounds for dt_i in time_sequence
-        run_timestep(farmer, zone, dt_i)
 
-        # Resetting allocations for test run
+    # Example annual water allocations
+    allocs = (surface_water=150.0, groundwater=40.0)
+
+    @inbounds for (idx, dt_i) in enumerate(time_sequence)
+        run_timestep!(zone.manager, zone, idx, dt_i)
+
+        # Resetting allocations for example run
         if monthday(dt_i) == gs_start
-            for ws in zone.water_sources
-                if ws.name == "surface_water"
-                    ws.allocation = 150.0
-                elseif ws.name == "groundwater"
-                    ws.allocation = 40.0
-                end
-            end
+            update_available_water!(zone, allocs)
         end
     end
 

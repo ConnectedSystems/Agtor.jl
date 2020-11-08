@@ -8,7 +8,7 @@ abstract type FarmField <: AgComponent end
     # crop_choices::Array{Crop}  # This can be the unique values in crop_rotation
     crop_rotation::Array{Crop}
     soil_TAW::Union{Float64, AgParameter}
-    soil_SWD::Union{Float64, AgParameter}
+    soil_SWD::Union{Float64, AgParameter}  # soil water deficit
     ssm::Union{Float64, AgParameter} = 0.0
     irrigated_area::Union{Nothing, Float64} = nothing
     sowed::Bool = false
@@ -20,9 +20,8 @@ abstract type FarmField <: AgComponent end
     # counter will increment and reset as the seasons go by
     _next_crop_idx::Int64 = 2
     _fname::String = replace("$(name)-", " " => "_")
+    _seasonal_log::DataFrame = setup_log()
 
-    _seasonal_log::DataFrame = DataFrame([Date, Float64, Float64, Float64, Float64, Float64, Float64, Float64], 
-                                         [:Date, :income, :irrigated_volume, :irrigated_yield, :dryland_yield, :growing_season_rainfall, :irrigated_area, :dryland_area])
 end
 
 """Getter for Field"""
@@ -110,6 +109,7 @@ function seasonal_field_log!(f::FarmField, dt::Date, income::Float64,
                              irrig_vol::Float64, irrig_yield::Float64, 
                              dry_yield::Float64, seasonal_rainfall::Float64)::Nothing
     push!(f._seasonal_log, [dt, income, irrig_vol, irrig_yield, dry_yield, seasonal_rainfall, f.irrigated_area, f.dryland_area])
+
     return nothing
 end
 
@@ -158,33 +158,35 @@ As an example, if a crop has a root depth (:math:`RD_{r}`) of 1m, an effective r
 
 Returns
 -------
-    * float : net irrigation depth as negative value
+    * float : net irrigation depth
 """
 function nid(f::FarmField, dt::Date)::Float64
     crop::Crop = f.crop
-    coefs::Dict = get_stage_coefs(crop, dt)
+    coefs::NamedTuple = get_stage_coefs(crop, dt)
 
-    e_rootzone_m::Float64 = crop.root_depth_m * crop.effective_root_zone
-    soil_RAW::Float64 = f.soil_TAW * coefs[:depletion_fraction] 
+    e_rootzone_m::Float64 = crop.root_depth_m::Float64 * crop.effective_root_zone::Float64
+    soil_RAW::Float64 = f.soil_TAW::Float64 * coefs.depletion_fraction::Float64
 
     return (e_rootzone_m * soil_RAW)
 end
 
 
 """
-Volume of water to maintain moisture at net irrigation depth.
+Volume of water to maintain moisture above net irrigation depth (`nid`).
 
-Factors in irrigation efficiency.
+Calculates volume of water needed to replenish soil water deficit (`swd`)
+when SWD falls below `nid`, considering irrigation efficiency.
+
 Values are given in mm.
 """
 function calc_required_water(f::FarmField, dt::Date)::Float64
-    to_nid::Float64 = f.soil_SWD - nid(f, dt)
+    swd::Float64 = f.soil_SWD::Float64
+    to_nid::Float64 = swd - nid(f, dt)
     if to_nid < 0.0
         return 0.0
     end
-    
-    tmp::Float64 = f.soil_SWD / f.irrigation.efficiency
-    return round(tmp, digits=4)
+
+    return (swd / f.irrigation.efficiency)
 end
 
 
@@ -359,3 +361,19 @@ function total_costs(f::FarmField, dt::Date, water_sources::Array{WaterSource}, 
 
     return total_costs
 end
+
+
+function setup_log()::DataFrame
+    return DataFrame([Date, Float64, Float64, Float64, Float64, Float64, Float64, Float64], 
+                     [:Date, :income, :irrigated_volume, :irrigated_yield, :dryland_yield, 
+                      :growing_season_rainfall, :irrigated_area, :dryland_area])
+end
+
+function reset!(f::FarmField)::Nothing
+    f._seasonal_log = setup_log()
+
+    reset_state!(f)
+
+    return
+end
+

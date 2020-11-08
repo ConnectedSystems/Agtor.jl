@@ -9,7 +9,7 @@ function load_yaml(data_dir::String, ext::String=".yml")::Dict{String, Dict}
 
     if !endswith(data_dir, ext)
         if startswith(ext, ".") == false
-            error("Extension must include period, e.g. '.yml'")
+            throw(ArgumentError("Extension must include period, e.g. '.yml'"))
         end
 
         if endswith(data_dir, "/") == false || endswith(data_dir, "\\") == false
@@ -48,11 +48,12 @@ function load_climate(data_fn::String)
         use_threads = Threads.nthreads() > 1
         climate_seq = DataFrame!(CSV.File(data_fn, threaded=use_threads, dateformat="dd-mm-YYYY"))
     else
-        error("Currently, climate data can only be provided in CSV format")
+        throw(ArgumentError("Currently, climate data can only be provided in CSV format"))
     end
 
     return Climate(climate_seq)
 end
+
 
 """Save results for a single zone to JLD."""
 function save_results!(fn, results::Dict)::Nothing
@@ -66,9 +67,10 @@ function save_results!(fn, results::Dict)::Nothing
     return
 end
 
+
 """Save results for a single zone to JLD."""
-function save_results!(fn::String, idx::String, results::Tuple)::Nothing
-    jldopen(fn, "w") do file
+function save_results!(fn::String, idx::String, results::Tuple; mode="w")::Nothing
+    jldopen(fn, mode) do file
         file["$(idx)/zone_results"] = results[1]  # zone_results
         file["$(idx)/field_results"] = results[2]  # field_results
     end
@@ -78,9 +80,9 @@ end
 
 
 """Save results for a scenario, basin, and zone combination"""
-function save_results!(fn, sid, bid, zid, results)::Nothing
-    jldopen(fn, "w") do file
-        prefix = "Scenario_$(sid)/Basin_$(bid)/Zone_$(zid)"
+function save_results!(fn, sid, bid, zid, results; mode="w")::Nothing
+    jldopen(fn, mode) do file
+        prefix = "Scenario_$(sid)/$(bid)/$(zid)"
         file["$(prefix)/zone_results"] = results[1]  # zone_results
         file["$(prefix)/field_results"] = results[2]  # field_results
     end

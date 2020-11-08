@@ -1,5 +1,5 @@
 name: CalibZone
-component: Zone
+component: FarmZone
 
 # Paths to data, relative to where project is run
 climate_data: "test/data/climate/farm_climate_data.csv"

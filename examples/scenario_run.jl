@@ -24,11 +24,11 @@ function setup_zone(data_dir::String="test/data/")
 end
 
 
-function run_model(farmer, zone)
+function run_model(zone)
     time_sequence = zone.climate.time_steps
-    allocs = LittleDict("surface_water"=> 150.0, "groundwater" => 40.0)
-    @inbounds for dt_i in time_sequence
-        run_timestep(farmer, zone, dt_i)
+    allocs = (surface_water=150.0, groundwater=40.0)
+    @inbounds for (idx, dt_i) in enumerate(time_sequence)
+        run_timestep!(zone.manager, zone, idx, dt_i)
 
         # Resetting allocations for example run
         if monthday(dt_i) == gs_start
@@ -97,6 +97,10 @@ end
 
 @btime example_scenario_run()
 @btime example_batch_save()
+
+# using ProfileView
+# @profview example_scenario_run()
+# @profview example_scenario_run()
 
 
 # Loading and displaying results

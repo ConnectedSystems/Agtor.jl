@@ -17,13 +17,14 @@ function setup_zone(data_dir::String="test/data/")
 end
 
 
-function run_model(farmer, zone)
+function run_model(zone)
     time_sequence = zone.climate.time_steps
 
-    allocs = LittleDict("surface_water"=> 150.0, "groundwater" => 40.0)
+    # Example annual water allocations
+    allocs = (surface_water=150.0, groundwater=40.0)
 
-    @inbounds for dt_i in time_sequence
-        run_timestep(farmer, zone, dt_i)
+    @inbounds for (idx, dt_i) in enumerate(time_sequence)
+        run_timestep!(zone.manager, zone, idx, dt_i)
 
         # Resetting allocations for example run
         if monthday(dt_i) == gs_start
