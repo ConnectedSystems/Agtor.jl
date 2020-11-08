@@ -3,8 +3,6 @@ using Test
 
 import Flatten
 
-using Infiltrator
-
 
 function setup_zone(data_dir::String="test/data/")
     zone_spec_dir::String = "$(data_dir)zones/"
