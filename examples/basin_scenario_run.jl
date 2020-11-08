@@ -1,6 +1,4 @@
-"""
-Running scenarios one after the other.
-"""
+"""Running scenarios one after the other."""
 
 using DataFrames, CSV, FileIO
 using BenchmarkTools
@@ -123,14 +121,14 @@ sp = ProblemSpec({
   'output': ['CV', 'Mean ML per Yield [ML/t]', 'Mean Income [$]', 'Mean Water Use [ML]']
 })
 
-sp.sample_latin(50, seed=101)
+sp.sample_latin(4, seed=101)
 samples = pd.DataFrame(sp.samples, columns=sp['names'])
 samples.to_csv("basin_samples.csv", index=False)
 """
 
 samples = DataFrame!(CSV.File("basin_samples.csv"))
-
 @time res = scenario_run(samples, example_basin)
+
 
 py"""
 sp.results = np.array($(res))
@@ -139,6 +137,6 @@ sp.analyze_rbd_fast()
 
 @info "Analysis:" py"sp.to_df()"
 
-rm("Basin_samples.csv")
+rm("basin_samples.csv")
 
 
