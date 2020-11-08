@@ -1,8 +1,8 @@
-Agtor-jl
-=====
+Agtor.jl
+========
 
-[![Build Status](https://travis-ci.com/ConnectedSystems/agtor.jl.svg?branch=master)](https://travis-ci.com/ConnectedSystems/agtor.jl)
-[![Codecov](https://codecov.io/gh/ConnectedSystems/agtor.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/ConnectedSystems/agtor.jl)
+[![Build Status](https://travis-ci.com/ConnectedSystems/Agtor.jl.svg?branch=master)](https://travis-ci.com/ConnectedSystems/Agtor.jl)
+[![Codecov](https://codecov.io/gh/ConnectedSystems/Agtor.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/ConnectedSystems/Agtor.jl)
 
 
 An agricultural management model currently under development.
@@ -18,7 +18,7 @@ Contributions are welcome.
 
 
 Why the name "Agtor"?
-------------
+---------------------
 
 The model represents agricultural actors within a system and so the name is a portmandeau of "agriculture" and "actor".
 
