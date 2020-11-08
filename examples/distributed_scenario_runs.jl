@@ -33,31 +33,27 @@ addprocs(3, exeflags="--project=.")
 end
 
 
-@everywhere function run_model(farmer, zone)
+@everywhere function run_model(zone)
     """
     An example model run.
 
     Per-time step interactions between other models should be defined here.
     """
     time_sequence = zone.climate.time_steps
-    @inbounds for dt_i in time_sequence
-        run_timestep(farmer, zone, dt_i)
 
-        # Resetting allocations for test run
+    # Example annual water allocations
+    allocs = (surface_water=150.0, groundwater=40.0)
+
+    @inbounds for (idx, dt_i) in enumerate(time_sequence)
+        run_timestep!(zone.manager, zone, idx, dt_i)
+
+        # Resetting allocations for example run
         if monthday(dt_i) == gs_start
-            for ws in zone.water_sources
-                if ws.name == "surface_water"
-                    ws.allocation = 150.0
-                elseif ws.name == "groundwater"
-                    ws.allocation = 40.0
-                end
-            end
+            update_available_water!(zone, allocs)
         end
     end
 
-    zone_results, field_results = collect_results(zone)
-
-    return zone_results, field_results
+    return collect_results(zone)
 end
 
 
@@ -78,7 +74,7 @@ function test_scenario_run(data_dir::String="test/data/", result_dir::String="")
     tmp_z = deepcopy(z1)
     @sync @distributed (hcat) for row_id in 1:nrow(samples)
         update_model!(tmp_z, samples[row_id, :])
-        res = run_model(farmer, tmp_z)
+        res = run_model(tmp_z)
 
         pth = joinpath(result_dir, "sampled_params_batch_run_distributed_$(row_id).jld2")
         save_results!(pth, string(row_id), res)
