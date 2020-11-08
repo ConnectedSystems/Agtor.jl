@@ -55,7 +55,7 @@ function run_timestep!(farmer::RigidManager, zone::FarmZone, idx::Int64, dt::Dat
                     vol_to_apply_ML_ha::Float64 = (water_to_apply_mm / mm_to_ML)
                     apply_irrigation!(f, ws, water_to_apply_mm, area_to_apply)
                     
-                    app_cost_per_ML::LittleDict{Symbol, Float64} = ML_water_application_cost(farmer, zone, f, vol_to_apply_ML_ha)
+                    app_cost_per_ML::NamedTuple = ML_water_application_cost(farmer, zone, f, vol_to_apply_ML_ha)
                     application_cost::Float64 = app_cost_per_ML[Symbol(ws.name)]
                     log_irrigation_cost(f, (application_cost * vol_to_apply_ML_ha * area_to_apply))
                 else

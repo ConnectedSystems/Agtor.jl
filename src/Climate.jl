@@ -1,5 +1,6 @@
 using DataFrames, Dates
 
+
 """Serves as an interface to climate data"""
 mutable struct Climate <: AgComponent
 

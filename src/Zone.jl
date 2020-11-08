@@ -2,21 +2,42 @@ using Dates
 
 using Base.Threads
 using Formatting
-using DataStructures
-using Statistics
 using OrderedCollections
-
-using Setfield
+using Statistics
 
 
 @with_kw mutable struct FarmZone <: AgComponent
     name::String
     climate::Any
     fields::Array{FarmField}
-
     water_sources::Array{WaterSource}
     _irrigation_volume_by_source::DataFrame = DataFrame()
+    manager = nothing
 end
+
+
+# function Base.show(io::IO, z::FarmZone)
+#     compact = get(io, :compact, false)
+
+#     name = z.name
+#     fields = Tuple((f.name, f.total_area_ha) for f in z.fields) 
+#     zone_ws = Tuple(ws.name for ws in z.water_sources) 
+#     manager = z.manager.name
+
+#     if compact
+#         print(z, " ($name)")
+#     else
+#         println("""
+#         FarmZone ($name):
+
+#         Fields: $(length(fields))
+
+#         Water Sources: $(zone_ws)
+
+#         Manager: $(manager)
+#         """)
+#     end
+# end
 
 
 """Use allocation volume from a particular water source.
@@ -94,6 +115,7 @@ end
 # end
 
 
+"""Apply irrigation water to field"""
 function apply_irrigation!(field::CropField, 
                           ws::WaterSource, water_to_apply_mm::Float64,
                           area_to_apply::Float64)::Nothing
@@ -153,10 +175,10 @@ end
 
 
 """Update water allocations"""
-function update_available_water!(zone::FarmZone, allocations::LittleDict)::Nothing
-    for (k, v) in allocations
+function update_available_water!(zone::FarmZone, allocations::NamedTuple)::Nothing
+    for (k, v) in pairs(allocations)
         for ws in zone.water_sources
-            if ws.name == k
+            if ws.name == string(k)
                 ws.allocation = v
             end
         end
@@ -164,7 +186,7 @@ function update_available_water!(zone::FarmZone, allocations::LittleDict)::Nothi
 end
     
 
-
+"""Log irrigation volumes from water sources"""
 function log_irrigation_by_water_source(zone::FarmZone, f::FarmField, dt::Date)::Nothing
     
     # Construct log structure if needed
@@ -218,15 +240,14 @@ function aggregate_field_logs(field_logs::DataFrame)::DataFrame
 
     collated[:, Symbol("Dollar per ML")] = collated[:, :income_sum] ./ collated[:, :irrigated_volume_sum]
     collated[:, Symbol("ML per Irrigated Yield")] = collated[:, :irrigated_volume_sum] ./ collated[:, :irrigated_yield_sum]
-    collated[:, Symbol("Dollar per Ha")] = collated[:, :income_sum] ./ (collated[:, :dryland_area_sum] + collated[:, :irrigated_area_sum])
+    collated[:, Symbol("Dollar per Ha")] = collated[:, :income_sum] ./ (collated[:, :dryland_area_sum] .+ collated[:, :irrigated_area_sum])
     collated[:, Symbol("Mean Irrigated Yield")] = collated[:, :irrigated_yield_sum] ./ collated[:, :irrigated_area_sum]
     collated[:, Symbol("Mean Dryland Yield")] = collated[:, :dryland_yield_sum] ./ collated[:, :dryland_area_sum]
 
+    collated[isnan.(collated[!,Symbol("Mean Dryland Yield")]), Symbol("Mean Dryland Yield")] .= 0
+    collated[isnan.(collated[!,Symbol("Mean Irrigated Yield")]), Symbol("Mean Irrigated Yield")] .= 0
+
     return collated
-end
-
-
-function calculate_metrics(collated_logs::DataFrame)
 end
 
 
@@ -308,4 +329,18 @@ function create(data::Dict{Symbol}, climate_data::Climate)::FarmZone
     zone = FarmZone(; zone_spec...)
 
     return zone
+end
+
+function reset!(z::FarmZone)::Nothing
+    for f in z.fields
+        reset!(f)
+
+        initial_dt = z.climate.time_steps[1]
+
+        f._next_crop_idx = 1
+        set_next_crop!(z.manager, f, initial_dt)
+        
+    end
+
+    return
 end
