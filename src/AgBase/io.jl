@@ -67,9 +67,10 @@ function save_results!(fn, results::Dict)::Nothing
     return
 end
 
+
 """Save results for a single zone to JLD."""
-function save_results!(fn::String, idx::String, results::Tuple)::Nothing
-    jldopen(fn, "w") do file
+function save_results!(fn::String, idx::String, results::Tuple; mode="w")::Nothing
+    jldopen(fn, mode) do file
         file["$(idx)/zone_results"] = results[1]  # zone_results
         file["$(idx)/field_results"] = results[2]  # field_results
     end
@@ -79,9 +80,9 @@ end
 
 
 """Save results for a scenario, basin, and zone combination"""
-function save_results!(fn, sid, bid, zid, results)::Nothing
-    jldopen(fn, "w") do file
-        prefix = "Scenario_$(sid)/Basin_$(bid)/Zone_$(zid)"
+function save_results!(fn, sid, bid, zid, results; mode="w")::Nothing
+    jldopen(fn, mode) do file
+        prefix = "Scenario_$(sid)/$(bid)/$(zid)"
         file["$(prefix)/zone_results"] = results[1]  # zone_results
         file["$(prefix)/field_results"] = results[2]  # field_results
     end
