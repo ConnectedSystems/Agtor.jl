@@ -1,76 +1,75 @@
+using Flatten
+
 
 abstract type AgComponent end
 
-# @dataclass
-# class Component:
 
-#     def __getattribute__(self, attr):
-#         v = object.__getattribute__(self, attr)
-#         if isinstance(v, (CategoricalParameter, Constant, RealParameter)):
-#             try:
-#                 val = v.value
-#             except AttributeError:
-#                 val = v.default
-#             # End try
+macro def(name, definition)
+    return quote
+        macro $(esc(name))()
+            esc($(Expr(:quote, definition)))
+        end
+    end
+end
 
-#             return val
 
-#         return v
-#     # End __getattribute__()
+@def add_preprefix begin
+    if !isnothing(id_prefix)
+        prefix = id_prefix * prefix
+    end
+end
 
-#     def get_nominal(self, item):
-#         if isinstance(item, (CategoricalParameter, Constant, RealParameter)):
-#             try:
-#                 val = item.value
-#             except AttributeError:
-#                 val = item.default
-#             # End try
 
-#             return val
+function create(spec::Dict)
+    dt = deepcopy(spec)
+    cls_name = pop!(dt, :component)
 
-#         return item
-#     # End get_nominal()
+    cls = nothing
+    try
+        cls = eval(Symbol(cls_name))
+    catch e
+        if e isa UndefVarError
+            println("$(cls_name) is not a valid Agtor component name")
+            println("Error in specification for '$(dt[:name])'")
+        end
 
-#     @classmethod
-#     def load_data(cls, name, data, override=None):
-#         prefix = f"Irrigation___{name}"
-#         props = generate_params(prefix, data['properties'], override)
+        throw(e)
+    end
 
-#         return {
-#             'name': name,
-#             'properties': props
-#         }
-#     # End load_data()
+    if cls_name == "FarmZone"
+        cd_fn::Union{String, Nothing} = get(dt, :climate_data, nothing)
+        if isnothing(cd_fn)
+            throw(ArgumentError("Climate data not found in Zone spec."))
+        end
 
-#     @classmethod
-#     def collate_data(cls, data: Dict):
-#         """Produce flat lists of crop-specific parameters.
+        climate::Climate = load_climate(cd_fn)
 
-#         Parameters
-#         ----------
-#         * crop_data : Dict, of crop_data
+        return create(dt, climate)
+    end
 
-#         Returns
-#         -------
-#         * tuple[List] : (uncertainties, categoricals, and constants)
-#         """
-#         unc, cats, consts = sort_param_types(data['properties'], unc=[], cats=[], consts=[])
+    return cls(; dt...)
+end
 
-#         return unc, cats, consts
-#     # End collate_data()
 
-#     @classmethod
-#     def create(cls, data, override=None):
-#         cls_name = cls.__class__.__name__
+function create(spec::Dict, climate_data::String)
+    dt = deepcopy(spec)
+    cls_name = pop!(dt, :component)
+    cls = eval(Symbol(cls_name))
 
-#         tmp = data.copy()
-#         name = tmp['name']
-#         prop = tmp.pop('properties')
+    if cls_name == "Basin"
+        return cls(; name=dt[:name], zone_specs=dt[:zone_spec], 
+                   climate_data=dt[:climate_data])
+    end
 
-#         prefix = f"{cls_name}___{name}"
-#         props = generate_params(prefix, prop, override)
+    throw(ArgumentError("Unknown component: $(cls_name), with additional parameter '$(climate_data)'"))
+end
 
-#         return cls(**tmp, **props)
-#     # End create()
 
-# # End Component()
+function Base.getproperty(A::AgComponent, v::Symbol)
+    field = getfield(A, v)
+    if field isa AgParameter
+        return field.value
+    end
+
+    return field
+end

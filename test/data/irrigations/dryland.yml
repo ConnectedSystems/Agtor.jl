@@ -1,0 +1,19 @@
+name: dryland
+component: Irrigation
+
+# Cost to install
+capital_cost: 0.0  # $ per ha
+
+# water application efficiency
+efficiency: 0.0
+
+# Assumed percentage of cost_per_ha 
+minor_maintenance_rate: 0.0
+major_maintenance_rate: 0.0
+
+# Assumed maintenance schedule for minor/major maintenance
+minor_maintenance_schedule: 1
+major_maintenance_schedule: 1
+flow_ML_day: 0.0
+# pumping_cost_per_ML: ["RealParameter", 8, 8, 15]
+head_pressure: 0.0

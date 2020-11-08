@@ -1,0 +1,24 @@
+name: CalibZone
+component: FarmZone
+
+# Paths to data, relative to where project is run
+climate_data: "test/data/climate/farm_climate_data.csv"
+# crop_spec: "test/data/crops/"  # Crops that may be considered in this Zone
+# irrigation_spec: "test/data/irrigations/"
+water_source_spec: "test/data/water_sources/"
+pump_spec: "test/data/pumps/"
+
+fields:
+  field1:
+    name: field1
+    component: CropField
+
+    total_area_ha: 100.0
+    irrigation_spec: "test/data/irrigations/dryland.yml"
+    crop_rotation_spec: ["test/data/crops/uncalibrated_wheat.yml"]
+
+    # average total available water in soil (mm)
+    soil_TAW: 100.0
+
+    # Initial Soil Water Deficit
+    soil_SWD: 20.0

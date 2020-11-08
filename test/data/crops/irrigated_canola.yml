@@ -1,0 +1,43 @@
+name: irrigated_canola
+component: Crop
+crop_type: irrigated_cereal
+
+# values below are given as list of
+# nominal "best guess" values, min, and max 
+# plant_dates are assumed to be static across all seasons
+plant_date: ["CategoricalParameter", "05-31", "05-31", "05-31"]
+yield_per_ha: ["RealParameter", 2.6, 1.3, 5.0]
+price_per_yield: ["RealParameter", 500.0, 500.0, 500.0]
+variable_cost_per_ha: ["RealParameter", 350.0, 350.0, 350.0]
+water_use_ML_per_ha: ["RealParameter", 2.5, 2.0, 6.0]
+root_depth_m: ["RealParameter", 1.0, 0.8, 1.5]
+# values below were calibrated for North-Central Victoria
+et_coef: ["RealParameter", 170.0, 170.0, 170.0]
+wue_coef: ["RealParameter", 11.4552, 11.4552, 11.4552]
+rainfall_threshold: ["RealParameter", 466.43204, 466.43204, 466.43204]
+ssm_coef: ["RealParameter", 0.4, 0.4, 0.4]
+
+# Effective root zone is roughly half to 2/3rds of root depth
+# https://www.bae.ncsu.edu/programs/extension/evans/ag452-1.html
+# http://dpipwe.tas.gov.au/Documents/Soil-water_factsheet_14_12_2011a.pdf
+effective_root_zone: ["RealParameter", 0.55, 0.5, 0.66]
+  
+growth_stages:
+  # growth stage length are given in days
+  # harvest date is the sum of all stages
+  initial: 
+    stage_length: ["RealParameter", 25, 25, 25]
+    crop_coefficient: 0.2
+    depletion_fraction: 0.3
+  development: 
+    stage_length: ["RealParameter", 35, 35, 35]
+    crop_coefficient: 0.4
+    depletion_fraction: 0.5
+  mid_season: 
+    stage_length: ["RealParameter", 45, 45, 45]
+    crop_coefficient: 0.6
+    depletion_fraction: 1.05
+  late:
+    stage_length: ["RealParameter", 25, 25, 25]
+    crop_coefficient: 0.8
+    depletion_fraction: 0.35
