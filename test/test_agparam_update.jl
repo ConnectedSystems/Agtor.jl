@@ -20,9 +20,9 @@ function setup_zone(data_dir::String="test/data/")
     zone_params = generate_agparams("", zone_specs["Zone_1"])
 
     climate_fn::String = "$(data_dir)climate/farm_climate_data.csv"
-    climate::Climate = load_climate(climate_fn)
+    climate::Climate = Agtor.load_climate(climate_fn)
 
-    return create(zone_params, climate), agparams
+    return create(zone_params, climate)
 end
 
 
@@ -43,4 +43,6 @@ samples = DataFrame!(CSV.File("test/data/scenarios/sampled_params.csv"))
 @assert z1.fields[1].irrigation.efficiency.value == tc_z1.fields[1].irrigation.efficiency.value
 update_model!(z1, samples[1, :])
 @assert z1.fields[1].irrigation.efficiency.value != tc_z1.fields[1].irrigation.efficiency.value
+
+@info z1.fields[1].irrigation.efficiency.value tc_z1.fields[1].irrigation.efficiency.value
 
