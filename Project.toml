@@ -1,7 +1,7 @@
 name = "Agtor"
 uuid = "95dc4c25-59f6-4b9e-a920-4913b22a8444"
 authors = ["ConnectedSystems"]
-version = "0.1.0"
+version = "0.2.0"
 
 [deps]
 BIGUQ = "7f9c7709-75fb-5397-acba-f980073965f6"
