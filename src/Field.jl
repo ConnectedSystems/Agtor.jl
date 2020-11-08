@@ -115,14 +115,13 @@ end
 
 
 """
+    update_SWD!(f::FarmField, rainfall::Float64, ET::Float64)
+
 Calculate soil water deficit.
 
 Water deficit is represented as positive values.
 
-Parameters
-----------
-    * rainfall : Amount of rainfall across timestep in mm
-    * ET : Amount of evapotranspiration across timestep in mm
+`rainfall` and `ET` parameters are expected in mm
 """
 function update_SWD!(f::FarmField, rainfall::Float64, ET::Float64)::Nothing
     tmp::Float64 = f.soil_SWD::Float64 - (rainfall - ET)::Float64
@@ -134,6 +133,8 @@ end
 
 
 """
+    nid(f::FarmField, dt::Date)
+
 Calculate net irrigation depth in mm, 0.0 or above.
 
 Equation taken from [Agriculture Victoria](http://agriculture.vic.gov.au/agriculture/horticulture/vegetables/vegetable-growing-and-management/estimating-vegetable-crop-water-use)
@@ -144,17 +145,26 @@ See also:
 * http://dpipwe.tas.gov.au/Documents/Soil-water_factsheet_14_12_2011a.pdf
 * https://www.agric.wa.gov.au/water-management/calculating-readily-available-water?nopaging=1
 
-:math:`NID` = Effective root depth (:math:`D_{rz}`) :math:`*` Readily Available Water (:math:`RAW`)
+``NID`` = Effective root depth (``D_{rz}``) ``*`` Readily Available Water (``RAW``)
 
 where:
 
-* :math:`D_{rz}` = :math:`Crop_{root_depth} * Crop_{e_rz}`, where :math:`Crop_{root_depth}` is the estimated root depth for current stage of crop (initial, late, etc.) and :math:`Crop_{e_rz}` is the effective root zone coefficient for the crop. \\
-* :math:`Crop_{e_rz}` is said to be between 1 and 2/3rds of total root depth \\
-* :math:`RAW = p * TAW`, :math:`p` is depletion fraction of crop, :math:`TAW` is Total Available Water in Soil
+* ``D_{rz}`` = ``Crop_{root depth} * Crop_{e_rz}``, where ``Crop_{root depth}`` 
+  is the estimated root depth for current stage of crop (initial, late, etc.) 
+  and ``Crop_{e rz}`` is the effective root zone coefficient for the crop.
+* ``Crop_{e rz}`` is said to be between 1 and 2/3rds of total root depth
+* ``RAW = p * TAW``, ``p`` is depletion fraction of crop, ``TAW`` is 
+  Total Available Water in Soil
 
-As an example, if a crop has a root depth (:math:`RD_{r}`) of 1m, an effective root zone (:math:`RD_{erz}`) coefficient of 0.55, a depletion fraction (p) of 0.4 and the soil has a TAW of 180mm: \\
-:math:`(RD_{r} * RD_{erz}) * (p * TAW)`
-:math:`(1 * 0.55) * (0.4 * 180)`
+As an example, if a crop has a root depth (``RD_{r}``) of 1m, an effective 
+root zone (``RD_{erz}``) coefficient of 0.55, a depletion fraction (`p`) of 0.4 
+and the soil has a ``TAW`` of 180mm:
+
+``(RD_{r} * RD_{erz}) * (p * TAW)``
+
+Works out to be:
+
+``(1 * 0.55) * (0.4 * 180)``
 
 Returns
 -------
@@ -172,12 +182,16 @@ end
 
 
 """
+    calc_required_water(f::FarmField, dt::Date)
+
 Volume of water to maintain moisture above net irrigation depth (`nid`).
 
 Calculates volume of water needed to replenish soil water deficit (`swd`)
 when SWD falls below `nid`, considering irrigation efficiency.
 
 Values are given in mm.
+
+- link to [`nid(f::FarmField, dt::Date)`](@ref)
 """
 function calc_required_water(f::FarmField, dt::Date)::Float64
     swd::Float64 = f.soil_SWD::Float64
@@ -239,6 +253,8 @@ end
 
 
 """
+    calc_potential_crop_yield(ssm_mm::Float64, gsr_mm::Float64, crop::AgComponent)
+
 Potential crop yield calculation based on a modified French-Schultz equation.
 The implemented method is the farmer-friendly version as described by 
 Oliver et al., (2008) (see [1]).
@@ -257,9 +273,8 @@ where
 
 References
 ----------
-.. [1] [Oliver et al. 2008 (Equation 1)](http://www.regional.org.au/au/asa/2008/concurrent/assessing-yield-potential/5827_oliverym.htm)
-
-.. [2] [Whitbread and Hancock 2008](http://www.regional.org.au/au/asa/2008/concurrent/assessing-yield-potential/5803_whitbreadhancock.htm)
+1. [Oliver et al. (2008) (see Equation 1)](http://www.regional.org.au/au/asa/2008/concurrent/assessing-yield-potential/5827_oliverym.htm)
+2. [Whitbread and Hancock (2008)](http://www.regional.org.au/au/asa/2008/concurrent/assessing-yield-potential/5803_whitbreadhancock.htm)
 
 
 Parameters
@@ -287,15 +302,11 @@ function calc_potential_crop_yield(ssm_mm::Float64, gsr_mm::Float64,
 end
 
 
-"""Calculate net income considering crop yield and costs incurred.
+"""
+    total_income(f::FarmField, ssm::Float64, gsr::Float64, irrig::Float64, comps)::Tuple
 
-Parameters
-----------
-    yield_func : function, used to calculate crop yield.
-    ssm : float, stored soil moisture at season start (in mm)
-    gsr : float, growing season rainfall (in mm)
-    irrig : float, volume (in mm) of irrigation water applied
-    comps : list-like : (current datetime, water sources considered)
+Calculate net income considering crop yield and costs incurred.
+
 
 Returns
 -------

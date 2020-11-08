@@ -93,28 +93,30 @@ end
 
 
 """
+    optimize_irrigation(m::Manager, zone::FarmZone, dt::Date)::Tuple{OrderedDict, NamedTuple}
+
 Apply Linear Programming to optimize irrigation water use.
 
 Results can be used to represent percentage mix
 e.g. if the field area is 100 ha, and the optimal area to be
         irrigated by a water source is
 
-    `SW: 70 ha
-    GW: 30 ha`
+    SW: 70 ha
+    GW: 30 ha
 
 and the required amount is 20mm
 
-    `SW: 70 / 100 = 0.7 (irrigated area / total area, 70%)
-    GW: 30 / 100 = 0.3 (30%)`
+    SW: 70 / 100 = 0.7 (irrigated area / total area, 70%)
+    GW: 30 / 100 = 0.3 (30%)
     
 Then the per hectare amount to be applied from each 
 water source is calculated as:
 
-    `SW = 20mm * 0.7
-        = 14mm
+    SW = 20mm * 0.7
+       = 14mm
 
     GW = 20mm * 0.3
-        = 6mm`
+       = 6mm
 
 Parameters
 ----------
@@ -123,9 +125,9 @@ Parameters
 
 Returns
 ---------
-* Tuple : OrderedDict[str, float] : keys based on field and water source names
-                                    values are hectare area
-            Float : \$/ML cost of applying water
+* Tuple : OrderedDict[str, float] 
+          keys based on field and water source names values are hectare area
+          Float : \$/ML cost of applying water
 """
 function optimize_irrigation(m::Manager, zone::FarmZone, dt::Date)::Tuple{OrderedDict, NamedTuple}
 
@@ -259,11 +261,14 @@ function perc_irrigation_sources(m::Manager, field::FarmField, water_sources::Ar
 end
 
 
-"""Calculate water application cost/ML by each water source.
+"""
+    ML_water_application_cost(m::Manager, zone::FarmZone, field::FarmField, req_water_ML_ha::Float64)::NamedTuple
+
+Calculate water application cost/ML by each water source.
 
 Returns
 -------
-* dict[str, float] : water source name and cost per ML
+* NamedTuple[str, float] : water source name and cost per ML
 """
 function ML_water_application_cost(m::Manager, zone::FarmZone, field::FarmField, req_water_ML_ha::Float64)::NamedTuple
     zone_ws::Array{WaterSource} = zone.water_sources
@@ -284,6 +289,7 @@ end
 
 Parameters
 ----------
+* m : manager component
 * zone : FarmZone
 * flow_rate_Lps : float, desired flow rate in Litres per second.
 
