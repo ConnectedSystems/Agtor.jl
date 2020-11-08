@@ -1,8 +1,5 @@
 name: TestBasin
 component: Basin
 
-# Paths to data
-climate_data: "test/data/climate/farm_climate_data.csv"
-# zone_data: "test/data/zones/"
-# climate_options: ["CategoricalParameter", "test", "test", "test2"]
-zone_spec: ["test/data/zones/Zone_1.yml"]
+# Paths to zone specs
+zone_spec: ["test/data/zones/Zone_1.yml", "test/data/zones/Zone_2.yml"]
