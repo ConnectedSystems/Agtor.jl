@@ -13,7 +13,7 @@ struct RigidManager <: Manager
 end
 
 
-function run_timestep(farmer::RigidManager, zone::FarmZone, dt::Date)::Nothing
+function run_timestep!(farmer::RigidManager, zone::FarmZone, idx::Int64, dt::Date)::Nothing
     for f::FarmField in zone.fields
         s_start::Date = f.plant_date
         s_end::Date = f.harvest_date

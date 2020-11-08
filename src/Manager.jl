@@ -15,7 +15,7 @@ struct BaseManager <: Manager
     name::String
     opt::DataType
 
-    function BaseManager(name::String)::Agtor.Manager
+    function BaseManager(name::String)::Manager
         return new(name, GLPK.Optimizer)
     end
 end
@@ -336,7 +336,8 @@ function set_next_crop!(m::Manager, f::FarmField, dt::Date)::Nothing
 end
 
 
-function run_timestep(farmer::Manager, zone::FarmZone, dt_idx::Int64, dt::Date)::Nothing
+function run_timestep!(farmer::BaseManager, zone::FarmZone, dt_idx::Int64, dt::Date)::Nothing
+
     for f::FarmField in zone.fields
         s_start::Date = f.plant_date
         s_end::Date = f.harvest_date
