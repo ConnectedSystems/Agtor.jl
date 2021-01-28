@@ -119,7 +119,8 @@ import pandas as pd
 sp = ProblemSpec({
   'names': $(param_names),
   'bounds': list($(Array(param_bounds))),
-  'output': ['CV', 'Mean ML per Yield [ML/t]', 'Mean Income [$]', 'Mean Water Use [ML]']
+  'output': ['CV', 'Mean ML per Yield [ML/t]', 'Mean Income [$]', 
+             'Mean Water Use [ML]']
 })
 
 sp.sample_latin(4, seed=101)
@@ -147,3 +148,44 @@ sp.analyze_rbd_fast()
 """
 
 @info "Analysis:" py"sp.to_df()"
+
+
+using PyCall
+
+py"""
+from SALib import ProblemSpec
+import numpy as np
+import pandas as pd
+
+sp = ProblemSpec({
+  'names': $(param_names),
+  'bounds': list($(Array(param_bounds))),
+  'output': ['CV', 'Mean ML per Yield [ML/t]', 'Mean Income [$]', 
+             'Mean Water Use [ML]']
+})
+
+sp.sample_latin(4, seed=101)
+
+orig_samples = sp.samples
+
+# Convert Pandas DF to Julia DataFrame, bypassing any checks...
+tmp = pd.DataFrame(sp.samples, columns=sp['names'])
+sp._samples = $(pd_to_df)(tmp)
+
+# Run model
+sp.evaluate($(scenario_run), $(example_basin))
+
+# Revert back to original samples as numpy array
+sp.samples = orig_samples
+
+# Have to coerce results to numpy array as these
+# are returned as a Python list by Julia
+sp.results = np.array(sp.results)
+
+# Perform analysis
+sp.analyze_rbd_fast()
+"""
+
+@info "Analysis:" py"sp.to_df()"
+
+
