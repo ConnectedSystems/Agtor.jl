@@ -79,6 +79,7 @@ using Setfield
     end
 end
 
+
 """Update growth stages with corresponding dates from given sowing date."""
 function update_stages!(c::Crop, dt::Date)::Nothing
     stages::NamedTuple = c.growth_stages::NamedTuple
