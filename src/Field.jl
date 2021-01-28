@@ -253,7 +253,7 @@ end
 
 
 """
-    calc_potential_crop_yield(ssm_mm::Float64, gsr_mm::Float64, crop::AgComponent)
+    french_schultz_cy(; ssm_mm::Float64, gsr_mm::Float64, crop::AgComponent)
 
 Potential crop yield calculation based on a modified French-Schultz equation.
 The implemented method is the farmer-friendly version as described by 
@@ -287,9 +287,8 @@ Returns
 -----------
 * Potential yield in tonnes/Ha
 """
-function calc_potential_crop_yield(ssm_mm::Float64, gsr_mm::Float64, 
-                                   crop::AgComponent)::Float64
-    
+function french_schultz_cy(; ssm_mm::Float64, gsr_mm::Float64, 
+                             crop::AgComponent)::Float64
     evap_coef_mm::Float64 = crop.et_coef  # Crop evapotranspiration coefficient (mm)
     wue_coef_mm::Float64 = crop.wue_coef  # Water Use Efficiency coefficient (kg/mm)
 
@@ -303,6 +302,19 @@ end
 
 
 """
+    calc_potential_crop_yield(method::Function; kwargs...)
+
+Calculate potential crop yield using an arbitrary function.
+This function enables a consistent interface to be provided.
+
+Function must return a Tuple of results or a Float64
+"""
+function calc_potential_crop_yield(method::Function; kwargs...)::Union{Tuple, Float64}
+    return method(; kwargs...)
+end
+
+
+"""
     total_income(f::FarmField, ssm::Float64, gsr::Float64, irrig::Float64, comps)::Tuple
 
 Calculate net income considering crop yield and costs incurred.
@@ -312,8 +324,8 @@ Returns
 -------
     Tuple:
         * float : net income
-        * float : irrigated crop yield, tonnes/Ha
-        * float : dryland crop yield, tonnes/Ha
+        * float : irrigated crop yield [t/ha]
+        * float : dryland crop yield [t/ha]
 """
 function total_income(f::FarmField, ssm::Float64, gsr::Float64, 
                       irrig::Float64, comps)::Tuple
@@ -322,11 +334,21 @@ function total_income(f::FarmField, ssm::Float64, gsr::Float64,
 end 
 
 
-function gross_income(f::FarmField, ssm::Float64, gsr::Float64, 
-                      irrig::Float64)::Tuple
+"""
+    gross_income(f::FarmField, ssm::Float64, gsr::Float64, 
+        irrig::Float64, func::Function=french_schultz_cy)::Tuple
+
+Calculate gross income, potential irrigated yield, and potential dryland yield.
+
+Returns
+-------
+Tuple{Float64} : income, irrigated yield [t], dryland yield [t]
+"""
+function gross_income(f::FarmField, ssm_mm::Float64, gsr_mm::Float64, 
+                      irrig::Float64, func::Function=french_schultz_cy)::Tuple
     crop::Crop = f.crop
-    irrigated_yield::Float64 = calc_potential_crop_yield(ssm, gsr+irrig, crop)
-    dryland_yield::Float64 = calc_potential_crop_yield(ssm, gsr, crop)
+    irrigated_yield::Float64 = calc_potential_crop_yield(func; ssm_mm, gsr_mm=(gsr_mm+irrig), crop)
+    dryland_yield::Float64 = calc_potential_crop_yield(func; ssm_mm, gsr_mm, crop)
 
     total_irrig_yield::Float64 = irrigated_yield * f.irrigated_area
     total_dry_yield::Float64 = dryland_yield * f.dryland_area
@@ -335,6 +357,26 @@ function gross_income(f::FarmField, ssm::Float64, gsr::Float64,
     inc += dryland_yield * f.dryland_area * crop.price_per_yield
 
     return inc, total_irrig_yield, total_dry_yield
+end
+
+
+"""
+    gross_income(f::FarmField, area::Float64, func::Function=french_schultz_cy; kwargs...)::Tuple
+
+Calculate gross income and crop yield using an arbitrary crop yield function.
+
+Returns
+-------
+Tuple{Float64} : income, total_yield [t]
+"""
+function gross_income(f::FarmField, area::Float64, func::Function=french_schultz_cy; kwargs...)::Tuple
+    crop::Crop = f.crop
+    crop_yield_per_area::Float64 = calc_potential_crop_yield(func; kwargs...)
+
+    total_yield::Float64 = crop_yield_per_area * area
+    income::Float64 = total_yield * crop.price_per_yield
+
+    return income, total_yield
 end
 
 
