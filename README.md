@@ -37,6 +37,26 @@ julia> ]
 (Agtor) pkg> instantiate
 ```
 
+Examples may use `PyCall` to interact with the SALib package.
+
+To set up PyCall, first activate the target Python environment and then
+run `Pkg.build()`, for example:
+
+```bash
+$ conda activate salib
+
+(salib) $ julia --project=.
+
+julia> using Pkg
+
+julia> Pkg.build("PyCall")
+   Building Conda ─→ `...`
+   Building PyCall → `...`
+
+julia>
+```
+
+
 Tentative usage examples are provided in the `examples` directory.
 
 Tests are found in the `test` directory and the `runtests.jl` will invoke all available tests.
