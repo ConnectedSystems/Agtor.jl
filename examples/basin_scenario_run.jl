@@ -104,7 +104,7 @@ end
 
 
 data_dir = "test/data/"
-example_basin = setup_basin(data_dir, "test/data/climate/basin_climate_data.csv")
+example_basin = setup_basin(data_dir, "$(data_dir)climate/basin_climate_data.csv")
 
 all_params = collect_agparams!(example_basin, [])
 param_names = all_params[:name]
