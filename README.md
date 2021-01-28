@@ -39,23 +39,43 @@ julia> ]
 
 Examples may use `PyCall` to interact with the SALib package.
 
-To set up PyCall, first activate the target Python environment and then
+To set up PyCall, define the appropriate Python environment location and
 run `Pkg.build()`, for example:
 
 ```bash
 $ conda activate salib
 
+# Example for windows
+(salib) $ where python.exe
+C:\example\miniconda3\envs\salib\python.exe
+
 (salib) $ julia --project=.
 
 julia> using Pkg
+
+julia> ENV["PYTHON"] = raw"C:\example\miniconda3\envs\salib\python.exe"
 
 julia> Pkg.build("PyCall")
    Building Conda ─→ `...`
    Building PyCall → `...`
 
-julia>
+julia> using PyCall
+
+julia> py"""
+a = 100
+"""
+
+julia> py"a"
+100
+
+julia> b = py"200"
+200
+
+julia> b
+200
 ```
 
+See [PyCall documentation](https://github.com/JuliaPy/PyCall.jl) for further details
 
 Tentative usage examples are provided in the `examples` directory.
 
