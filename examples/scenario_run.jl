@@ -54,13 +54,12 @@ function example_scenario_run(data_dir::String="test/data/")::Nothing
     scen_data = joinpath(data_dir, "scenarios", "sampled_params.csv")
     samples = DataFrame!(CSV.File(scen_data))
 
-    farmer = BaseManager("test")
-
     tmp_z = deepcopy(z1)
+    tmp_z.manager = BaseManager("test")
     @sync for (row_id, r) in enumerate(eachrow(samples))
         update_model!(tmp_z, r)
 
-        results = run_model(farmer, tmp_z)
+        results = run_model(tmp_z)
 
         # Save results as they complete
         @async save_results!("async_save.jld2", string(row_id), results)
@@ -80,14 +79,13 @@ function example_batch_save(data_dir::String="test/data/")::Nothing
     scen_data = joinpath(data_dir, "scenarios", "sampled_params.csv")
     samples = DataFrame!(CSV.File(scen_data))
 
-    farmer = BaseManager("test")
-
     all_results = Dict()
     tmp_z = deepcopy(z1)
+    tmp_z.manager = BaseManager("test")
     for (row_id, r) in enumerate(eachrow(samples))
         update_model!(tmp_z, r)
 
-        zone_results, field_results = run_model(farmer, tmp_z)
+        zone_results, field_results = run_model(tmp_z)
         all_results[row_id] = (zone_results, field_results)
     end
 
