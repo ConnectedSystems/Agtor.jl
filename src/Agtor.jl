@@ -4,6 +4,7 @@ module Agtor
 
 using Parameters
 using DataFrames, Dates, YAML, CSV
+using Distributed
 
 import DataStructures: OrderedDict, DefaultDict
 
@@ -23,6 +24,7 @@ include("Zone.jl")
 include("Manager.jl")
 include("RigidManager.jl")
 include("Basin.jl")
+include("Model.jl")
 
 
 AgUnion = Union{Int64, Float64, Agtor.AgParameter}
@@ -37,6 +39,6 @@ export Manager, BaseManager, RigidManager
 export Climate, Basin, run_timestep!, subtotal_costs, total_costs, update_available_water!
 export collect_results, min_max, extract_values, param_info, extract_spec, add_prefix!
 export set_params!, extract_agparams, collect_agparams!, collect_agparams, update_model!
-export aggregate_field_logs, collate_results!, save_results!
+export aggregate_field_logs, collate_results!, save_results!, run_model
 
 end # module
