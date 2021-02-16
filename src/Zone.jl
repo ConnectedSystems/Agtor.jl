@@ -270,6 +270,35 @@ function collate_field_logs(seasonal_logs::Dict)::DataFrame
 end
 
 
+function water_used_by_source(zone::FarmZone)::DataFrame
+    return water_used_by_source(zone, nothing)
+end
+
+
+function water_used_by_source(zone::FarmZone, dt)::DataFrame
+    ws_irrig = zone._irrigation_volume_by_source
+
+    if nrow(ws_irrig) == 0
+        return DataFrame(Date=dt, surface_water_sum=0.0, groundwater_sum=0.0)
+    end
+
+    if !(isnothing(dt))
+        ws_irrig = ws_irrig[ws_irrig[:Date] .== dt, :]
+    end
+
+    if nrow(ws_irrig) == 0
+        if isnothing(dt)
+            return aggregate(groupby(ws_irrig, :Date), sum)
+        end
+
+        # Catch empty subset
+        return DataFrame(Date=dt, surface_water_sum=0.0, groundwater_sum=0.0)
+    end
+
+    return aggregate(groupby(ws_irrig, :Date), sum)
+end
+
+
 """Collect model run results for a FarmZone"""
 function collect_results(zone::FarmZone; last=false)::Tuple{DataFrame,Dict}
     field_logs = Dict(
@@ -279,8 +308,7 @@ function collect_results(zone::FarmZone; last=false)::Tuple{DataFrame,Dict}
 
     collated = collate_field_logs(field_logs)
 
-    ws_irrig = zone._irrigation_volume_by_source
-    irrig_ws::DataFrame = aggregate(groupby(ws_irrig, :Date), sum)
+    irrig_ws::DataFrame = water_used_by_source(zone)
 
     collated_res = hcat(collated, irrig_ws[:, setdiff(names(irrig_ws), [:Date])])
 
