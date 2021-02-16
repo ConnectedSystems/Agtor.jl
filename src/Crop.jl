@@ -25,7 +25,7 @@ using Setfield
     effective_root_zone::Union{Float64, AgParameter}
     harvest_date::Union{Date, AgParameter}
     harvest_offset::Union{Day, Int64, AgParameter}
-    naive_crop_yield::Float64
+    naive_crop_income::Float64
 
     function Crop(name::String, crop_type::String, growth_stages::Dict, start_dt::Date; props...)::Crop
         plant_date = props[:plant_date]
@@ -73,7 +73,9 @@ using Setfield
                 yield_per_ha, price_per_yield, variable_cost_per_ha, water_use_ML_per_ha,
                 root_depth_m, et_coef, wue_coef, rainfall_threshold, 
                 ssm_coef, effective_root_zone, harvest_date, harvest_offset)
-        c.naive_crop_yield = (c.price_per_yield * c.yield_per_ha) - c.variable_cost_per_ha
+
+        # variable cost does not include water usage costs (added later in optimized allocation step)
+        c.naive_crop_income = (c.price_per_yield * c.yield_per_ha) - c.variable_cost_per_ha
 
         return c
     end

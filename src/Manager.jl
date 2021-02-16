@@ -47,7 +47,7 @@ function optimize_irrigated_area(m::Manager, zone::FarmZone)::OrderedDict{String
         did::String = f._fname
         f_name = Symbol(f.name)
 
-        naive_crop_income::Float64 = f.crop.naive_crop_yield  # estimate_income_per_ha(f.crop)
+        naive_crop_income::Float64 = f.crop.naive_crop_income  # estimate_income_per_ha(f.crop)
         naive_req_water::Float64 = f.crop.water_use_ML_per_ha
         app_cost_per_ML::NamedTuple = ML_water_application_cost(m, zone, f, naive_req_water)
 
@@ -176,7 +176,8 @@ function optimize_irrigation(m::Manager, zone::FarmZone, dt::Date)::Tuple{Ordere
         # Costs to pump needed water volume from each water source
         app_cost_per_ML::NamedTuple = ML_water_application_cost(m, zone, f, req_water_ML_ha)
 
-        crop_income_per_ha::Float64 = f.crop.naive_crop_yield
+        crop = f.crop
+        crop_income_per_ha::Float64 = crop.naive_crop_income
 
         # estimated gross income - variable costs per ha
         # Creating individual field area variables
