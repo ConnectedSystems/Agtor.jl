@@ -141,3 +141,19 @@ function get_seasonal_et(c::Climate, season_range::Array{Date}, partial_name::St
     subset::DataFrame = get_season_range(c, s, e)[!, Regex("ET")][!, Regex(partial_name)]
     return sum.(eachcol(subset))[1]
 end
+
+
+function get_data_for_timestep(c::Climate, dt; pattern=nothing)
+
+    data::DataFrame = c.data::DataFrame
+    idx::BitArray = (c.time_steps::Array .== dt)::BitArray
+
+    if isnothing(pattern)
+        subset::DataFrame = data[idx, :]
+    else
+        cols = [k for k in names(data) if any(occursin(pattern, string(k)))]
+        subset = data[idx, cols]
+    end
+
+    return subset
+end
