@@ -39,7 +39,7 @@ cost_per_ha:  7.95  # ($/ha)
 # above_entitlement_storage: 15.35
 cost_per_ML: 77.82  # ($/ML)
 
-head: 25.0  # Initial head
+head: 25.0  # Initial head (in meters)
 allocation: 50.0  # Initial allocation
 
 

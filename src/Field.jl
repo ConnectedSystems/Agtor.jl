@@ -347,7 +347,7 @@ Tuple{Float64} : income, irrigated yield [t], dryland yield [t]
 function gross_income(f::FarmField, ssm_mm::Float64, gsr_mm::Float64, 
                       irrig::Float64, func::Function=french_schultz_cy)::Tuple
     crop::Crop = f.crop
-    irrigated_yield::Float64 = calc_potential_crop_yield(func; ssm_mm, gsr_mm=(gsr_mm+irrig), crop)
+    irrigated_yield::Float64 = calc_potential_crop_yield(func; ssm_mm, gsr_mm=gsr_mm+irrig, crop)
     dryland_yield::Float64 = calc_potential_crop_yield(func; ssm_mm, gsr_mm, crop)
 
     total_irrig_yield::Float64 = irrigated_yield * f.irrigated_area
@@ -367,7 +367,7 @@ Calculate gross income and crop yield using an arbitrary crop yield function.
 
 Returns
 -------
-Tuple{Float64} : income, total_yield [t]
+Tuple{Float64} : income [\$/yield], total_yield [t]
 """
 function gross_income(f::FarmField, area::Float64, func::Function=french_schultz_cy; kwargs...)::Tuple
     crop::Crop = f.crop
@@ -421,6 +421,7 @@ function setup_log()::DataFrame
                      [:Date, :income, :irrigated_volume, :irrigated_yield, :dryland_yield, 
                       :growing_season_rainfall, :irrigated_area, :dryland_area])
 end
+
 
 function reset!(f::FarmField)::Nothing
     f._seasonal_log = setup_log()
