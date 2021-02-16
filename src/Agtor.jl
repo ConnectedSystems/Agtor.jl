@@ -39,6 +39,7 @@ export Manager, BaseManager, RigidManager
 export Climate, Basin, run_timestep!, subtotal_costs, total_costs, update_available_water!
 export collect_results, min_max, extract_values, param_info, extract_spec, add_prefix!
 export set_params!, extract_agparams, collect_agparams!, collect_agparams, update_model!
-export aggregate_field_logs, collate_results!, save_results!, run_model
+export water_used_by_source
+export get_data_for_timestep, aggregate_field_logs, collate_results!, save_results!, run_model
 
 end # module
