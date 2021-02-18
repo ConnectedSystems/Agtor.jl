@@ -89,6 +89,22 @@ function Base.setproperty!(cat::CategoricalParameter, v::Symbol, value)::Nothing
 end
 
 
+"""Ag specific in function.
+
+Purposeful decision not to override Base.in() method as this
+performs the check on any Array expecting NamedTuples.
+"""
+function agin(p::AgParameter, store::Array)::Bool
+    for st in store
+        if st.name == p.name
+            return true
+        end
+    end
+
+    return false
+end
+
+
 # Below is equivalent to defining methods for each operation, e.g:
 #    function Base.:+(x::AgParameter, y::AgParameter) x.value + y.value end
 for op = (:+, :-, :/, :*, :^)
@@ -238,7 +254,9 @@ function collect_agparams!(dataset::Dict, store::Array; ignore::Union{Array, Not
         end
 
         if v isa AgParameter && !is_const(v)
-            push!(store, extract_values(v))
+            if !agin(v, store)
+                push!(store, extract_values(v))
+            end
         elseif v isa Dict || v isa Array
             collect_agparams!(v, store; ignore=ignore)
         end
@@ -251,7 +269,9 @@ end
 function collect_agparams!(dataset::Union{Array, Tuple}, store::Array; ignore::Union{Array, Nothing}=nothing)::Nothing
     for v in dataset
         if v isa AgParameter && !is_const(v)
-            push!(store, extract_values(v))
+            if !agin(v, store)
+                push!(store, extract_values(v))
+            end
         elseif v isa Dict || v isa Array || v isa AgComponent || v isa Tuple
             collect_agparams!(v, store; ignore=ignore)
         end
@@ -283,12 +303,22 @@ end
 function collect_agparams!(dataset::Union{AgComponent, AgParameter}, store::Union{Array, Nothing}=nothing; ignore=nothing)::DataFrame
     match = (Array, Tuple, Dict, AgComponent, AgParameter)
 
+    if isnothing(store)
+        store = []
+    end
+
     for fn in fieldnames(typeof(dataset))
+
         fv = getfield(dataset, fn)
         if fv isa AgParameter && !is_const(fv)
-            push!(store, extract_values(fv))
+            if !agin(fv, store)
+                push!(store, extract_values(fv))
+            end
         elseif any(map(x -> fv isa x, match))
-            collect_agparams!(fv, store)
+            if fv isa Array{Date}
+                continue
+            end
+            collect_agparams!(fv, store; ignore=ignore)
         end
     end
 
@@ -296,7 +326,7 @@ function collect_agparams!(dataset::Union{AgComponent, AgParameter}, store::Unio
 end
 
 
-# """Extract parameter values from Dict specification and store in a common Dict."""
+"""Extract parameter values from Dict specification and store in a common Dict."""
 function collect_agparams!(dataset::Dict, mainset::Dict)::Nothing
     for (k, v) in dataset
         if Symbol(v.name) in mainset
