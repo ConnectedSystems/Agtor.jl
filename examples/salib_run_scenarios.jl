@@ -59,8 +59,7 @@ function run_model(scenario_id, basin)
     @sync for z in basin.zones
         results = collect_results(z)
 
-        # Uncomment the below if intermediate results
-        # are desired
+        # Uncomment the below if intermediate results are desired
         # run_id = "$(scenario_id)/$(z.name)"
         # @async save_results!("basin_async_save.jld2", run_id, results; mode="a+")
 
