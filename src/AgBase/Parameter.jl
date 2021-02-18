@@ -160,7 +160,7 @@ function generate_agparams(prefix::Union{String, Symbol}, dataset::Dict)::Dict{S
         if prefix === ""
             prefix *= "$(comp)-$(comp_name)"
         else
-            prefix *= "___$(comp)-$(comp_name)"
+            prefix *= "└──$(comp)-$(comp_name)"
         end
     end
 

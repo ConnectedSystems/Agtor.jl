@@ -131,7 +131,7 @@ summary(res)
 # │     f(x) calls:    1957
 # └     ∇f(x) calls:   1957
 # [ Info: [379.7167523959479, 100.00000000000001, 7.755910986915787]
-# [ Info: (Zone__CalibZone___CropField__field1___Crop__uncalibrated_wheat~rainfall_threshold = 379.7167523959479, Zone__CalibZone___CropField__field1___Crop__uncalibrated_wheat~et_coef = 100.00000000000001, Zone__CalibZone___CropField__field1___Crop__uncalibrated_wheat~wue_coef = 7.755910986915787)
+# [ Info: (Zone-CalibZone└──CropField-field1└──Crop-uncalibrated_wheat~rainfall_threshold = 379.7167523959479, Zone-CalibZone└──CropField-field1└──Crop-uncalibrated_wheat~et_coef = 100.00000000000001, Zone-CalibZone└──CropField-field1└──Crop-uncalibrated_wheat~wue_coef = 7.755910986915787)
 
 # Fminbox with L-BFGS
 # ┌ Info:  * Status: success
@@ -155,7 +155,7 @@ summary(res)
 # │     f(x) calls:    2507
 # └     ∇f(x) calls:   2507
 # [ Info: [380.4056132641329, 100.00000000000001, 7.703705039894828, 0.31532465148791083]
-# [ Info: (Zone__CalibZone___CropField__field1___Crop__uncalibrated_wheat~rainfall_threshold = 380.4056132641329, Zone__CalibZone___CropField__field1___Crop__uncalibrated_wheat~et_coef = 100.00000000000001, Zone__CalibZone___CropField__field1___Crop__uncalibrated_wheat~wue_coef = 7.703705039894828, Zone__CalibZone___CropField__field1___Crop__uncalibrated_wheat~ssm_coef = 0.31532465148791083)
+# [ Info: (Zone-CalibZone└──CropField-field1└──Crop-uncalibrated_wheat~rainfall_threshold = 380.4056132641329, Zone-CalibZone└──CropField-field1└──Crop-uncalibrated_wheat~et_coef = 100.00000000000001, Zone-CalibZone└──CropField-field1└──Crop-uncalibrated_wheat~wue_coef = 7.703705039894828, Zone-CalibZone└──CropField-field1└──Crop-uncalibrated_wheat~ssm_coef = 0.31532465148791083)
 
 
 # ┌ Info:  * Status: success
@@ -179,7 +179,7 @@ summary(res)
 # │     f(x) calls:    2667
 # └     ∇f(x) calls:   2667
 # [ Info: [371.4033677239416, 100.00000000000004, 8.97837123677021, 0.39999999999999986]
-# [ Info: (Zone__CalibZone___CropField__field1___Crop__uncalibrated_wheat~rainfall_threshold = 371.4033677239416, 
-#    Zone__CalibZone___CropField__field1___Crop__uncalibrated_wheat~et_coef = 100.00000000000004, 
-#    Zone__CalibZone___CropField__field1___Crop__uncalibrated_wheat~wue_coef = 8.97837123677021, 
-#    Zone__CalibZone___CropField__field1___Crop__uncalibrated_wheat~ssm_coef = 0.39999999999999986)
+# [ Info: (Zone-CalibZone└──CropField-field1└──Crop-uncalibrated_wheat~rainfall_threshold = 371.4033677239416, 
+#    Zone-CalibZone└──CropField-field1└──Crop-uncalibrated_wheat~et_coef = 100.00000000000004, 
+#    Zone-CalibZone└──CropField-field1└──Crop-uncalibrated_wheat~wue_coef = 8.97837123677021, 
+#    Zone-CalibZone└──CropField-field1└──Crop-uncalibrated_wheat~ssm_coef = 0.39999999999999986)

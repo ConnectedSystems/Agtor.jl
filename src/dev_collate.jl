@@ -69,10 +69,10 @@ end
 
 test = Foo([Agtor.RealParameter("Doo", 0, 1, 0.5), Agtor.RealParameter("Boo", 0, 1, 0.5)],
             Agtor.RealParameter("FooBar", -1, 1, 0.5), 
-            Dict("Blig"=>Agtor.RealParameter("Blig___Blag", 0, 3, 0.5))
+            Dict("Blig"=>Agtor.RealParameter("Blig└──Blag", 0, 3, 0.5))
 )
 
-sample = [(Doo=0.3, Boo=0.3, FooBar=0.3, Blig___Blag=3.0)]
+sample = [(Doo=0.3, Boo=0.3, FooBar=0.3, Blig└──Blag=3.0)]
 df = DataFrame(sample)
 
 @info "Updating with values:" df
@@ -88,7 +88,7 @@ set_params!(test, df[1, :])
 
 
 @info typeof(df[1, :])
-sample = (Doo=0.2, Boo=0.2, FooBar=0.2, Blig___Blag=2.0)
+sample = (Doo=0.2, Boo=0.2, FooBar=0.2, Blig└──Blag=2.0)
 @info "DF before" test
 @info typeof(sample)
 set_params!(test, sample)
