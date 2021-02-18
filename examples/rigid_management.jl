@@ -2,6 +2,8 @@ using DataFrames, CSV, FileIO, Dates
 using BenchmarkTools
 using Agtor
 
+import Agtor: run_model
+
 import OrderedCollections: LittleDict
 
 
@@ -17,25 +19,20 @@ function setup_zone(data_dir::String="test/data/")
 end
 
 
-function run_model(zone)
-    time_sequence = zone.climate.time_steps
+"""
+Allocation callback for example.
+"""
+function allocation_callback!(zone, dt_i)
 
-    # Example annual water allocations
-    allocs = (surface_water=150.0, groundwater=40.0)
+    # Resetting allocations for example run
+    if monthday(dt_i) == gs_start
+        # Example annual water allocations
+        allocs = (surface_water=150.0, groundwater=40.0)
 
-    @inbounds for (idx, dt_i) in enumerate(time_sequence)
-        run_timestep!(zone.manager, zone, idx, dt_i)
-
-        # Resetting allocations for example run
-        if monthday(dt_i) == gs_start
-            update_available_water!(zone, allocs)
-        end
+        update_available_water!(zone, allocs)
     end
-
-    zone_results, field_results = collect_results(zone)
-
-    return zone_results, field_results
 end
+
 
 data_dir = "test/data/"
 rigid_zone = setup_zone(data_dir)
@@ -49,11 +46,13 @@ tmp_zone = deepcopy(rigid_zone)
 for (row_id, r) in enumerate(eachrow(samples))
     update_model!(tmp_zone, r)
 
-    zone_results, field_results = run_model(farmer, tmp_zone)
-    push!(all_results, (zone_results, field_results))
+    zone_results, field_results = run_model(farmer, tmp_zone; post=allocation_callback!)
+    # push!(all_results, (zone_results, field_results))
+
+    save_results!("rigid_run.jld2", row_id, (zone_results, field_results))
 end
 
-save_results!("rigid_run.jld2", all_results)
+# save_results!("rigid_run.jld2", all_results)
 
 # Loading and displaying results
 saved_results = load("rigid_run.jld2")
