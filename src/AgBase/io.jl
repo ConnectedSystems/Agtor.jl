@@ -55,6 +55,23 @@ function load_climate(data_fn::String)
 end
 
 
+"""Save arbitrary results to JLD."""
+function save_results!(fn::String, results::Any, group::Tuple{String, String})::Nothing
+    if isfile(fn)
+        mode = "a+"
+    else
+        mode = "w"
+    end
+
+    jldopen(fn, mode) do file
+        idx, name = group
+        file["$(idx)/$(name)"] = results
+    end
+
+    return
+end
+
+
 """Save results for a single zone to JLD."""
 function save_results!(fn, results::Dict)::Nothing
     jldopen(fn, "w") do file
@@ -69,10 +86,27 @@ end
 
 
 """Save results for a single zone to JLD."""
-function save_results!(fn::String, idx::String, results::Tuple; mode="w")::Nothing
-    jldopen(fn, mode) do file
-        file["$(idx)/zone_results"] = results[1]  # zone_results
-        file["$(idx)/field_results"] = results[2]  # field_results
+function save_results!(fn::String, idx::Union{String, Int64}, results::Tuple)::Nothing
+    if isfile(fn)
+        mode = "a+"
+    else
+        mode = "w"
+    end
+
+    try
+        jldopen(fn, mode) do file
+            file["$(idx)/zone_results"] = results[1]  # zone_results
+            file["$(idx)/field_results"] = results[2]  # field_results
+        end
+    catch e
+        if isa(e, TaskFailedException)
+            jldopen(fn, "a+") do file
+                file["$(idx)/zone_results"] = results[1]  # zone_results
+                file["$(idx)/field_results"] = results[2]  # field_results
+            end
+        else
+            println("Could not save results ($(idx)) to $(fn)!")
+        end
     end
 
     return
