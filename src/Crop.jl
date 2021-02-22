@@ -1,6 +1,9 @@
 using Dates
 using OrderedCollections
 using Setfield
+using DataFrames
+
+import Agtor: Climate
 
 
 @with_kw mutable struct Crop <: AgComponent
@@ -138,4 +141,15 @@ function create(spec::Dict, start_dt::Date)::Crop
     data = deepcopy(spec)
     _ = pop!(data, :component)
     return Crop(data[:name], data[:crop_type], data[:growth_stages], start_dt; data...)
+end
+
+
+"""Get all in-season dates for a given crop."""
+function in_season_dates(c::Climate, crop::Crop)::DataFrame
+    d = c.data
+    sow_d = monthday(crop.plant_date)
+    harvest_d = monthday(crop.harvest_date)
+    mds = monthday.(d[:Date])
+
+    return d[(mds .>= [sow_d]) .| (mds .< [harvest_d]), :]
 end
