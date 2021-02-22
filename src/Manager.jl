@@ -144,7 +144,6 @@ function optimize_irrigation(m::Manager, zone::FarmZone, dt::Date)::Tuple{Ordere
     req_water::Array{Float64} = Float64[]
 
     @inbounds for f::FarmField in zone.fields
-        # f_name::Symbol = Symbol(f.name)
         did::String = f._fname
 
         req_water_ML_ha::Float64 = calc_required_water(f, dt) / mm_to_ML
