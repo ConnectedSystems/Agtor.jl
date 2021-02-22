@@ -55,14 +55,28 @@ function load_climate(data_fn::String)
 end
 
 
-"""Save arbitrary results to JLD."""
-function save_results!(fn::String, results::Any, group::Tuple{String, String})::Nothing
+function determine_file_mode(fn::String)
     if isfile(fn)
-        mode = "a+"
-    else
-        mode = "w"
+        return "a+"
     end
 
+    return "w"
+end
+
+
+"""Save state to JLD"""
+function save_state!(fn::String, obj::Any, group::String)::Nothing
+    mode = determine_file_mode(fn)
+    jldopen(fn, mode) do file
+        file[group] = obj
+    end
+
+    return
+end
+
+"""Save arbitrary results to JLD."""
+function save_results!(fn::String, results::Any, group::Tuple{String, String})::Nothing
+    mode = determine_file_mode(fn)
     jldopen(fn, mode) do file
         idx, name = group
         file["$(idx)/$(name)"] = results
@@ -74,7 +88,8 @@ end
 
 """Save results for a single zone to JLD."""
 function save_results!(fn, results::Dict)::Nothing
-    jldopen(fn, "w") do file
+    mode = determine_file_mode(fn)
+    jldopen(fn, mode) do file
         for (i, res) in results
             file["$(i)/zone_results"] = results[1]  # zone_results
             file["$(i)/field_results"] = results[2]  # field_results
@@ -87,11 +102,7 @@ end
 
 """Save results for a single zone to JLD."""
 function save_results!(fn::String, idx::Union{String, Int64}, results::Tuple)::Nothing
-    if isfile(fn)
-        mode = "a+"
-    else
-        mode = "w"
-    end
+    mode = determine_file_mode(fn)
 
     try
         jldopen(fn, mode) do file
