@@ -91,12 +91,12 @@ function save_results!(fn, results::Dict)::Nothing
     mode = determine_file_mode(fn)
     jldopen(fn, mode) do file
         for (i, res) in results
-            file["$(i)/zone_results"] = results[1]  # zone_results
-            file["$(i)/field_results"] = results[2]  # field_results
+            file["$(i)/zone_results"] = res[1]  # zone_results
+            file["$(i)/field_results"] = res[2]  # field_results
         end
     end
 
-    return
+    return nothing
 end
 
 
