@@ -42,7 +42,7 @@ function load_spec(data_dir::String)::Dict{Symbol, Dict}
 end
 
 
-function load_climate(data_fn::String)
+function load_climate(data_fn::String)::Climate
     # Expect only CSV for now...
     if endswith(data_fn, ".csv")
         use_threads = Threads.nthreads() > 1
@@ -55,7 +55,7 @@ function load_climate(data_fn::String)
 end
 
 
-function determine_file_mode(fn::String)
+function determine_file_mode(fn::String)::String
     if isfile(fn)
         return "a+"
     end
@@ -71,7 +71,7 @@ function save_state!(fn::String, obj::Any, group::String)::Nothing
         file[group] = obj
     end
 
-    return
+    return nothing
 end
 
 """Save arbitrary results to JLD."""
@@ -82,7 +82,7 @@ function save_results!(fn::String, results::Any, group::Tuple{String, String})::
         file["$(idx)/$(name)"] = results
     end
 
-    return
+    return nothing
 end
 
 
@@ -120,7 +120,7 @@ function save_results!(fn::String, idx::Union{String, Int64}, results::Tuple)::N
         end
     end
 
-    return
+    return nothing
 end
 
 
@@ -132,7 +132,7 @@ function save_results!(fn, sid, bid, zid, results; mode="w")::Nothing
         file["$(prefix)/field_results"] = results[2]  # field_results
     end
 
-    return
+    return nothing
 end
 
 
@@ -147,5 +147,5 @@ function collate_results!(fn_pattern::String, main_fn::String)::Nothing
         end
     end
 
-    return
+    return nothing
 end
