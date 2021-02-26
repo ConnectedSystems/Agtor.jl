@@ -1,8 +1,9 @@
-using Agtor, Dates, CSV
 using Test
 using DataFrames
 
 import Flatten
+
+using Agtor, Dates, CSV
 
 
 function setup_zone(data_dir::String="test/data/")
@@ -74,26 +75,19 @@ function test_pump_creation(data_dir::String="test/data/")
 end
 
 
-function test_parameter_extraction(data_dir::String="test/data/")
-    pump_spec_dir::String = "$(data_dir)pumps/"
-    pump_specs::Dict{String, Dict} = load_yaml(pump_spec_dir)
-
-    pump_specs
-end
-
-
-@testset "Agtor.jl" begin
-
-    test_parameter_extraction()
-
+@testset "Crop in-season" begin
     test_in_season()
     test_out_of_season()
+end
 
+@testset "Crop plantings and stages" begin
     test_crop_plantings()
     test_crop_update_stages()
-
-    test_pump_creation()
-
-    
-
 end
+
+@testset "Pumping" begin
+    test_pump_creation()
+end
+
+
+include("test_parameters.jl")
