@@ -63,15 +63,15 @@ Results are saved to a file on completion, based on scenario id.
 """
 function test_scenario_run(data_dir::String="test/data/", result_dir::String="")::Nothing
     z1, agparams = setup_zone(data_dir)
+    z1.manager = BaseManager("test")
 
     scen_data = joinpath(data_dir, "scenarios", "sampled_params.csv")
     samples = DataFrame!(CSV.File(scen_data))
 
     # Each row represents a scenario to run.
     # We distribute these across available cores.
-    tmp_z = deepcopy(z1)
-    tmp_z.manager = BaseManager("test")
     @sync @distributed (hcat) for row_id in 1:nrow(samples)
+        tmp_z = deepcopy(z1)
         update_model!(tmp_z, samples[row_id, :])
         res = run_model(tmp_z, run_timestep!, allocation_callback!)
 

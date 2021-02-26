@@ -54,10 +54,10 @@ function example_scenario_run(data_dir::String="test/data/")::Nothing
     @sync for (row_id, r) in enumerate(eachrow(samples))
         update_model!(tmp_z, r)
 
-        results = run_model(tmp_z, run_timestep!, allocation_callback!)
+        results = run_model(tmp_z, run_timestep!; post=allocation_callback!)
 
         # Save results as they complete
-        @async save_results!("async_save.jld2", string(row_id), results)
+        @async save_results!("async_save.jld2", row_id, results)
     end
 end
 
@@ -70,17 +70,18 @@ results are kept in memory until the end.
 """
 function example_batch_save(data_dir::String="test/data/")::Nothing
     z1 = setup_zone(data_dir)
+    z1.manager = BaseManager("test")
 
     scen_data = joinpath(data_dir, "scenarios", "sampled_params.csv")
     samples = DataFrame!(CSV.File(scen_data))
 
     all_results = Dict()
-    tmp_z = deepcopy(z1)
-    tmp_z.manager = BaseManager("test")
+    # tmp_z = deepcopy(z1)
     for (row_id, r) in enumerate(eachrow(samples))
+        tmp_z = deepcopy(z1)
         update_model!(tmp_z, r)
 
-        zone_results, field_results = run_model(tmp_z, run_timestep!, allocation_callback!)
+        zone_results, field_results = run_model(tmp_z, run_timestep!; post=allocation_callback!)
         all_results[row_id] = (zone_results, field_results)
     end
 
@@ -88,10 +89,21 @@ function example_batch_save(data_dir::String="test/data/")::Nothing
 end
 
 
-@btime example_scenario_run()
-@btime example_batch_save()
+# @btime example_scenario_run()
+# @btime example_batch_save()
 
+
+example_batch_save()
 
 # Loading and displaying results
-saved_results = load("async_save.jld2")
-@info saved_results
+saved_results = load("batch_run.jld2")
+# @info saved_results
+
+# @info saved_results["1/zone_results"]
+
+df = collate_results("batch_run.jld2", "zone_results", "irrigated_yield_sum")
+
+using Gadfly
+
+col_names = map(Symbol, names(df))
+p = plot(df, x=Row, y=Col.value(col_names...), color=Col.index(col_names...), Geom.line)
