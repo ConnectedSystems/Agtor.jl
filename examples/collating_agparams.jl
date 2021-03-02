@@ -10,9 +10,10 @@ zone_spec_dir = "test/data/zones/"
 zone_params = load_spec(zone_spec_dir)
 tgt_zone = zone_params[:Zone_1]
 
+@info tgt_zone
+
 # Collate all the non-constant variables in the model
-collated_specs = []
-agparams = collect_agparams!(tgt_zone, collated_specs)
+agparams = collect_agparams(tgt_zone)
 
 @info agparams
 
