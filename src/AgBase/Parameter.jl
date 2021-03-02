@@ -247,7 +247,7 @@ function extract_values(p::AgParameter; prefix::Union{String, Nothing}=nothing):
 end
 
 
-function collect_agparams!(dataset::Dict, store::Array; ignore::Union{Array, Nothing}=nothing)
+function collect_agparams!(dataset::Dict, store::Array; ignore::Union{Array, Nothing}=nothing)::DataFrame
     for (k, v) in dataset
         if !isnothing(ignore) && (k in ignore)
             continue
@@ -266,6 +266,12 @@ function collect_agparams!(dataset::Dict, store::Array; ignore::Union{Array, Not
 end
 
 
+"""Extract parameter values from Dict specification."""
+function collect_agparams(dataset::Dict; ignore::Union{Array, Nothing}=nothing)::DataFrame
+    return collect_agparams!(dataset, []; ignore=ignore)
+end
+
+
 function collect_agparams!(dataset::Union{Array, Tuple}, store::Array; ignore::Union{Array, Nothing}=nothing)::Nothing
     for v in dataset
         if v isa AgParameter && !is_const(v)
@@ -277,35 +283,13 @@ function collect_agparams!(dataset::Union{Array, Tuple}, store::Array; ignore::U
         end
     end
 
-    return
-end
-
-
-"""Extract parameter values from Dict specification."""
-function collect_agparams(dataset::Dict; prefix::Union{String, Nothing}=nothing)::Dict
-    mm::Dict{Symbol, Any} = Dict()
-    for (k, v) in dataset
-        if v isa AgParameter && !is_const(v)
-            if !isnothing(prefix)
-                name = prefix * v.name
-            else
-                name = v.name
-            end
-            mm[Symbol(name)] = extract_values(v; prefix=prefix)
-        end
-    end
-
-    return mm
+    return nothing
 end
 
 
 """Extract parameter values from AgComponent."""
-function collect_agparams!(dataset::Union{AgComponent, AgParameter}, store::Union{Array, Nothing}=nothing; ignore=nothing)::DataFrame
+function collect_agparams!(dataset::Union{AgComponent, AgParameter}, store::Array; ignore=nothing)::DataFrame
     match = (Array, Tuple, Dict, AgComponent, AgParameter)
-
-    if isnothing(store)
-        store = []
-    end
 
     for fn in fieldnames(typeof(dataset))
 
@@ -323,6 +307,10 @@ function collect_agparams!(dataset::Union{AgComponent, AgParameter}, store::Unio
     end
 
     return DataFrame(store)
+end
+
+function collect_agparams!(dataset::Union{AgComponent, AgParameter}; ignore=nothing)::DataFrame
+    return collect_agparams!(dataset, []; ignore=nothing)
 end
 
 
