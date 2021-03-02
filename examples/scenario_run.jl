@@ -45,13 +45,13 @@ is slower overall, but does not use as much memory.
 """
 function example_scenario_run(data_dir::String="test/data/")::Nothing
     z1 = setup_zone(data_dir)
+    z1.manager = BaseManager("test")
 
     scen_data = joinpath(data_dir, "scenarios", "sampled_params.csv")
     samples = DataFrame!(CSV.File(scen_data))
 
-    tmp_z = deepcopy(z1)
-    tmp_z.manager = BaseManager("test")
     @sync for (row_id, r) in enumerate(eachrow(samples))
+        tmp_z = deepcopy(z1)
         update_model!(tmp_z, r)
 
         results = run_model(tmp_z, run_timestep!; post=allocation_callback!)
@@ -76,8 +76,8 @@ function example_batch_save(data_dir::String="test/data/")::Nothing
     samples = DataFrame!(CSV.File(scen_data))
 
     all_results = Dict()
-    # tmp_z = deepcopy(z1)
     for (row_id, r) in enumerate(eachrow(samples))
+        @info "row" r
         tmp_z = deepcopy(z1)
         update_model!(tmp_z, r)
 
