@@ -5,6 +5,8 @@ using Formatting
 using OrderedCollections
 using Statistics
 
+using Infiltrator
+
 
 @with_kw mutable struct FarmZone <: AgComponent
     name::String
@@ -324,10 +326,14 @@ function create(data::Dict{Symbol}, climate_data::Climate)::FarmZone
     end
 
     name = spec[:name]
-    water_specs::Dict{Symbol, Dict} = spec[:water_source_spec]
-    pump_specs::Dict{Symbol, Dict} = spec[:pump_spec]
 
-    water_sources::Array{WaterSource} = create(water_specs, pump_specs)
+    if haskey(spec, :water_sources)
+        water_specs::Dict{Symbol, Dict} = spec[:water_sources]
+        pump_specs::Dict{Symbol, Dict} = spec[:pump_spec]
+        water_sources::Array{WaterSource} = create(water_specs, pump_specs)
+    else
+        water_sources = []
+    end
 
     # This will be used in future to provide list of irrigations/crops that could be considered
     # crop_specs::Dict{Symbol, Dict} = spec[:crop_spec]

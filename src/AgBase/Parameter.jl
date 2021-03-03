@@ -173,6 +173,7 @@ function generate_agparams(prefix::Union{String, Symbol}, dataset::Dict)::Dict{S
     if "component" in keys(dataset)
         comp = dataset["component"]
         comp_name = dataset["name"]
+
         if prefix === ""
             prefix *= "$(comp)-$(comp_name)"
         else

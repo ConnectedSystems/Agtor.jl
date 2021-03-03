@@ -36,3 +36,27 @@ fields:
   
     # Initial Soil Water Deficit
     soil_SWD: 20.0
+
+water_sources:
+  surface_water:
+    name: surface_water
+    component: WaterSource
+    
+    # See notes in Zone_1.yml
+    yearly_cost: 659.0
+    cost_per_ha: 0.0
+    cost_per_ML: 8.29
+    head: 0.0  # Initial head
+    allocation: 225.0  # Initial allocation
+
+  groundwater:
+    name: groundwater
+    component: WaterSource
+
+    # See notes in Zone_1.yml
+    yearly_cost: 3964.0
+    cost_per_ha:  7.95
+    cost_per_ML: 77.82
+
+    head: 25.0  # Initial head (in meters)
+    allocation: 50.0  # Initial allocation

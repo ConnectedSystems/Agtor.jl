@@ -358,12 +358,16 @@ function run_timestep!(farmer::BaseManager, zone::FarmZone, dt_idx::Int64, dt::D
         if within_season || season_start
             apply_rainfall!(zone, dt_idx)
 
-            if within_season
-                if f.irrigated_area == 0.0 || f.irrigation.name == "dryland"
-                    # no irrigation occurred!
-                    continue
+            if f.irrigated_area == 0.0 || f.irrigation.name == "dryland"
+                if season_start
+                    f.sowed = true
                 end
 
+                # no irrigation occurred!
+                continue
+            end
+
+            if within_season
                 # Get percentage split between water sources
                 irrigation, cost_per_ML = optimize_irrigation(farmer, zone::FarmZone, dt)
                 water_to_apply_mm = calc_required_water(f, dt)
@@ -385,8 +389,6 @@ function run_timestep!(farmer::BaseManager, zone::FarmZone, dt_idx::Int64, dt::D
                     log_irrigation_cost(f, (tmp * vol_to_apply_ML_ha * area_to_apply))
                 end 
             elseif season_start
-                f.sowed = true
-
                 # cropping for this field begins
                 opt_field_area = optimize_irrigated_area(farmer, zone)
                 f.irrigated_area = get_optimum_irrigated_area(f, opt_field_area)

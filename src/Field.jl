@@ -10,7 +10,7 @@ abstract type FarmField <: AgComponent end
     soil_TAW::Union{Float64, AgParameter}
     soil_SWD::Union{Float64, AgParameter}  # soil water deficit
     ssm::Union{Float64, AgParameter} = 0.0
-    irrigated_area::Union{Nothing, Float64} = nothing
+    irrigated_area::Union{Nothing, Float64} = 0.0
     sowed::Bool = false
     _irrigated_volume::DefaultDict = DefaultDict{String, Float64}(0.0)
     _num_irrigation_events::Int64 = 0
@@ -210,7 +210,11 @@ function possible_irrigation_area(f::FarmField, vol_ML::Float64, req_ML::Float64
         return 0.0
     end
 
-    area::Float64 = isnothing(f.irrigated_area) ? f.total_area_ha : f.irrigated_area
+    area::Float64 = 0.0
+    if f.irrigation.name != "dryland"
+        area = f.irrigated_area == 0.0 ? f.total_area_ha : f.irrigated_area
+    end
+
     if area == 0.0
         return 0.0
     end
@@ -237,10 +241,6 @@ end
 
 function reset_state!(f::FarmField)::Nothing
     f.sowed = false
-
-    if f.irrigation.name != "dryland"
-        f.irrigated_area = f.total_area_ha
-    end
 
     f.irrigated_volume = 0.0  # This clears the underlying log as well.
     f.irrigated_area = 0.0
@@ -347,16 +347,21 @@ Tuple{Float64} : income, irrigated yield [t], dryland yield [t]
 function gross_income(f::FarmField, ssm_mm::Float64, gsr_mm::Float64, 
                       irrig::Float64, func::Function=french_schultz_cy)::Tuple
     crop::Crop = f.crop
-    irrigated_yield::Float64 = calc_potential_crop_yield(func; ssm_mm, gsr_mm=gsr_mm+irrig, crop)
-    dryland_yield::Float64 = calc_potential_crop_yield(func; ssm_mm, gsr_mm, crop)
 
-    total_irrig_yield::Float64 = irrigated_yield * f.irrigated_area
+    income::Float64 = 0.0
+    total_irrig_yield::Float64 = 0.0
+    if f.irrigated_area > 0.0
+        irrigated_yield::Float64 = calc_potential_crop_yield(func; ssm_mm, gsr_mm=gsr_mm+irrig, crop)
+        total_irrig_yield = irrigated_yield * f.irrigated_area
+        income = irrigated_yield * f.irrigated_area * crop.price_per_yield
+    end
+
+    dryland_yield::Float64 = calc_potential_crop_yield(func; ssm_mm, gsr_mm, crop)
     total_dry_yield::Float64 = dryland_yield * f.dryland_area
 
-    inc::Float64 = irrigated_yield * f.irrigated_area * crop.price_per_yield
-    inc += dryland_yield * f.dryland_area * crop.price_per_yield
+    income += dryland_yield * f.dryland_area * crop.price_per_yield
 
-    return inc, total_irrig_yield, total_dry_yield
+    return income, total_irrig_yield, total_dry_yield
 end
 
 
