@@ -1,11 +1,8 @@
-using Dates
-
 using Base.Threads
 using Formatting
 using OrderedCollections
 using Statistics
-
-using Infiltrator
+using Dates
 
 
 @with_kw mutable struct FarmZone <: AgComponent

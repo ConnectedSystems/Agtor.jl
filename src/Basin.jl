@@ -1,5 +1,6 @@
 import DataStructures: counter
 
+
 mutable struct Basin <: AgComponent
     name::String
     zones::Tuple
@@ -46,11 +47,10 @@ Raises `ArgumentError` if duplicate zone names are found.
 function assign_managers!(rel, zones)
     all_names = []
     for (mg, zone_names) in rel
-        append!(all_names, zone_names)
-
         for tgt_name in zone_names
             for zone in zones
-                if tgt_name == zone.name
+                if tgt_name == Symbol(zone.name)
+                    push!(all_names, tgt_name)
                     zone.manager = mg
                 end
             end
@@ -68,42 +68,6 @@ function assign_managers!(rel, zones)
 end
 
 
-function run_timestep!(basin)
-
-    idx, dt_i = basin.current_ts
-
-    for z in basin.zones
-        run_timestep!(z.manager, z, idx, dt_i)
-    end
-
-    advance_timestep!(basin)
-end
-
-
-function advance_timestep!(basin)::Nothing
-    idx::Int64, _ = basin.current_ts
-    next_idx::Int64 = idx+1
-    dt = nothing
-
-    try
-        dt = basin.climate.time_steps[next_idx]
-    catch e
-        if e isa BoundsError
-            return
-        end
-
-        throw(e)
-    end
-
-    if isnothing(dt)
-        throw(ArgumentError("datetime cannot be nothing"))
-    end
-    
-    basin.current_ts = (idx=next_idx, dt=dt)
-
-    return
-end
-
 function reset!(b::Basin)::Nothing
     for z in b.zones
         reset!(z)
@@ -111,5 +75,19 @@ function reset!(b::Basin)::Nothing
 
     b.current_ts = (idx=1, dt=b.climate.time_steps[1])
 
-    return
+    return nothing
+end
+
+
+"""Collect model run results for a FarmZone"""
+function collect_results(basin::Basin; last=false)::Array{Tuple{DataFrame,Dict}}
+    # TODO: Change this to be a Dict to maintain zone->results mapping
+    results = []
+    sizehint!(results, length(basin.zones))
+
+    for z in basin.zones
+        push!(results, collect_results(z))
+    end
+
+    return results
 end
