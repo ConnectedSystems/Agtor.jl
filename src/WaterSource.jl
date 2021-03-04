@@ -6,6 +6,7 @@
     pump::Pump
     head::Union{Int64, Float64, AgParameter}
     allocation::Union{Int64, Float64, AgParameter}
+    entitlement::Union{Int64, Float64, AgParameter}
 end
 
 function pump_cost_per_ML(ws::WaterSource, flow_rate_Lps::Float64)::Float64
