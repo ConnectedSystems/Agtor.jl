@@ -1,8 +1,9 @@
-using Mixers
-using Agtor
 import DataFrames: DataFrame, DataFrameRow
 import Flatten: flatten
 import Dates
+
+using Mixers
+using Agtor
 
 
 abstract type AgParameter end
@@ -107,24 +108,23 @@ end
 
 # Below is equivalent to defining methods for each operation, e.g:
 #    function Base.:+(x::AgParameter, y::AgParameter) x.value + y.value end
-for op = (:+, :-, :/, :*, :^)
+for op = (:+, :-, :/, :*, :^, :<, :>)
     @eval Base.$op(x::AgParameter, y::AgParameter) = Base.$op(x.value, y.value)
 end
 
-for op = (:+, :-, :/, :*, :^)
-    @eval Base.$op(x::Union{Int, Real}, y::AgParameter) = Base.$op(x, y.value)
+for op = (:+, :-, :/, :*, :^, :<, :>)
+    @eval Base.$op(x::Number, y::AgParameter) = Base.$op(x, y.value)
+    @eval Base.$op(x::AgParameter, y::Number) = Base.$op(x.value, y)
 end
 
-for op = (:+, :-, :/, :*, :^)
-    @eval Base.$op(x::AgParameter, y::Union{Int, Real}) = Base.$op(x.value, y)
+for op = (:isless, :isgreater)
+    @eval Base.$op(x::AgParameter, y::Number) = Base.$op(x.value, y)
 end
 
+Base.:*(x::String, y::Union{ConstantParameter, CategoricalParameter}) = x * y.value
 
-function Base.:*(x::String, y::Union{ConstantParameter, CategoricalParameter}) x * y.value end
-
-# function Base.convert(x::Type{Union{Float64, Int64}}, y::Agtor.RealParameter) convert(x, y.value) end
-function Base.convert(x::Type{Any}, y::Agtor.ConstantParameter) convert(x, y.value) end
-
+Base.convert(::Type{T}, x::AgParameter) where {T<:Number} = T(x.value)
+Base.convert(x::Type{Any}, y::Agtor.ConstantParameter) = convert(x, y.value)
 
 for op = (:Year, :Month, :Day)
     @eval Dates.$op(x::AgParameter) = Dates.$op(x.value)
