@@ -114,25 +114,26 @@ function seasonal_field_log!(f::FarmField, dt::Date, income::Float64,
 end
 
 
-"""
+@doc """
     update_SWD!(f::FarmField, rainfall::Float64, ET::Float64)
 
-Calculate soil water deficit.
+Calculate soil water deficit, and update `f.soil_SWD`
 
 Water deficit is represented as positive values.
 
-`rainfall` and `ET` parameters are expected in mm
+`rainfall` and `ET` parameters are expected in mm.
 """
 function update_SWD!(f::FarmField, rainfall::Float64, ET::Float64)::Nothing
     tmp::Float64 = f.soil_SWD::Float64 - (rainfall - ET)::Float64
-    tmp = max(0.0, min(tmp, f.soil_TAW::Float64))
+
+    tmp = max(0.0, min(tmp, f.soil_TAW))
     f.soil_SWD = round(tmp, digits=4)
 
     return nothing
 end
 
 
-"""
+@doc """
     nid(f::FarmField, dt::Date)
 
 Calculate net irrigation depth in mm, 0.0 or above.
@@ -181,7 +182,7 @@ function nid(f::FarmField, dt::Date)::Float64
 end
 
 
-"""
+@doc """
     calc_required_water(f::FarmField, dt::Date)
 
 Volume of water to maintain moisture above net irrigation depth (`nid`).
@@ -204,7 +205,7 @@ function calc_required_water(f::FarmField, dt::Date)::Float64
 end
 
 
-"""Possible irrigation area in hectares."""
+@doc """Possible irrigation area in hectares."""
 function possible_irrigation_area(f::FarmField, vol_ML::Float64, req_ML::Float64)::Float64
     if vol_ML == 0.0
         return 0.0
@@ -252,7 +253,7 @@ function reset_state!(f::FarmField)::Nothing
 end
 
 
-"""
+@doc """
     french_schultz_cy(; ssm_mm::Float64, gsr_mm::Float64, crop::AgComponent)
 
 Potential crop yield calculation based on a modified French-Schultz equation.
