@@ -1,0 +1,48 @@
+name: Zone_8
+component: FarmZone
+
+# Paths to data, relative to where project is run
+climate_data: "examples/campaspe/climate/basin_historic_climate_data.csv"
+pump_spec: "test/data/pumps/"
+
+fields:
+  field1:
+    name: field1
+    component: CropField
+
+    total_area_ha: 5676.718075
+    irrigation_spec: "test/data/irrigations/gravity.yml"
+
+    # Initial crop is the first one in this list
+    crop_rotation_spec: ["test/data/crops/irrigated_wheat.yml", "test/data/crops/irrigated_barley.yml", "test/data/crops/irrigated_canola.yml"]
+
+    # average soil total available water (mm)
+    soil_TAW: ["RealParameter", 130.0, 100.0, 160.0]
+
+    # Initial Soil Water Deficit
+    soil_SWD: 20.0
+
+water_sources:
+  # See notes in Zone_2.yml
+  surface_water:
+    name: surface_water
+    component: WaterSource
+
+    yearly_cost: 659.0
+    cost_per_ha: 0.0
+    cost_per_ML: 8.29
+    head: 0.0  # Initial head
+    allocation: 61655.035  # Initial allocation
+    entitlement: 61655.035
+
+  groundwater:
+    name: groundwater
+    component: WaterSource
+
+    yearly_cost: 3964.0
+    cost_per_ha:  7.95
+    cost_per_ML: 77.82
+
+    head: 25.0  # Initial head (in meters)
+    allocation: 8760.132  # Initial allocation
+    entitlement: 8760.132

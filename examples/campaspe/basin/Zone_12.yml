@@ -1,0 +1,22 @@
+name: Zone_12
+component: FarmZone
+
+# Paths to data, relative to where project is run
+climate_data: "examples/campaspe/climate/basin_historic_climate_data.csv"
+
+fields:
+  field1:
+    name: field1
+    component: CropField
+
+    total_area_ha: 8167.071602
+    irrigation_spec: "test/data/irrigations/dryland.yml"
+
+    # Initial crop is the first one in this list
+    crop_rotation_spec: ["test/data/crops/irrigated_wheat.yml", "test/data/crops/irrigated_barley.yml", "test/data/crops/irrigated_canola.yml"]
+
+    # average soil total available water (mm)
+    soil_TAW: ["RealParameter", 165.0, 145.0, 185.0]
+
+    # Initial Soil Water Deficit
+    soil_SWD: 20.0

@@ -1,0 +1,18 @@
+name: Campaspe
+component: Basin
+
+# Paths to zone specs
+zone_spec: [
+  "examples/campaspe/basin/Zone_1.yml", 
+  "examples/campaspe/basin/Zone_2.yml",
+  "examples/campaspe/basin/Zone_3.yml",
+  "examples/campaspe/basin/Zone_4.yml",
+  "examples/campaspe/basin/Zone_5.yml",
+  "examples/campaspe/basin/Zone_6.yml",
+  "examples/campaspe/basin/Zone_7.yml",
+  "examples/campaspe/basin/Zone_8.yml",
+  "examples/campaspe/basin/Zone_9.yml",
+  "examples/campaspe/basin/Zone_10.yml",
+  "examples/campaspe/basin/Zone_11.yml",
+  "examples/campaspe/basin/Zone_12.yml"
+]
