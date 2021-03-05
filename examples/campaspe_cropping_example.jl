@@ -71,3 +71,8 @@ df = names!(DataFrame(samples), map(Symbol, agparams[:, :name]))
 res = scenario_run(df, campaspe_basin; pre=allocation_precall!)
 
 @info res
+
+# Get first scenario, first zone, zonal results 
+# (setting last index to '2' would get dict of field results)
+# Need simpler way of getting results
+# res[1][1][1]
