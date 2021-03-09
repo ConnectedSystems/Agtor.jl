@@ -175,8 +175,8 @@ function nid(f::FarmField, dt::Date)::Float64
     crop::Crop = f.crop
     coefs::NamedTuple = get_stage_coefs(crop, dt)
 
-    e_rootzone_m::Float64 = crop.root_depth_m::Float64 * crop.effective_root_zone::Float64
-    soil_RAW::Float64 = f.soil_TAW::Float64 * coefs.depletion_fraction::Float64
+    e_rootzone_m::Float64 = crop.root_depth_m * crop.effective_root_zone
+    soil_RAW::Float64 = f.soil_TAW * coefs.depletion_fraction
 
     return (e_rootzone_m * soil_RAW)
 end
