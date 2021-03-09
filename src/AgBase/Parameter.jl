@@ -449,3 +449,54 @@ function update_model!(comp, sample)::Nothing
 
     return
 end
+
+
+"""
+Create relational mapping between components and values.
+"""
+function component_relationship(agparams::DataFrame)::Dict
+    comp_sep = Agtor.component_sep
+    name_sep = Agtor.component_name_sep
+    field_sep = Agtor.component_field_sep
+    
+    relation = Dict()
+    names = agparams.name
+
+    for n in names
+        nstr = String(n)
+        components = split(nstr, comp_sep)
+        top_level = components[1]
+
+        if !haskey(relation, top_level)
+            relation[top_level] = Dict() 
+        end
+            
+        upper = relation[top_level]
+        
+        for c in components[2:end]
+            if contains(c, field_sep)
+                comp, fld_name = Tuple(split(c, field_sep))
+
+                field_values = agparams[in([n]).(names), [:default, :min_val, :max_val]]
+                field_values = copy(field_values[1, :])
+
+                if haskey(upper, comp)
+                    upper[comp][fld_name] = field_values
+                else
+                    upper[comp] = Dict(fld_name=>field_values)
+                end
+
+                continue
+            end
+
+            if !haskey(upper, c)
+                upper[c] = Dict()
+            end
+            
+            upper = upper[c]
+        end
+    end
+
+    return relation
+end
+
