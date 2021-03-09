@@ -81,3 +81,21 @@ function collate_results(data::Dict, group::String, target::String)::DataFrame
 
     return DataFrame!(res)
 end
+
+
+"""Filter down to a subset of results based on partial column name match."""
+function select_results(data::DataFrame, needle::String)::DataFrame
+    return data[:, [c for c in names(data) if contains(String(c), needle)]]
+end
+
+
+"""Get aggregate statistics for an entire scenario run."""
+function scenario_stats(data::DataFrame, needle::String)::NamedTuple
+    df = select_results(data, needle)
+    total = sum(sum.(eachrow(df)))
+    avg = mean(mean.(eachrow(df)))
+    med = median(median.(eachrow(df)))
+
+    return (total=total, mean=avg, median=med)
+
+end
