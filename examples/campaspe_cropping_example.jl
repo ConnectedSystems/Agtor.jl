@@ -2,8 +2,11 @@
 
 using DataFrames, CSV, FileIO
 using Statistics, OrderedCollections
+using Distributed
 using Surrogates
 using Agtor, Dates
+
+using Interact: @manipulate
 
 import Base.Filesystem: rm
 
@@ -22,16 +25,16 @@ function allocation_precall!(zone, dt_i)
 end
 
 
-function scenario_run(samples, basin; pre=nothing, post=nothing)::Array
+function scenario_run(samples, basin; pre=nothing, post=nothing)::Dict
     # Need to change this to be a Dict so we have scenario/
-    scenario_results = []
+    scenario_results = Dict()
     sizehint!(scenario_results, nrow(samples))
 
     for (row_id, r) in enumerate(eachrow(samples))
         tmp_b = deepcopy(basin)
         
         update_model!(tmp_b, r)
-        push!(scenario_results, run_model(tmp_b, run_timestep!; pre=pre, post=post))
+        scenario_results[row_id] = run_model(tmp_b, run_timestep!; pre=pre, post=post)
     end
 
     return scenario_results
@@ -62,17 +65,12 @@ campaspe_basin = Basin(name=basin_name, zone_spec=zone_specs,
 
 agparams = collect_agparams!(campaspe_basin)
 
-# search_range = [(x[:min_val], x[:max_val]) for x in eachrow(agparams[:, [:min_val, :max_val]])]
+samples = sample(50, agparams[:, :min_val], agparams[:, :max_val], SobolSample())
 
-samples = sample(10, agparams[:, :min_val], agparams[:, :max_val], SobolSample())
-
+# Match sampled values with parameter names
 df = names!(DataFrame(samples), map(Symbol, agparams[:, :name]))
 
 res = scenario_run(df, campaspe_basin; pre=allocation_precall!)
 
-@info res
+save_results!("campaspe_example.jld2", res)
 
-# Get first scenario, first zone, zonal results 
-# (setting last index to '2' would get dict of field results)
-# Need simpler way of getting results
-# res[1][1][1]

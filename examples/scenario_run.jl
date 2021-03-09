@@ -18,7 +18,7 @@ function setup_zone(data_dir::String="test/data/")
     zone_spec_dir::String = "$(data_dir)zones"
     zone_params::Dict{Symbol, Dict} = load_spec(zone_spec_dir)
 
-    return create(zone_params[:Zone_1])
+    return create(zone_params[:Zone_3])
 end
 
 
@@ -77,12 +77,10 @@ function example_batch_save(data_dir::String="test/data/")::Nothing
 
     all_results = Dict()
     for (row_id, r) in enumerate(eachrow(samples))
-        @info "row" r
         tmp_z = deepcopy(z1)
         update_model!(tmp_z, r)
 
-        zone_results, field_results = run_model(tmp_z, run_timestep!; post=allocation_callback!)
-        all_results[row_id] = (zone_results, field_results)
+        all_results[row_id] = run_model(tmp_z, run_timestep!; post=allocation_callback!)
     end
 
     save_results!("batch_run.jld2", all_results)
@@ -101,9 +99,11 @@ saved_results = load("batch_run.jld2")
 
 # @info saved_results["1/zone_results"]
 
-df = collate_results("batch_run.jld2", "zone_results", "irrigated_yield_sum")
+# df = collate_results("batch_run.jld2", "zone_results", "irrigated_yield_sum")
+df = collate_results("batch_run.jld2", "zone_results", "dryland_yield_sum")
 
 using Gadfly
 
 col_names = map(Symbol, names(df))
-p = plot(df, x=Row, y=Col.value(col_names...), color=Col.index(col_names...), Geom.line)
+# p = plot(df, x=Row, y=Col.value(col_names...), color=Col.index(col_names...), Geom.line)
+p = plot(df, y=Col.value(col_names...), color=Col.index(col_names...), Geom.line)

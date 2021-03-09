@@ -22,8 +22,17 @@ data_dir = "test/data/"
 zone_spec_dir = "$(data_dir)zones"
 zone_params = load_spec(zone_spec_dir)
 
-example_zone = create(zone_params[:Zone_1])
+climate_data = "$(data_dir)/climate/farm_climate_data.csv"
+climate = load_climate(climate_data)
+
+example_zone = create(zone_params[:Zone_1], climate)
 example_zone.manager = BaseManager("Example")
+
+@info example_zone
+
+
+
+
 
 agparams = collect_agparams!(example_zone)
 
