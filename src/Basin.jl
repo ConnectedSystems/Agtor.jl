@@ -80,13 +80,12 @@ end
 
 
 """Collect model run results for a FarmZone"""
-function collect_results(basin::Basin; last=false)::Array{Tuple{DataFrame,Dict}}
-    # TODO: Change this to be a Dict to maintain zone->results mapping
-    results = []
+function collect_results(basin::Basin; last=false)::Dict
+    results = Dict()
     sizehint!(results, length(basin.zones))
 
     for z in basin.zones
-        push!(results, collect_results(z))
+        results[z.name] = collect_results(z)
     end
 
     return results
