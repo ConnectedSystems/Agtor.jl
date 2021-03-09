@@ -86,13 +86,22 @@ function save_results!(fn::String, results::Any, group::Tuple{String, String})::
 end
 
 
-"""Save results for a single zone to JLD."""
+"""Save results to JLD2."""
 function save_results!(fn, results::Dict)::Nothing
     mode = determine_file_mode(fn)
     jldopen(fn, mode) do file
         for (i, res) in results
-            file["$(i)/zone_results"] = res[1]  # zone_results
-            file["$(i)/field_results"] = res[2]  # field_results
+            if res isa NamedTuple
+                # Handle Zone level results
+                file["$(i)/zone_results"] = res.zone_results
+                file["$(i)/field_results"] = res.field_results
+            elseif res isa Dict
+                # handle Basin level results
+                for (k, v) in res
+                    file["$(i)/$(k)/zone_results"] = v.zone_results
+                    file["$(i)/$(k)/field_results"] = v.field_results
+                end
+            end
         end
     end
 
@@ -106,14 +115,14 @@ function save_results!(fn::String, idx::Union{String, Int64}, results::Tuple)::N
 
     try
         jldopen(fn, mode) do file
-            file["$(idx)/zone_results"] = results[1]  # zone_results
-            file["$(idx)/field_results"] = results[2]  # field_results
+            file["$(idx)/zone_results"] = results.zone_results  # zone_results
+            file["$(idx)/field_results"] = results.field_results  # field_results
         end
     catch e
         if isa(e, TaskFailedException)
             jldopen(fn, "a+") do file
-                file["$(idx)/zone_results"] = results[1]  # zone_results
-                file["$(idx)/field_results"] = results[2]  # field_results
+                file["$(idx)/zone_results"] = results.zone_results  # zone_results
+                file["$(idx)/field_results"] = results.field_results  # field_results
             end
         else
             println("Could not save results ($(idx)) to $(fn)!")
@@ -128,23 +137,8 @@ end
 function save_results!(fn, sid, bid, zid, results; mode="w")::Nothing
     jldopen(fn, mode) do file
         prefix = "Scenario_$(sid)/$(bid)/$(zid)"
-        file["$(prefix)/zone_results"] = results[1]  # zone_results
-        file["$(prefix)/field_results"] = results[2]  # field_results
-    end
-
-    return nothing
-end
-
-
-function collate_results!(fn_pattern::String, main_fn::String)::Nothing
-    all_fns = glob(fn_pattern)
-    jldopen(main_fn, "w") do file
-        for fn in all_fns
-            data = load(fn)
-            for (grp_id, grp) in data
-                file[grp_id] = grp
-            end
-        end
+        file["$(prefix)/zone_results"] = results.zone_results  # zone_results
+        file["$(prefix)/field_results"] = results.field_results  # field_results
     end
 
     return nothing

@@ -299,7 +299,7 @@ end
 
 
 """Collect model run results for a FarmZone"""
-function collect_results(zone::FarmZone; last=false)::Tuple{DataFrame,Dict}
+function collect_results(zone::FarmZone; last=false)::NamedTuple
     field_logs = Dict(
         f.name => f._seasonal_log
         for f in zone.fields
@@ -311,7 +311,7 @@ function collect_results(zone::FarmZone; last=false)::Tuple{DataFrame,Dict}
 
     collated_res = hcat(collated, irrig_ws[:, setdiff(names(irrig_ws), [:Date])])
 
-    return collated_res, field_logs
+    return (zone_results=collated_res, field_results=field_logs)
 end
 
 
