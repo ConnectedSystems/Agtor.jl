@@ -232,10 +232,6 @@ function generate_agparams(prefix::Union{String, Symbol}, dataset::Dict)::Dict{S
 end
 
 
-function sample_params(dataset::Dict)
-end
-
-
 """Extract parameter values from AgParameter"""
 function extract_values(p::AgParameter; prefix::Union{String, Nothing}=nothing)::NamedTuple
     if !isnothing(prefix)
