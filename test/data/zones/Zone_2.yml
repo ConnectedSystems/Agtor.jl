@@ -23,20 +23,6 @@ fields:
     # Initial Soil Water Deficit
     soil_SWD: 20.0
 
-  field2:
-    name: field2
-    component: CropField
-
-    total_area_ha: 80.0
-    irrigation_spec: "test/data/irrigations/gravity.yml"
-    crop_rotation_spec: ["test/data/crops/irrigated_wheat.yml", "test/data/crops/irrigated_canola.yml"]
-
-    # average soil total available water (mm)
-    soil_TAW: 100.0
-  
-    # Initial Soil Water Deficit
-    soil_SWD: 20.0
-
 water_sources:
   surface_water:
     name: surface_water
@@ -48,6 +34,7 @@ water_sources:
     cost_per_ML: 8.29
     head: 0.0  # Initial head
     allocation: 225.0  # Initial allocation
+    entitlement: 225.0  # Total entitlement
 
   groundwater:
     name: groundwater
@@ -60,3 +47,4 @@ water_sources:
 
     head: 25.0  # Initial head (in meters)
     allocation: 50.0  # Initial allocation
+    entitlement: 50.0  # Total entitlement
