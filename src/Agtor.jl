@@ -30,6 +30,11 @@ include("Model.jl")
 
 AgUnion = Union{Int64, Float64, Agtor.AgParameter}
 
+const component_sep = "└──"
+const component_name_sep = "-"
+const component_field_sep = "~"
+
+
 export @def, AgUnion
 
 export load_yaml, load_spec, load_climate, create

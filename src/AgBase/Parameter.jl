@@ -170,20 +170,24 @@ Returns
 * Dict matching structure of dataset
 """
 function generate_agparams(prefix::Union{String, Symbol}, dataset::Dict)::Dict{Symbol, Any}
+    comp_sep = Agtor.component_sep
+    name_sep = Agtor.component_name_sep
+    field_sep = Agtor.component_field_sep
+
     if "component" in keys(dataset)
         comp = dataset["component"]
         comp_name = dataset["name"]
 
         if prefix === ""
-            prefix *= "$(comp)-$(comp_name)"
+            prefix *= "$(comp)$(name_sep)$(comp_name)"
         else
-            prefix *= "└──$(comp)-$(comp_name)"
+            prefix *= "$(comp_sep)$(comp)$(name_sep)$(comp_name)"
         end
     end
 
     created::Dict{Any, Any} = deepcopy(dataset)
     for (n, vals) in dataset
-        var_id = "$(prefix)~$n"
+        var_id = "$(prefix)$(field_sep)$n"
 
         s = Symbol(n)
         pop!(created, n)
