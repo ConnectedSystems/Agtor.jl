@@ -1,3 +1,7 @@
+using Distributed
+
+
+
 """
 Run model for a single zone.
 
@@ -42,6 +46,7 @@ function run_model(zone::FarmZone, ts_func::Function; pre::Union{Function, Nothi
 
     return collect_results(zone)
 end
+
 
 """Run timestep for all zones within a basin."""
 function run_timestep!(basin::Basin, ts_func; pre::Union{Function, Nothing}=nothing, post::Union{Function, Nothing}=nothing)
@@ -97,3 +102,98 @@ function advance_timestep!(basin)::Nothing
 
     return
 end
+
+
+"""
+Run zone level scenarios for a given sample set.
+
+Returns Dict with keys:
+    "scenario_id/zone_results" = zone level results
+    "scenario_id/field_results" = field level results
+"""
+function run_scenarios!(samples::DataFrame, zone::FarmZone, ts_func::Function; 
+                        pre::Union{Function, Nothing}=nothing, post::Union{Function, Nothing}=nothing)::Dict
+    results = @sync @distributed (hcat) for row_id in 1:nrow(samples)
+        tmp_z = deepcopy(zone)
+        update_model!(tmp_z, samples[row_id, :])
+        res = run_model(tmp_z, ts_func; pre=pre, post=post)
+
+        # Return pair of scenario_id and results
+        string(row_id), res
+    end
+
+    # Prep results into expected form
+    transformed = Dict()
+    for (idx, res) in results
+        transformed["$(idx)/zone_results"] = res.zone_results
+        transformed["$(idx)/field_results"] = res.field_results
+    end
+
+    return transformed
+end
+
+
+"""
+Run basin level scenarios for a given sample set.
+
+Returns Dict with keys:
+    "scenario_id/zone_results" = zone level results for each zone in basin
+    "scenario_id/field_results" = field level results for each zone in basin
+"""
+function run_scenarios!(samples::DataFrame, basin::Basin, ts_func::Function; 
+                        pre::Union{Function, Nothing}=nothing, post::Union{Function, Nothing}=nothing)::Dict
+    results = @sync @distributed (hcat) for row_id in 1:nrow(samples)
+        tmp_b = deepcopy(basin)
+        update_model!(tmp_b, samples[row_id, :])
+        res = run_model(tmp_b, ts_func; pre=pre, post=post)
+
+        # Return pair of scenario_id and results
+        string(row_id), res
+    end
+
+    # # Prep results into expected form
+    transformed = Dict()
+    for (idx, res) in results
+        transformed["$(idx)/zone_results"] = Dict(
+            k => v.zone_results for (k, v) in res
+        )
+        transformed["$(idx)/field_results"] = Dict(
+            k => v.field_results for (k, v) in res
+        )
+    end
+
+    return transformed
+end
+
+
+# todo
+struct BasinResults
+end
+
+struct ZoneResults
+end
+
+
+# """
+# Setup a model with a specific timestep function.
+# """
+# function setup_model(catchment::Union{FarmZone, Basin}, ts_func::Function; pre::Union{Function, Nothing}=nothing, post::Union{Function, Nothing}=nothing)
+#     function run_model(catchment::Union{FarmZone, Basin})
+#         time_sequence = catchment.climate.time_steps
+#         @inbounds for (idx, dt_i) in enumerate(time_sequence)
+#             if !isnothing(pre)
+#                 pre(catchment, dt_i)
+#             end
+
+#             ts_func(catchment.manager, catchment, idx, dt_i)
+
+#             if !isnothing(post)
+#                 post(catchment, dt_i)
+#             end
+#         end
+
+#         return collect_results(catchment)
+#     end
+
+#     return run_model
+# end
