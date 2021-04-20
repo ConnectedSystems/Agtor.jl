@@ -65,6 +65,7 @@ function assign_managers!(rel::Tuple, zones)
     end
 
     if length(all_names) != length(zones)
+        @info "Names vs zones" all_names zones
         throw(ArgumentError("One or more zones are missing a manager"))
     end
 end
