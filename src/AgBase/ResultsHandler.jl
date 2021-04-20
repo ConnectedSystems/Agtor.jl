@@ -72,12 +72,19 @@ function collate_results(data::Dict, group::String, target::String)::DataFrame
             for (fid, v) in dataset
                 res[k*"_"*fid] = v[:, tgt_sym]
             end
-        else
+        elseif dataset isa DataFrame
             res[k] = dataset[:, tgt_sym]
+        elseif dataset isa Dict
+            # collate basin level results
+            compiled_results = for (idx, res) in dataset
+                result_set = results_df(res, target; res_type="zone_results")
+                mean(result_set[:total])
+            end
+            res[k] = compiled_results
         end
     end
 
-    return DataFrame!(res)
+    return DataFrame(res)
 end
 
 
@@ -96,4 +103,14 @@ function scenario_stats(data::DataFrame, needle::String)::NamedTuple
 
     return (total=total, mean=avg, median=med)
 
+end
+
+
+function results_df(results::Union{Dict, String}, metric::String; res_type::String="zone_results")
+    res_df = collate_results(results, res_type, metric)
+    n_samples = ncol(res_df)
+    res_stats = [scenario_stats(res_df, "$(i)/$(res_type)") for i in 1:n_samples]
+    result_set = DataFrame(res_stats)
+
+    return result_set
 end
