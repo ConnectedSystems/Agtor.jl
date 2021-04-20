@@ -86,22 +86,32 @@ function save_results!(fn::String, results::Any, group::Tuple{String, String})::
 end
 
 
-"""Save results to JLD2."""
-function save_results!(fn, results::Dict)::Nothing
+"""Save arbitrary results to JLD."""
+function save_results!(fn::String, results::NamedTuple)::Nothing
+    mode = determine_file_mode(fn)
+    jldopen(fn, mode) do file
+        file["results"] = results
+    end
+
+    return nothing
+end
+
+
+"""Save results to JLD2.
+
+# Example
+
+```julia
+output_fn = "example.jld2"
+results = run_scenarios!(samples, z1, run_timestep!; post=allocation_callback!)
+save_results!(output_fn, results)
+```
+"""
+function save_results!(fn::String, results::Dict)::Nothing
     mode = determine_file_mode(fn)
     jldopen(fn, mode) do file
         for (i, res) in results
-            if res isa NamedTuple
-                # Handle Zone level results
-                file["$(i)/zone_results"] = res.zone_results
-                file["$(i)/field_results"] = res.field_results
-            elseif res isa Dict
-                # handle Basin level results
-                for (k, v) in res
-                    file["$(i)/$(k)/zone_results"] = v.zone_results
-                    file["$(i)/$(k)/field_results"] = v.field_results
-                end
-            end
+            file[i] = res
         end
     end
 
@@ -109,8 +119,31 @@ function save_results!(fn, results::Dict)::Nothing
 end
 
 
+# """Save results to JLD2."""
+# function save_results!(fn::String, results::Dict)::Nothing
+#     mode = determine_file_mode(fn)
+#     jldopen(fn, mode) do file
+#         for (i, res) in results
+#             if res isa NamedTuple
+#                 # Handle Zone level results
+#                 file["$(i)/zone_results"] = res.zone_results
+#                 file["$(i)/field_results"] = res.field_results
+#             elseif res isa Dict
+#                 # handle Basin level results
+#                 for (k, v) in res
+#                     file["$(i)/$(k)/zone_results"] = v.zone_results
+#                     file["$(i)/$(k)/field_results"] = v.field_results
+#                 end
+#             end
+#         end
+#     end
+
+#     return nothing
+# end
+
+
 """Save results for a single zone to JLD."""
-function save_results!(fn::String, idx::Union{String, Int64}, results::Tuple)::Nothing
+function save_results!(fn::String, idx::Union{String, Int64}, results::NamedTuple)::Nothing
     mode = determine_file_mode(fn)
 
     try

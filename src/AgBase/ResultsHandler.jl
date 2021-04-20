@@ -43,12 +43,10 @@ end
 
 
 """
-Collate a given list of names from across scenario runs into a individual DataFrames.
+Collate a given list of names from across scenario runs into individual DataFrames.
 """
 function collate_results(data::Dict, group::String, target::Array{String})::DataFrame
-
     res = Dict()
-
     for tgt in target
         res[tgt] = collate_results(data, group, tgt)
     end
@@ -83,7 +81,7 @@ function collate_results(data::Dict, group::String, target::String)::DataFrame
 end
 
 
-"""Filter down to a subset of results based on partial column name match."""
+"""Filter DataFrame down to a subset of results based on partial column name match."""
 function select_results(data::DataFrame, needle::String)::DataFrame
     return data[:, [c for c in names(data) if contains(String(c), needle)]]
 end
