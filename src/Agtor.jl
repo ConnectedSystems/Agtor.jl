@@ -6,6 +6,7 @@ using Parameters
 using DataFrames, Dates, YAML, CSV
 using Distributed
 
+import OrderedCollections: LittleDict
 import DataStructures: OrderedDict, DefaultDict
 
 include("AgBase/Units.jl")
@@ -47,8 +48,8 @@ export collect_results, min_max, extract_values, param_info, extract_spec, add_p
 export set_params!, extract_agparams, collect_agparams!, collect_agparams, update_model!
 export water_used_by_source
 export get_data_for_timestep, aggregate_field_logs, run_model
-export save_results!, save_state!
+export run_scenarios!, save_results!, save_state!
 export collate_results, collate_results!, component_relationship
-export select_results, scenario_stats
+export select_results, scenario_stats, results_df
 
 end # module
