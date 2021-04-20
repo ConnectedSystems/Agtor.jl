@@ -3,20 +3,11 @@ using Test
 using Agtor, Dates, CSV
 
 
-function setup_zone(data_dir::String="test/data/")
-    zone_spec_dir::String = "$(data_dir)zones"
-    zone_params::Dict{Symbol, Dict} = load_spec(zone_spec_dir)
-
-    return create(zone_params[:Zone_1])
-end
-
-
 @testset "Loading YAML spec" begin
     data_dir::String="test/data/"
     pump_spec_dir::String = "$(data_dir)pumps/"
     pump_specs::Dict{String, Dict} = load_yaml(pump_spec_dir)
 
-    @info pump_specs
     @test pump_specs["groundwater"]["capital_cost"][1] == "RealParameter"
 end
 
