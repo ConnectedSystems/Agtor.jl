@@ -23,6 +23,16 @@ Why the name "Agtor"?
 The model represents agricultural actors within a system and so the name is a portmandeau of "agriculture" and "actor".
 
 
+Tests
+=====
+
+Tests are invoked from the project root, like so:
+
+```julia
+include("test/runtests.jl")
+```
+
+
 Development Setup
 =================
 
