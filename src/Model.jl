@@ -1,3 +1,4 @@
+using ProgressMeter
 using Distributed
 
 
@@ -104,18 +105,22 @@ end
 
 
 """
+    run_scenarios!(samples::DataFrame, zone::FarmZone; ts_func::Function=run_timestep!,
+                   pre::Union{Function, Nothing}=nothing, post::Union{Function, Nothing}=nothing)::Dict
+
 Run zone level scenarios for a given sample set.
 
-Returns Dict with keys:
-    "scenario_id/zone_results" = zone level results
-    "scenario_id/field_results" = field level results
+# Returns
+Dict with keys:
+    - "scenario_id/zone_results" = zone level results
+    - "scenario_id/field_results" = field level results
 """
-function run_scenarios!(samples::DataFrame, zone::FarmZone, ts_func::Function; 
+function run_scenarios!(samples::DataFrame, zone::FarmZone; ts_func::Function=run_timestep!,
                         pre::Union{Function, Nothing}=nothing, post::Union{Function, Nothing}=nothing)::Dict
     results = @sync @distributed (hcat) for row_id in 1:nrow(samples)
         tmp_z = deepcopy(zone)
         update_model!(tmp_z, samples[row_id, :])
-        res = run_model(tmp_z, ts_func; pre=pre, post=post)
+        res = run_model(tmp_z, ts_func=ts_func, pre=pre, post=post)
 
         # Return pair of scenario_id and results
         string(row_id), res
@@ -133,18 +138,22 @@ end
 
 
 """
+    run_scenarios!(samples::DataFrame, basin::Basin, ts_func::Function; 
+                   pre::Union{Function, Nothing}=nothing, post::Union{Function, Nothing}=nothing)::Dict
+
 Run basin level scenarios for a given sample set.
 
-Returns Dict with keys:
+# Returns
+- Dict with keys:
     "scenario_id/zone_results" = zone level results for each zone in basin
     "scenario_id/field_results" = field level results for each zone in basin
 """
-function run_scenarios!(samples::DataFrame, basin::Basin, ts_func::Function; 
+function run_scenarios!(samples::DataFrame, basin::Basin; ts_func::Function=run_timestep!,
                         pre::Union{Function, Nothing}=nothing, post::Union{Function, Nothing}=nothing)::Dict
-    results = @sync @distributed (hcat) for row_id in 1:nrow(samples)
+    results = @showprogress 1 "Running..." @distributed (hcat) for row_id in 1:nrow(samples)
         tmp_b = deepcopy(basin)
         update_model!(tmp_b, samples[row_id, :])
-        res = run_model(tmp_b, ts_func; pre=pre, post=post)
+        res = run_model(tmp_b; ts_func=ts_func, pre=pre, post=post)
 
         # Return pair of scenario_id and results
         string(row_id), res
