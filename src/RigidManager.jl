@@ -20,7 +20,6 @@ function run_timestep!(farmer::RigidManager, zone::FarmZone, idx::Int64, dt::Dat
         within_season::Bool = in_season(dt, s_start, s_end)
         season_start::Bool = matching_dates(dt, s_start)
         season_end::Bool = matching_dates(dt, s_end)
-        crop::Crop = f.crop
 
         f_name::String = f.name
 
@@ -35,8 +34,6 @@ function run_timestep!(farmer::RigidManager, zone::FarmZone, idx::Int64, dt::Dat
             req_water_mm::Float64 = farmer.application_amount * ML_to_mm
             area_to_apply::Float64 = f.total_area_ha
             for ws in zone.water_sources
-                ws_name::String = ws.name
-
                 avail_water_mm::Float64 = (ws.allocation / area_to_apply) * ML_to_mm
                 water_to_apply_mm::Float64 = 0.0
 
@@ -74,7 +71,7 @@ function run_timestep!(farmer::RigidManager, zone::FarmZone, idx::Int64, dt::Dat
             # growing season rainfall
             gsr_mm::Float64 = get_seasonal_rainfall(zone.climate, [s_start, s_end], f_name)
 
-            if f.sowed == true
+            if f.sowed
                 irrig_mm::Float64 = f.irrigated_vol_mm
 
                 # The French-Schultz method assumes 25-30% of previous 3 months

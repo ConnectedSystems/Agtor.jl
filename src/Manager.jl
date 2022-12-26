@@ -360,7 +360,6 @@ function run_timestep!(farmer::EconManager, zone::FarmZone, dt_idx::Int64, dt::D
         within_season::Bool = in_season(dt, s_start, s_end)
         season_start::Bool = matching_dates(dt, s_start)
         season_end::Bool = matching_dates(dt, s_end)
-        crop::Crop = f.crop
 
         f_name::String = f.name
 
