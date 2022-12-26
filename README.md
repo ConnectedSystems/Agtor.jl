@@ -42,12 +42,16 @@ Development Setup
 ```bash
 $ julia --project=.
 
+# Activate the package manager
 julia> ]
 
+# Instantiate project and dependencies
 (Agtor) pkg> instantiate
 ```
 
 Examples may use `PyCall` to interact with the SALib package.
+
+Note: Examples will eventually be updated to use [PythonCall.jl](https://cjdoris.github.io/PythonCall.jl/stable/) instead.
 
 To set up PyCall, define the appropriate Python environment location and
 run `Pkg.build()`, for example:
