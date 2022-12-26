@@ -109,9 +109,9 @@ save_results!(output_fn, results)
 """
 function save_results!(fn::String, results::Dict)::Nothing
     mode = determine_file_mode(fn)
-    jldopen(fn, mode) do file
+    jldopen(fn, mode; compress=true) do f
         for (i, res) in results
-            file[i] = res
+            f[i] = res
         end
     end
 
