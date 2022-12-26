@@ -44,9 +44,7 @@ end
 
 """Run timestep for all zones within a basin."""
 function run_timestep!(basin::Basin, ts_func; pre::Union{Function, Nothing}=nothing, post::Union{Function, Nothing}=nothing)
-
     idx, dt_i = basin.current_ts
-
     for z in basin.zones
         if !isnothing(pre)
             pre(z, dt_i)
