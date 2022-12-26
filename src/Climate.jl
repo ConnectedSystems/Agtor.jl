@@ -2,7 +2,7 @@ using DataFrames, Dates
 
 
 """Serves as an interface to climate data"""
-mutable struct Climate <: AgComponent
+mutable struct Climate
 
     data::Any
     time_steps::Array
