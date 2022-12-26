@@ -34,15 +34,15 @@ end
 
 
 @doc """
-    Categorical parameters.
+    CategoricalParameter
 
-    Min and max values will map to (integer) element position in an CategoricalArray.
+Min and max values will map to (integer) element position in an CategoricalArray.
 
-    Sampling between the min and max values will be mapped to their categorical value in the given array
-    using `floor()` of the Float value `x`.
+Sampling between the min and max values will be mapped to their categorical value in the given array
+using `floor()` of the Float value `x`.
 
-    Valid values for the CategoricalParameter will therefore be: 
-    `1 <= x < (n+1)`, where n is number of options.
+Valid values for the CategoricalParameter will therefore be: 
+`1 <= x < (n+1)`, where n is number of options.
 """
 @with_kw mutable struct CategoricalParameter <: AgParameter
     name::String
@@ -91,7 +91,10 @@ function Base.setproperty!(cat::CategoricalParameter, v::Symbol, value)::Nothing
 end
 
 
-"""Ag specific in function.
+"""
+    agin(p::AgParameter, store::Array)::Bool
+
+Agtor specific `in` function.
 
 Purposeful decision not to override Base.in() method as this
 performs the check on any Array expecting NamedTuples.
@@ -160,15 +163,12 @@ end
 """
 Generate AgParameter definitions.
 
-Parameters
-----------
-prefix : str
+# Arguments
+- prefix : str
+- dataset : Dict, of parameters for given component
 
-dataset : Dict, of parameters for given component
-
-Returns
-----------
-* Dict matching structure of dataset
+# Returns
+- Dict matching structure of dataset
 """
 function generate_agparams(prefix::Union{String, Symbol}, dataset::Dict)::Dict{Symbol, Any}
     comp_sep = Agtor.component_sep
@@ -364,26 +364,29 @@ end
 
 
 """
-Usage:
-    zone_dir = "data_dir/zones/"
-    zone_specs = load_yaml(zone_dir)
-    zone_params = generate_agparams("", zone_specs["Zone_1"])
-    
-    collated_specs = []
-    collect_agparams!(zone_params, collated_specs; ignore=["crop_spec"])
-    
-    # Expect only CSV for now...
-    climate_fn::String = "data/climate/farm_climate_data.csv"
-    climate::Climate = load_climate(climate_fn)
-    z1 = create(zone_params, climate)
+# Example
 
-    param_info = DataFrame(collated_specs)
+```julia
+zone_dir = "data_dir/zones/"
+zone_specs = load_yaml(zone_dir)
+zone_params = generate_agparams("", zone_specs["Zone_1"])
 
-    # Generate dataframe of samples
-    samples = sample(param_info, 1000, sampler)  # where sampler is some function
+collated_specs = []
+collect_agparams!(zone_params, collated_specs; ignore=["crop_spec"])
 
-    # Update z1 components with values found in first row
-    set_params!(z1, samples[1])
+# Expect only CSV for now...
+climate_fn::String = "data/climate/farm_climate_data.csv"
+climate::Climate = load_climate(climate_fn)
+z1 = create(zone_params, climate)
+
+param_info = DataFrame(collated_specs)
+
+# Generate dataframe of samples
+samples = sample(param_info, 1000, sampler)  # where sampler is some function
+
+# Update z1 components with values found in first row
+set_params!(z1, samples[1])
+```
 """
 function set_params!(comp, sample)::Nothing
     match = (Array, Tuple, Dict, AgComponent, AgParameter)

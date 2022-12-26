@@ -1,5 +1,6 @@
 import Agtor.@def
 
+
 """Represents generic farm infrastructure."""
 abstract type Infrastructure <: AgComponent end
 
@@ -23,7 +24,9 @@ end
 
 """Calculate maintenance costs.
 
-Warning: This can be on a per hectare basis or given as a total.
+!!! warning 
+    Don't forget that the output of this can be on a per hectare basis 
+    or given as a total depending on how the model is parameterized.
 """
 function maintenance_cost(infra::Infrastructure, year_step::Int64)::Float64
     minor=infra.minor_maintenance_schedule

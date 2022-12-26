@@ -77,8 +77,7 @@ end
 
 """Gets climate data for season range.
 
-Parameters
-----------
+# Arguments
 * p_start : datetime, start of range in Y-m-d format, inclusive.
 * p_end : datetime, end of range in Y-m-d format, inclusive.
 """
@@ -103,19 +102,16 @@ end
 """Retrieve seasonal rainfall by matching column name. 
 Columns names are expected to have 'rainfall' with some identifier.
 
-Parameters
-----------
-* season_range : List-like, start and end dates, can be string or datetime object
-* partial_name : str, string to (partially) match column name identifier on
-
-Example
-----------
+# Example
 Where column names are: 'rainfall_field1', 'rainfall_field2', ...
 
 `get_seasonal_rainfall(c, ['1981-01-01', '1982-06-01'], 'field1')`
 
-Returns
---------
+# Arguments
+* season_range : List-like, start and end dates, can be string or datetime object
+* partial_name : str, string to (partially) match column name identifier on
+
+# Returns
 numeric, representing seasonal rainfall
 """
 function get_seasonal_rainfall(c::Climate, season_range::Array{Date}, partial_name::String)::Float64
@@ -127,13 +123,11 @@ end
 
 """Retrieve seasonal evapotranspiration.
 
-Parameters
-----------
+# Arguments
 * season_range : List-like, start and end dates, can be string or datetime object
 * partial_name : str, string to (partially) match column name identifier on
 
-Returns
---------
+# Returns
 numeric of seasonal rainfall
 """
 function get_seasonal_et(c::Climate, season_range::Array{Date}, partial_name::String)::DataFrame

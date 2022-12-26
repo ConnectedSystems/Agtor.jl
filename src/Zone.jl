@@ -253,16 +253,17 @@ function aggregate_field_logs(field_logs::DataFrame)::DataFrame
 end
 
 
-"""Collate logged values, aggregating to the zonal level based on identical datetimes."""
+"""
+    collate_field_logs(zone::FarmZone)::DataFrame
+    collate_field_logs(seasonal_logs::Dict)::DataFrame
+
+Collate logged values, aggregating to the zonal level based on identical datetimes."""
 function collate_field_logs(zone::FarmZone)::DataFrame
     tmp::DataFrame = reduce(vcat, [f._seasonal_log for f in zone.fields])
     collated::DataFrame = aggregate_field_logs(tmp)
 
     return collated
 end
-
-
-"""Collate logged values, aggregating to the zonal level based on identical datetimes."""
 function collate_field_logs(seasonal_logs::Dict)::DataFrame
     s_logs = values(seasonal_logs)
     tmp::DataFrame = reduce(vcat, s_logs)
@@ -271,12 +272,15 @@ function collate_field_logs(seasonal_logs::Dict)::DataFrame
     return collated
 end
 
+"""
+    water_used_by_source(zone::FarmZone)::DataFrame
+    water_used_by_source(zone::FarmZone, dt)::DataFrame
 
+Identify source of water used by a zone.
+"""
 function water_used_by_source(zone::FarmZone)::DataFrame
     return water_used_by_source(zone, nothing)
 end
-
-
 function water_used_by_source(zone::FarmZone, dt)::DataFrame
     ws_irrig = zone._irrigation_volume_by_source
 

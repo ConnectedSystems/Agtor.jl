@@ -1,34 +1,28 @@
 using Distributed
 
 
-
 """
+    run_model(zone::FarmZone; ts_func::Function=run_timestep!, pre::Union{Function, Nothing}=nothing, post::Union{Function, Nothing}=nothing)::NamedTuple
+
 Run model for a single zone.
 
-    run_model(zone, ts_func, callback_func)
-
-Parameters
-----------
-zone : Zone AgComponent
-ts_func : Function, defining actions for a time step.
+# Arguments
+- zone : Zone AgComponent
+- ts_func : Function, defining actions for a time step.
         Must accept a Manager, zone, int, and Date/DateTime
         `ts_func(manager, zone, idx, dt)`
-
         All operations must be in-place as changes will not propagate.
-pre : Function, defines additional actions for `zone` that occur 
+- pre : Function, defines additional actions for `zone` that occur 
         at end of time step `dt_i`:
-
         `callback_func(zone, dt_i)`
-post : Function, defines additional actions for `zone` that occur 
-                at end of time step `dt_i`:
+- post : Function, defines additional actions for `zone` that occur 
+         at end of time step `dt_i`:
+         `callback_func(zone, dt_i)`
 
-                `callback_func(zone, dt_i)`
-
-Returns
-----------
-DataFrame : results
+# Returns
+NamedTuple : results
 """
-function run_model(zone::FarmZone, ts_func::Function; pre::Union{Function, Nothing}=nothing, post::Union{Function, Nothing}=nothing)
+function run_model(zone::FarmZone; ts_func::Function=run_timestep!, pre::Union{Function, Nothing}=nothing, post::Union{Function, Nothing}=nothing)::NamedTuple
     
     time_sequence = zone.climate.time_steps
 

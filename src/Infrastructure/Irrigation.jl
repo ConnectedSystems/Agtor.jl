@@ -24,9 +24,8 @@ function cost_per_ha(irrig::Irrigation, year_step::Int64, area::Float64)::Float6
     return maintenance_cost(irrig, year_step) * area
 end
 
+"""Calculate sub-total of irrigation costs"""
 function subtotal_costs(irrig::Irrigation, year_step::Int64)::Float64
-    """Calculate total costs.
-    """
     # cost per ha divides maintenance costs by the
     # area considered, so simply use 1 to get total.
     return cost_per_ha(irrig, year_step, 1.0)

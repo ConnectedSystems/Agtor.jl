@@ -45,26 +45,21 @@ See:
     * [Vellotti & Kalogernis (2013)](http://irrigation.org.au/wp-content/uploads/2013/06/Gennaro-Velloti-and-Kosi-Kalogernis-presentation.pdf>)
 
 
-Parameters
-----------
-`flow_rate_Lps` : required flow rate in Litres per second over the irrigation duration
+# Arguments
+- p : Pump object
+- flow_rate_Lps : required flow rate in Litres per second over the irrigation duration
+- head_pressure : Head pressure of pumping system in metres.
 
-`head_pressure` : Head pressure of pumping system in metres.
 
-
-Parameters taken from `Pump`
-----------------------------
-`pump_efficiency` : Efficiency of pump. Defaults to 0.7 (70%)
-
-`derating` : Accounts for efficiency losses between the energy required at the pump
+# Parameters taken from `p::Pump`
+- `pump_efficiency` : Efficiency of pump. Defaults to 0.7 (70%)
+- `derating` : Accounts for efficiency losses between the energy required at the pump
                     shaft and the total energy required. Defaults to 0.75
 
+# Returns
+- float, cost_per_ML
 
-Returns
--------
-float, cost_per_ML
-
-
+# See also
 - link to [`Pump(pump_efficiency, cost_per_kW, derating)`](@ref)
 """
 function pumping_costs_per_ML(p::Pump, flow_rate_Lps::Float64, 
