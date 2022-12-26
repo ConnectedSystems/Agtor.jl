@@ -13,18 +13,18 @@ AgUnion = Union{Date, Int64, Float64, AgParameter}
 
 
 @with_kw mutable struct ConstantParameter <: AgParameter
-    name::String
-    default_val::Any
+    const name::String
+    const default_val::Any
     value::Any
 
     ConstantParameter(name, default_val) = new(name, default_val, default_val)
 end
 
 @with_kw mutable struct RealParameter <: AgParameter
-    name::String
+    const name::String
     min_val::Float64
     max_val::Float64
-    default_val::Float64
+    const default_val::Float64
     value::Float64
 
     RealParameter(name, min_val, max_val, d_val, value) = new(name, min_val, max_val, d_val, value)
@@ -364,6 +364,16 @@ end
 
 
 """
+    set_params!(comp, sample)
+    set_params!(comp::Array, sample)::Nothing
+    set_params!(comp::Dict, sample)::Nothing
+    set_params!(p::AgParameter, sample::Union{DataFrame, DataFrameRow})::Nothing
+    set_params!(p::AgParameter, sample::Union{Number, String})::Nothing
+    set_params!(p::AgParameter, sample::Union{Dict, NamedTuple})::Nothing
+
+# Note
+`update_model!(comp, sample)` is an alias for `set_params!(comp, sample)`
+
 # Example
 
 ```julia
@@ -385,34 +395,52 @@ param_info = DataFrame(collated_specs)
 samples = sample(param_info, 1000, sampler)  # where sampler is some function
 
 # Update z1 components with values found in first row
-set_params!(z1, samples[1])
+set_params!(z1, samples[1, :])
 ```
 """
 function set_params!(comp, sample)::Nothing
-    match = (Array, Tuple, Dict, AgComponent, AgParameter)
+    match = (Vector{<:AgComponent}, Vector{<:AgParameter}, Tuple, Dict, AgComponent, AgParameter)
     for f_name in fieldnames(typeof(comp))
         tmp_f = getfield(comp, f_name)
 
         if any(map(x -> isa(tmp_f, x), match))
+            # Pass onto appropriate func if defined
             set_params!(tmp_f, sample)
         end
     end
 
     return
 end
-
-
-function set_params!(comp::Array, sample)::Nothing
-    arr_type = eltype(comp)
-    tmp_flat = reduce(vcat, Flatten.flatten(comp, Array{arr_type}))
+function set_params!(comp::Vector, sample)::Nothing
+    # Extract all AgComponents and AgParameters into a single vector
+    tmp_flat = reduce(vcat, Flatten.flatten(comp, Vector{eltype(comp)}))
     for i in tmp_flat
         set_params!(i, sample)
     end
 
     return
 end
+function set_params!(comp::AgComponent, sample)::Nothing
+    use = Union{Vector{<:AgComponent}, Vector{<:AgParameter}}
+    tmp_flat = Flatten.flatten(map(x -> getfield(comp, x), fieldnames(typeof(comp))), use)
+    if length(tmp_flat) > 0
+        for i in tmp_flat
+            set_params!(i, sample)
+        end
+    end
 
+    use = Union{<:AgParameter, <:AgComponent}
+    tmp_flat = Flatten.flatten(map(x -> getfield(comp, x), fieldnames(typeof(comp))), use)
+    if length(tmp_flat) > 0
+        for i in tmp_flat
+            set_params!(i, sample)
+        end
+    else
+        set_params!(tmp_flat, sample)
+    end
 
+    return
+end
 function set_params!(comp::Dict, sample)::Nothing
     for (k,v) in comp
         set_params!(v, sample)
@@ -420,39 +448,28 @@ function set_params!(comp::Dict, sample)::Nothing
 
     return
 end
-
 function set_params!(p::AgParameter, sample::Union{DataFrame, DataFrameRow})::Nothing
-    p_name::Symbol = Symbol(p.name)
-    if p_name in names(sample)
-        setfield!(p, :value, sample[p_name])
+    if p.name in names(sample)
+        setfield!(p, :value, sample[p.name])
     end
 
     return
 end
-
-
 function set_params!(p::AgParameter, sample::Union{Number, String})::Nothing
     setfield!(p, :value, sample)
 
     return
 end
-
-
 function set_params!(p::AgParameter, sample::Union{Dict, NamedTuple})::Nothing
-    p_name::Symbol = Symbol(p.name)
-    if p_name in keys(sample)
+    if p.name in keys(sample)
         setfield!(p, :value, sample)
     end
 
     return
 end
 
-
-function update_model!(comp, sample)::Nothing
-    set_params!(comp, sample)
-
-    return
-end
+# Convenient alias
+update_model! = set_params!
 
 
 """
@@ -460,7 +477,7 @@ Create relational mapping between components and values.
 """
 function component_relationship(agparams::DataFrame)::Dict
     comp_sep = Agtor.component_sep
-    name_sep = Agtor.component_name_sep
+    # name_sep = Agtor.component_name_sep
     field_sep = Agtor.component_field_sep
     
     relation = Dict()
