@@ -19,8 +19,8 @@ end
 #     compact = get(io, :compact, false)
 
 #     name = z.name
-#     fields = Tuple((f.name, f.total_area_ha) for f in z.fields) 
-#     zone_ws = Tuple(ws.name for ws in z.water_sources) 
+#     fields = Tuple((f.name, f.total_area_ha) for f in z.fields)
+#     zone_ws = Tuple(ws.name for ws in z.water_sources)
 #     manager = z.manager.name
 
 #     if compact
@@ -115,7 +115,7 @@ end
 
 
 """Apply irrigation water to field"""
-function apply_irrigation!(field::CropField, 
+function apply_irrigation!(field::CropField,
                           ws::WaterSource, water_to_apply_mm::Float64,
                           area_to_apply::Float64)::Nothing
     vol_ML_ha::Float64 = water_to_apply_mm / mm_to_ML
@@ -183,11 +183,11 @@ function update_available_water!(zone::FarmZone, allocations::NamedTuple)::Nothi
         end
     end
 end
-    
+
 
 """Log irrigation volumes from water sources"""
 function log_irrigation_by_water_source(zone::FarmZone, f::FarmField, dt::Date)::Nothing
-    
+
     # Construct log structure if needed
     if nrow(zone._irrigation_volume_by_source) == 0
         tmp_dict::OrderedDict = OrderedDict()
@@ -198,7 +198,7 @@ function log_irrigation_by_water_source(zone::FarmZone, f::FarmField, dt::Date):
 
         zone._irrigation_volume_by_source = DataFrame(; tmp_dict...)
     end
-    
+
     tmp::Array{Float64} = Float64[0.0 for ws in zone.water_sources]
     for (i::Int64, ws::WaterSource) in enumerate(zone.water_sources)
         try
@@ -236,7 +236,7 @@ end
 
 function aggregate_field_logs(field_logs::DataFrame)::DataFrame
     collated::DataFrame = combine(
-        groupby(field_logs, :Date), 
+        groupby(field_logs, :Date),
         [x=>sum for x in names(field_logs) if x != "Date"]...
     )
 
@@ -340,7 +340,7 @@ function create(data::Dict{Symbol}, climate_data::Climate)::FarmZone
     field_specs = deepcopy(spec[:fields])
     for (fk, f) in field_specs
         f[:irrigation] = create(collect(values(f[:irrigation_spec]))[1])
-        f[:crop_rotation] = [create(c, climate_data.time_steps[1]) 
+        f[:crop_rotation] = [create(c, climate_data.time_steps[1])
                              for c in collect(values(f[:crop_rotation_spec]))]
         f[:crop] = f[:crop_rotation][1]
 
@@ -348,7 +348,7 @@ function create(data::Dict{Symbol}, climate_data::Climate)::FarmZone
         delete!(f, :irrigation_spec)
         delete!(f, :crop_rotation_spec)
     end
-    
+
     fields = [create(v) for (k,v) in field_specs]
 
     zone_spec::Dict{Symbol, Any} = Dict(
@@ -371,7 +371,7 @@ function reset!(z::FarmZone)::Nothing
 
         f._next_crop_idx = 1
         set_next_crop!(z.manager, f, initial_dt)
-        
+
     end
 
     return
