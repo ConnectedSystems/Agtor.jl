@@ -62,9 +62,16 @@ end
 
 
 """Run scenario for an entire basin."""
-function run_model(basin::Basin, ts_func::Function; pre::Union{Function, Nothing}=nothing, post::Union{Function, Nothing}=nothing)
+function run_model(basin::Basin; ts_func::Function, pre::Union{Function, Nothing}=nothing, post::Union{Function, Nothing}=nothing)
     for i in basin.climate.time_steps
         run_timestep!(basin, ts_func; pre=pre, post=post)
+    end
+
+    return collect_results(basin)
+end
+function run_model(basin::Basin; ts_func::Function)
+    for i in basin.climate.time_steps
+        run_timestep!(basin, ts_func)
     end
 
     return collect_results(basin)
