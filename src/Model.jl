@@ -63,16 +63,9 @@ end
 
 
 """Run scenario for an entire basin."""
-function run_model(basin::Basin; ts_func::Function, pre::Union{Function, Nothing}=nothing, post::Union{Function, Nothing}=nothing)
+function run_model(basin::Basin; ts_func::Function=run_timestep!, pre::Union{Function, Nothing}=nothing, post::Union{Function, Nothing}=nothing)
     for i in basin.climate.time_steps
         run_timestep!(basin, ts_func; pre=pre, post=post)
-    end
-
-    return collect_results(basin)
-end
-function run_model(basin::Basin; ts_func::Function)
-    for i in basin.climate.time_steps
-        run_timestep!(basin, ts_func)
     end
 
     return collect_results(basin)
@@ -180,28 +173,3 @@ end
 
 struct ZoneResults
 end
-
-
-# """
-# Setup a model with a specific timestep function.
-# """
-# function setup_model(catchment::Union{FarmZone, Basin}, ts_func::Function; pre::Union{Function, Nothing}=nothing, post::Union{Function, Nothing}=nothing)
-#     function run_model(catchment::Union{FarmZone, Basin})
-#         time_sequence = catchment.climate.time_steps
-#         @inbounds for (idx, dt_i) in enumerate(time_sequence)
-#             if !isnothing(pre)
-#                 pre(catchment, dt_i)
-#             end
-
-#             ts_func(catchment.manager, catchment, idx, dt_i)
-
-#             if !isnothing(post)
-#                 post(catchment, dt_i)
-#             end
-#         end
-
-#         return collect_results(catchment)
-#     end
-
-#     return run_model
-# end
