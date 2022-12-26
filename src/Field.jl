@@ -423,9 +423,16 @@ end
 
 
 function setup_log()::DataFrame
-    return DataFrame([Date, Float64, Float64, Float64, Float64, Float64, Float64, Float64], 
-                     [:Date, :income, :irrigated_volume, :irrigated_yield, :dryland_yield, 
-                      :growing_season_rainfall, :irrigated_area, :dryland_area])
+    return DataFrame(
+        Date=Date[],
+        income=Float64[],
+        irrigated_volume=Float64[],
+        irrigated_yield=Float64[],
+        dryland_yield=Float64[],
+        growing_season_rainfall=Float64[],
+        irrigated_area=Float64[],
+        dryland_area=Float64[]
+    )
 end
 
 

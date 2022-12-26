@@ -44,14 +44,14 @@ import Agtor: Climate
         effective_root_zone = props[:effective_root_zone]
 
         start_year = year(start_dt)
-        sow_date = Date("$(start_year)-$(plant_date)")
+        dt = "$(start_year)-$(string(plant_date.default_val))"
+        sow_date = Date(dt, "YYYY-mm-dd")
 
         h_day = 0
         offset = 0
         start_date = sow_date
         g_stages = NamedTuple()
         coef_stages = NamedTuple()
-        
 
         @inbounds for (k, v) in growth_stages
             offset = v[:stage_length]
@@ -74,7 +74,7 @@ import Agtor: Climate
 
         c = new(name, crop_type, g_stages, coef_stages, sow_date,
                 yield_per_ha, price_per_yield, variable_cost_per_ha, water_use_ML_per_ha,
-                root_depth_m, et_coef, wue_coef, rainfall_threshold, 
+                root_depth_m, et_coef, wue_coef, rainfall_threshold,
                 ssm_coef, effective_root_zone, harvest_date, harvest_offset)
 
         # variable cost does not include water usage costs (added later in optimized allocation step)

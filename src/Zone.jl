@@ -235,13 +235,16 @@ end
 
 
 function aggregate_field_logs(field_logs::DataFrame)::DataFrame
-    collated::DataFrame = aggregate(groupby(field_logs, :Date), sum)
+    collated::DataFrame = combine(
+        groupby(field_logs, :Date), 
+        [x=>sum for x in names(field_logs) if x != "Date"]...
+    )
 
-    collated[:, Symbol("Dollar per ML")] = collated[:, :income_sum] ./ collated[:, :irrigated_volume_sum]
-    collated[:, Symbol("ML per Irrigated Yield")] = collated[:, :irrigated_volume_sum] ./ collated[:, :irrigated_yield_sum]
-    collated[:, Symbol("Dollar per Ha")] = collated[:, :income_sum] ./ (collated[:, :dryland_area_sum] .+ collated[:, :irrigated_area_sum])
-    collated[:, Symbol("Mean Irrigated Yield")] = collated[:, :irrigated_yield_sum] ./ collated[:, :irrigated_area_sum]
-    collated[:, Symbol("Mean Dryland Yield")] = collated[:, :dryland_yield_sum] ./ collated[:, :dryland_area_sum]
+    collated[:, Symbol("Dollar per ML")] = collated[!, :income_sum] ./ collated[!, :irrigated_volume_sum]
+    collated[:, Symbol("ML per Irrigated Yield")] = collated[!, :irrigated_volume_sum] ./ collated[!, :irrigated_yield_sum]
+    collated[:, Symbol("Dollar per Ha")] = collated[!, :income_sum] ./ (collated[!, :dryland_area_sum] .+ collated[!, :irrigated_area_sum])
+    collated[:, Symbol("Mean Irrigated Yield")] = collated[!, :irrigated_yield_sum] ./ collated[!, :irrigated_area_sum]
+    collated[:, Symbol("Mean Dryland Yield")] = collated[!, :dryland_yield_sum] ./ collated[!, :dryland_area_sum]
 
     collated[isnan.(collated[!,Symbol("Mean Dryland Yield")]), Symbol("Mean Dryland Yield")] .= 0
     collated[isnan.(collated[!,Symbol("Mean Irrigated Yield")]), Symbol("Mean Irrigated Yield")] .= 0
@@ -281,20 +284,16 @@ function water_used_by_source(zone::FarmZone, dt)::DataFrame
         return DataFrame(Date=dt, surface_water_sum=0.0, groundwater_sum=0.0)
     end
 
-    if !(isnothing(dt))
+    if !isnothing(dt)
         ws_irrig = ws_irrig[ws_irrig[:Date] .== dt, :]
     end
 
-    if nrow(ws_irrig) == 0
-        if isnothing(dt)
-            return aggregate(groupby(ws_irrig, :Date), sum)
-        end
-
-        # Catch empty subset
+    if nrow(ws_irrig) == 0 && !isnothing(dt)
+        # Catch empty subset when dt is specified
         return DataFrame(Date=dt, surface_water_sum=0.0, groundwater_sum=0.0)
     end
 
-    return aggregate(groupby(ws_irrig, :Date), sum)
+    return combine(groupby(ws_irrig, :Date), [x=>sum for x in names(ws_irrig) if x != "Date"]...)
 end
 
 
@@ -306,10 +305,8 @@ function collect_results(zone::FarmZone; last=false)::NamedTuple
     )
 
     collated = collate_field_logs(field_logs)
-
     irrig_ws::DataFrame = water_used_by_source(zone)
-
-    collated_res = hcat(collated, irrig_ws[:, setdiff(names(irrig_ws), [:Date])])
+    collated_res = hcat(collated, irrig_ws[:, setdiff(names(irrig_ws), ["Date"])])
 
     return (zone_results=collated_res, field_results=field_logs)
 end

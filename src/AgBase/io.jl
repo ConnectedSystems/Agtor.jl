@@ -46,7 +46,7 @@ function load_climate(data_fn::String)::Climate
     # Expect only CSV for now...
     if endswith(data_fn, ".csv")
         use_threads = Threads.nthreads() > 1
-        climate_seq = DataFrame!(CSV.File(data_fn, threaded=use_threads, dateformat="YYYY-mm-dd"))
+        climate_seq = CSV.read(data_fn, DataFrame; dateformat="YYYY-mm-dd")
     else
         throw(ArgumentError("Currently, climate data can only be provided in CSV format"))
     end

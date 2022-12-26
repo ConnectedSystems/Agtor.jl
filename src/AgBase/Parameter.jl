@@ -2,6 +2,7 @@ import DataFrames: DataFrame, DataFrameRow
 import Flatten: flatten
 import Dates
 
+using CategoricalArrays
 using Mixers
 using Agtor
 
@@ -108,11 +109,11 @@ end
 
 # Below is equivalent to defining methods for each operation, e.g:
 #    function Base.:+(x::AgParameter, y::AgParameter) x.value + y.value end
-for op = (:+, :-, :/, :*, :^, :<, :>)
+for op = (:+, :-, :/, :*, :^, :<, :>, :%)
     @eval Base.$op(x::AgParameter, y::AgParameter) = Base.$op(x.value, y.value)
 end
 
-for op = (:+, :-, :/, :*, :^, :<, :>)
+for op = (:+, :-, :/, :*, :^, :<, :>, :%)
     @eval Base.$op(x::Number, y::AgParameter) = Base.$op(x, y.value)
     @eval Base.$op(x::AgParameter, y::Number) = Base.$op(x.value, y)
 end
