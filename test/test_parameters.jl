@@ -20,17 +20,22 @@ end
     set_params!(test, 0.75)
     @test test.value == 0.75
 
-
-    data_dir = "test/data/"
-
-    z1 = setup_zone(data_dir)
+    z1 = setup_zone()
     tc_z1 = deepcopy(z1)  # test copy
 
-    samples = DataFrame!(CSV.File("test/data/scenarios/sampled_params.csv"))
+    samples = CSV.read("test/data/scenarios/sampled_params.csv", DataFrame)
 
+    # set_params!(z1.fields[1].irrigation.efficiency, 0.7)
     @test z1.fields[1].irrigation.efficiency.value == tc_z1.fields[1].irrigation.efficiency.value
     update_model!(z1, samples[1, :])
-    @test z1.fields[1].irrigation.efficiency.value != tc_z1.fields[1].irrigation.efficiency.value
+
+    @info z1.fields[1].irrigation.efficiency.value
+    @info tc_z1.fields[1].irrigation.efficiency.value
+    @info samples[1, "FarmZone-Zone_1└──CropField-field1└──Irrigation-gravity~efficiency"]
+    @info z1.fields[1].irrigation.name
+    @info z1.fields[1]
+
+    @test z1.fields[1].irrigation.efficiency.value != tc_z1.fields[1].irrigation.efficiency.value || "Parameter value was not correctly updated!"
 end
 
 
@@ -38,7 +43,7 @@ end
     zone = setup_zone()
 
     all_params = collect_agparams!(zone)
-    param_names = all_params[:name]
+    param_names = all_params[!, :name]
     uni_params = unique(param_names)
 
     @test length(param_names) == length(uni_params)

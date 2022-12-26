@@ -5,9 +5,11 @@ import Flatten
 
 using Agtor, Dates, CSV
 
+HERE = @__DIR__
 
-function setup_zone(data_dir::String="test/data/")
-    zone_spec_dir::String = "$(data_dir)zones"
+
+function setup_zone()
+    zone_spec_dir::String = joinpath(HERE, "data/zones")
     zone_params::Dict{Symbol, Dict} = load_spec(zone_spec_dir)
 
     return create(zone_params[:Zone_1])
@@ -62,8 +64,8 @@ function test_crop_update_stages()
 end
 
 
-function test_pump_creation(data_dir::String="test/data/")
-    pump_spec_dir::String = "$(data_dir)pumps/"
+function test_pump_creation()
+    pump_spec_dir::String = joinpath(HERE, "data/pumps")
     pump_specs::Dict{Symbol, Dict} = load_spec(pump_spec_dir)
 
     pumps = Pump[create(spec) for (pn, spec) in pump_specs]

@@ -33,15 +33,15 @@ Compared to storing all results and saving in one go, this approach
 is slower overall, but does not use as much memory.
 """
 function example_scenario_run(data_dir::String="test/data/")::Nothing
-    z1 = setup_zone(data_dir)
+    z1 = setup_zone()
     z1.manager = EconManager("test")
 
-    scen_data = joinpath(data_dir, "scenarios", "sampled_params.csv")
+    scen_data = joinpath(HERE, "data", "scenarios", "sampled_params.csv")
     samples = DataFrame!(CSV.File(scen_data))
 
     @sync for (row_id, r) in enumerate(eachrow(samples))
         tmp_z = deepcopy(z1)
-        update_model!(tmp_z, r)
+        tmp_z = update_model!(tmp_z, r)
 
         results = run_model(tmp_z, run_timestep!; post=allocation_callback!)
 
@@ -58,13 +58,13 @@ Should be faster than the first example (for the small number of scenarios run) 
 results are kept in memory until the end.
 """
 function example_batch_save(; data_dir::String="test/data/", output_fn::String="test_batch_save.jld2")::Nothing
-    z1 = setup_zone(data_dir)
+    z1 = setup_zone()
     z1.manager = EconManager("test")
 
-    scen_data = joinpath(data_dir, "scenarios", "sampled_params.csv")
-    samples = DataFrame!(CSV.File(scen_data))
+    scen_data = joinpath(HERE, "data", "scenarios", "sampled_params.csv")
+    samples = CSV.read(scen_data, DataFrame)
 
-    results = run_scenarios!(samples, z1, run_timestep!; post=allocation_callback!)
+    results = run_scenarios!(samples, z1; post=allocation_callback!)
 
     save_results!(output_fn, results)
 end
