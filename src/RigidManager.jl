@@ -1,5 +1,4 @@
 using OrderedCollections
-import Agtor: BaseManager
 
 
 """A rigid farm manager.

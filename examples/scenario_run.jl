@@ -45,7 +45,7 @@ is slower overall, but does not use as much memory.
 """
 function example_scenario_run(data_dir::String="test/data/")::Nothing
     z1 = setup_zone(data_dir)
-    z1.manager = BaseManager("test")
+    z1.manager = EconManager("test")
 
     scen_data = joinpath(data_dir, "scenarios", "sampled_params.csv")
     samples = DataFrame!(CSV.File(scen_data))
@@ -70,7 +70,7 @@ results are kept in memory until the end.
 """
 function example_batch_save(data_dir::String="test/data/")::Nothing
     z1 = setup_zone(data_dir)
-    z1.manager = BaseManager("test")
+    z1.manager = EconManager("test")
 
     scen_data = joinpath(data_dir, "scenarios", "sampled_params.csv")
     samples = DataFrame!(CSV.File(scen_data))

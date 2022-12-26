@@ -21,7 +21,7 @@ function setup_basin(data_dir, climate_data)
     basin_name = basin_spec[:name]
     zone_specs = basin_spec[:zone_spec]
 
-    Manager_A = BaseManager("optimizing")
+    Manager_A = EconManager("optimizing")
     Manager_B = RigidManager("rigid", 0.05)
     manage_zones = ((Manager_A, ("Zone_1", )), (Manager_B, ("Zone_2", )))
 

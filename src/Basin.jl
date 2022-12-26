@@ -34,7 +34,7 @@ end
 zone_specs = load_spec("test/data/zones")
 
 # Define managers of interest
-Manager_A = BaseManager("optimizing")
+Manager_A = EconManager("optimizing")
 Manager_B = RigidManager("rigid", 0.05)
 
 # Create tuple-based relation between managers and zones (by name)

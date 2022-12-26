@@ -26,7 +26,7 @@ climate_data = "$(data_dir)/climate/farm_climate_data.csv"
 climate = load_climate(climate_data)
 
 example_zone = create(zone_params[:Zone_1], climate)
-example_zone.manager = BaseManager("Example")
+example_zone.manager = EconManager("Example")
 
 @info example_zone
 

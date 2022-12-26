@@ -11,11 +11,11 @@ abstract type Manager <: AgComponent end
 Water is applied for optimal farm profitability based on soil water deficit,
 crop water requirements, and cost of water application.
 """
-struct BaseManager <: Manager
+struct EconManager <: Manager
     name::String
     opt::DataType
 
-    function BaseManager(name::String)::Manager
+    function EconManager(name::String)::Manager
         return new(name, GLPK.Optimizer)
     end
 end
@@ -351,7 +351,7 @@ function set_next_crop!(m::Manager, f::FarmField, dt::Date)::Nothing
 end
 
 
-function run_timestep!(farmer::BaseManager, zone::FarmZone, dt_idx::Int64, dt::Date)::Nothing
+function run_timestep!(farmer::EconManager, zone::FarmZone, dt_idx::Int64, dt::Date)::Nothing
 
     for f::FarmField in zone.fields
         s_start::Date = f.plant_date

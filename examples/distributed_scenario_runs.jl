@@ -63,7 +63,7 @@ Results are saved to a file on completion, based on scenario id.
 """
 function test_scenario_run(data_dir::String="test/data/", result_dir::String="")::Nothing
     z1, agparams = setup_zone(data_dir)
-    z1.manager = BaseManager("test")
+    z1.manager = EconManager("test")
 
     scen_data = joinpath(data_dir, "scenarios", "sampled_params.csv")
     samples = DataFrame!(CSV.File(scen_data))
