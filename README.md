@@ -28,8 +28,8 @@ Tests
 
 Tests are invoked from the project root, like so:
 
-```julia
-include("test/runtests.jl")
+```julia-repl
+julia> include("test/runtests.jl")
 ```
 
 
