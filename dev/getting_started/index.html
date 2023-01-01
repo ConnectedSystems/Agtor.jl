@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Getting Started · Agtor.jl</title><script data-outdated-warner src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../">Agtor.jl</a></span></div><form class="docs-search" action="../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../">Agtor.jl</a></li><li><a class="tocitem" href="../specs/">Example Component Specifications</a></li><li class="is-active"><a class="tocitem" href>Getting Started</a><ul class="internal"><li><a class="tocitem" href="#A-note-on-terminology"><span>A note on terminology</span></a></li><li><a class="tocitem" href="#Required-data"><span>Required data</span></a></li><li><a class="tocitem" href="#Defining-Components"><span>Defining Components</span></a></li><li><a class="tocitem" href="#Example:-Running-scenarios"><span>Example: Running scenarios</span></a></li><li><a class="tocitem" href="#Example:-Within-scenario/timestep"><span>Example: Within scenario/timestep</span></a></li></ul></li><li><a class="tocitem" href="../API/">Agtor API</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Getting Started</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Getting Started</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/ConnectedSystems/Agtor.jl/blob/main/docs/src/getting_started.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Getting-Started"><a class="docs-heading-anchor" href="#Getting-Started">Getting Started</a><a id="Getting-Started-1"></a><a class="docs-heading-anchor-permalink" href="#Getting-Started" title="Permalink"></a></h1><p>The sections below outline basic use of Agtor.</p><p>A complete runnable script can be found <a href="https://github.com/ConnectedSystems/Agtor.jl/blob/main/examples/campaspe_cropping_example.jl">here</a>.</p><h2 id="A-note-on-terminology"><a class="docs-heading-anchor" href="#A-note-on-terminology">A note on terminology</a><a id="A-note-on-terminology-1"></a><a class="docs-heading-anchor-permalink" href="#A-note-on-terminology" title="Permalink"></a></h2><p>Agtor is a zonal agricultural cropping model, where a zone is defined by a collection of fields, and a basin/catchment is defined with a collection of zones.</p><ul><li>Field : An area used for cropping, e.g., a field</li><li>FarmZone  : An arbitrary collection of fields, e.g., a farm or sub-catchment</li><li>Basin : An arbitrary collection of zones, e.g., a catchment</li></ul><p>In addition, each zone may be assigned a <code>Manager</code>, simulating an actor in charge of determining irrigation schedules and volume of water use.</p><p>Currently available <code>Manager</code>s include:</p><ul><li><code>EconManager</code> : an &quot;economically rational&quot; actor that optimizes for farm profit</li><li><code>RigidManager</code> : applies a pre-determined volume of water every time step</li></ul><p>Parameters at the field-level may be defined as:</p><ul><li><code>RealParameter</code>, inputs that have a range of possible values</li><li><code>CategoricalParameter</code>, similar to <code>RealParameter</code> except that the range of values relate to specific &quot;options&quot;</li><li><code>ConstantParameter</code>, parameters that are held constant for a simulation.</li></ul><p>Note that all dates follow <code>YYYY-mm-dd</code> format, or (<code>mm-dd</code>) if year is not specified.</p><h2 id="Required-data"><a class="docs-heading-anchor" href="#Required-data">Required data</a><a id="Required-data-1"></a><a class="docs-heading-anchor-permalink" href="#Required-data" title="Permalink"></a></h2><h3 id="Zones"><a class="docs-heading-anchor" href="#Zones">Zones</a><a id="Zones-1"></a><a class="docs-heading-anchor-permalink" href="#Zones" title="Permalink"></a></h3><ul><li>CSV of climate data for each zone (daily ET and rainfall, assumed daily)</li><li>Estimated Total Available Water for each field&#39;s soil type</li><li>Initial soil water deficit for each field</li></ul><h3 id="Fields"><a class="docs-heading-anchor" href="#Fields">Fields</a><a id="Fields-1"></a><a class="docs-heading-anchor-permalink" href="#Fields" title="Permalink"></a></h3><ul><li>Access costs for each water source</li><li>Operational costs of pumping from surface and groundwater</li><li>Operational costs of each irrigation system</li><li>Crop parameters</li></ul><h3 id="Water-allocations/policy"><a class="docs-heading-anchor" href="#Water-allocations/policy">Water allocations/policy</a><a id="Water-allocations/policy-1"></a><a class="docs-heading-anchor-permalink" href="#Water-allocations/policy" title="Permalink"></a></h3><p>Agtor requires a water allocation model to be provided by the user. This can represent a given policy, regional management approach, or other situation.</p><p>The example function below simply resets the water entitlement for a given zone/watersource on 1 May (<code>(5, 1)</code>) every year.</p><pre><code class="language-julia hljs">&quot;&quot;&quot;Reallocate water on given date.
+
+Example proxy for a policy model which is called every time step
+for the given zone.
+
+Water allocations are simply reset at start of season (1 May).
+&quot;&quot;&quot;
+function reset_allocation!(zone, dt_i; gs_start=(5, 1))
+    # Resetting allocations for each growing season
+    if monthday(dt_i) == gs_start
+        # Full annual water allocations each year
+        tmp = LittleDict(ws.name=&gt;ws.entitlement for ws in zone.water_sources)
+        t_names = Tuple(Symbol.(collect(keys(tmp))))
+        allocs = NamedTuple{t_names}(collect(values(tmp)))
+
+        update_available_water!(zone, allocs)
+    end
+end</code></pre><h2 id="Defining-Components"><a class="docs-heading-anchor" href="#Defining-Components">Defining Components</a><a id="Defining-Components-1"></a><a class="docs-heading-anchor-permalink" href="#Defining-Components" title="Permalink"></a></h2><p>All components for Agtor are defined through YAML files which act as the <code>specifications</code> of each component.</p><p>See <a href="../specs/#Example-Component-Specifications">Example Component Specifications</a> for an outline of each spec.</p><p>Specifications are loaded from the collection of YAML files as a dictionary. A <code>Basin</code> may therefore be defined directly as a dictionary so long as it follows component specifications as outlined in <a href="../specs/#Example-Component-Specifications">Example Component Specifications</a>.</p><h2 id="Example:-Running-scenarios"><a class="docs-heading-anchor" href="#Example:-Running-scenarios">Example: Running scenarios</a><a id="Example:-Running-scenarios-1"></a><a class="docs-heading-anchor-permalink" href="#Example:-Running-scenarios" title="Permalink"></a></h2><p>At the highest level of use, Agtor runs multiple simulations (&quot;scenarios&quot;).</p><pre><code class="language-julia hljs">using Agtor
+
+# Load Basin specification from its directory
+basin_spec_dir = &quot;examples/campaspe/basin/&quot;
+
+# A directory may hold specs for multiple basins.
+# Here, we are loading the Campaspe spec (the only one defined in the directory)
+basin_spec = load_spec(basin_spec_dir)[:Campaspe]
+
+# Extract name and zone specs
+basin_name = basin_spec[:name]
+zone_specs = basin_spec[:zone_spec]
+
+# Specify location of shared climate data for all zones
+climate_data = &quot;examples/campaspe/climate/basin_historic_climate_data.csv&quot;
+
+# Create an &quot;economically rational&quot; manager to be shared by all zones.
+# This manager optimizes returns for the available water, given water needs and costs.
+OptimizingManager = EconManager(&quot;optimizing&quot;)
+
+# We then assign this manager to all zones defined in the basin spec
+# this associate a set of zones to a given manager by the zone name
+# associate_managers([OptimizingManager], [[:Zone_1, :Zone_2, ..., :Zone_N]])
+manage_zones = associate_managers([OptimizingManager], [keys(zone_specs)])
+
+# Multiple associations can be created:
+# associate_managers(
+#    [OptimizingManager, RigidManager],
+#    [[:Zone_1, :Zone_2], [:Zone_3, ..., :Zone_N]])
+
+# Final step in the setup is to create the basin by specifying its name, the zones, 
+# the climate data and the manager-zone relationship defined above.
+campaspe_basin = Basin(name=basin_name, zone_spec=zone_specs, 
+                       climate_data=climate_data, managers=manage_zones)
+
+# We then create/run scenarios by sampling from possible parameter combinations
+# We use the `Surrogates` package for the sampling:
+agparams = collect_agparams!(campaspe_basin)  # collect all parameters
+samples = sample(50, agparams[:, :min_val], agparams[:, :max_val], SobolSample())
+
+# Match sampled values with parameter names
+df = rename!(DataFrame(samples), map(Symbol, agparams[:, :name]))
+
+# Run all defined scenarios
+res = run_scenarios!(df, campaspe_basin; pre=reset_allocation!)</code></pre><p>Note that the example water allocation model was passed into the <code>pre</code> argument. Agtor defines <code>pre</code> and <code>post</code> and in cases functions are supplied, these are run before each time step (in the case of <code>pre</code>) or after each time step (in the case of <code>post</code>).</p><p>Scenario results are held in the form of a dictionary with entries for aggregate zone level results...</p><pre><code class="language-julia hljs">julia&gt; res
+Dict{Any, Any} with 100 entries:
+  &quot;46/field_results&quot; =&gt; Dict{String, Dict{String, DataFrame}}(&quot;Zone_5&quot;=&gt;Dict(&quot;field1&quot;=&gt;36×8 DataFrame…
+  &quot;12/zone_results&quot;  =&gt; Dict{String, DataFrame}(&quot;Zone_5&quot;=&gt;36×13 DataFrame…
+
+julia&gt; res[&quot;1/zone_results&quot;]
+Dict{String, DataFrame} with 12 entries:
+  &quot;Zone_5&quot;  =&gt; 36×13 DataFrame…
+  &quot;Zone_2&quot;  =&gt; 36×15 DataFrame…
+  &quot;Zone_12&quot; =&gt; 36×13 DataFrame…</code></pre><p>... and results for each field for a given zone. In other words, finer-scale field level results:</p><pre><code class="language-julia hljs">julia&gt; res[&quot;1/field_results&quot;][&quot;Zone_5&quot;]
+Dict{String, DataFrame} with 1 entry:
+  &quot;field1&quot; =&gt; 36×8 DataFrame…</code></pre><h2 id="Example:-Within-scenario/timestep"><a class="docs-heading-anchor" href="#Example:-Within-scenario/timestep">Example: Within scenario/timestep</a><a id="Example:-Within-scenario/timestep-1"></a><a class="docs-heading-anchor-permalink" href="#Example:-Within-scenario/timestep" title="Permalink"></a></h2><p>Finer-grain simulations are also possible with Agtor.</p><pre><code class="language-julia hljs"># Update the zone with some new parameter values if necessary
+# update_model!(zone, some_parameters)
+zone_results, field_results = run_model(OptimizingManager, zone; post=reset_allocation!)
+
+# Run a specific timestep
+run_timestep!(OptimizingManager, zone, timestep_id, timestep_date);</code></pre><div class="admonition is-warning"><header class="admonition-header">Warning</header><div class="admonition-body"><p>In the case of running a timestep, all time stepping and  data handling is left to the user to specify.</p><p>See example below.</p></div></div><h3 id="Example-custom-run-function"><a class="docs-heading-anchor" href="#Example-custom-run-function">Example custom run function</a><a id="Example-custom-run-function-1"></a><a class="docs-heading-anchor-permalink" href="#Example-custom-run-function" title="Permalink"></a></h3><pre><code class="language-julia hljs"># Define growing season start as 1 May
+const gs_start = (5, 1);
+
+function run_model(zone)
+    time_sequence = zone.climate.time_steps
+
+    # Example annual water allocations
+    allocs = (surface_water=150.0, groundwater=40.0)
+
+    for (idx, dt_i) in enumerate(time_sequence)
+        run_timestep!(zone.manager, zone, idx, dt_i)
+
+        # Resetting allocations for example run
+        if monthday(dt_i) == gs_start
+            update_available_water!(zone, allocs)
+        end
+    end
+
+    zone_results, field_results = collect_results(zone)
+
+    return zone_results, field_results
+end</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../specs/">« Example Component Specifications</a><a class="docs-footer-nextpage" href="../API/">Agtor API »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.23 on <span class="colophon-date" title="Sunday 1 January 2023 02:55">Sunday 1 January 2023</span>. Using Julia version 1.8.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

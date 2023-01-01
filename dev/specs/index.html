@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Example Component Specifications · Agtor.jl</title><script data-outdated-warner src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../">Agtor.jl</a></span></div><form class="docs-search" action="../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../">Agtor.jl</a></li><li class="is-active"><a class="tocitem" href>Example Component Specifications</a><ul class="internal"><li><a class="tocitem" href="#Component-Structure"><span>Component Structure</span></a></li><li><a class="tocitem" href="#Crop"><span>Crop</span></a></li><li><a class="tocitem" href="#Irrigation"><span>Irrigation</span></a></li><li><a class="tocitem" href="#Pump"><span>Pump</span></a></li><li><a class="tocitem" href="#WaterSource"><span>WaterSource</span></a></li><li><a class="tocitem" href="#FarmZone"><span>FarmZone</span></a></li><li><a class="tocitem" href="#Basin"><span>Basin</span></a></li></ul></li><li><a class="tocitem" href="../getting_started/">Getting Started</a></li><li><a class="tocitem" href="../API/">Agtor API</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Example Component Specifications</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Example Component Specifications</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/ConnectedSystems/Agtor.jl/blob/main/docs/src/specs.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Example-Component-Specifications"><a class="docs-heading-anchor" href="#Example-Component-Specifications">Example Component Specifications</a><a id="Example-Component-Specifications-1"></a><a class="docs-heading-anchor-permalink" href="#Example-Component-Specifications" title="Permalink"></a></h1><p>See <a href="https://doi.org/10.1016/j.ejrh.2020.100669">this paper</a> for details on parameters outlined in the specs below.</p><h2 id="Component-Structure"><a class="docs-heading-anchor" href="#Component-Structure">Component Structure</a><a id="Component-Structure-1"></a><a class="docs-heading-anchor-permalink" href="#Component-Structure" title="Permalink"></a></h2><pre><code class="nohighlight hljs">                     ┌───────┐
+          ┌──────────┤ Basin │
+          │          └───────┘
+has many  │
+          │
+          │
+     ┌────▼───┐    shares a      ┌─────────┐
+     │  Zone  ├──────────────────► Manager │
+     └───┬────┘                  └─────────┘
+         │
+has many │ ┌───────┐
+         └─► Field │
+           └┬──────┘
+            │
+            │  Rotates many ┌───────┐
+            ├────────────────► Crop │
+            │               └───────┘
+            │
+            │      has a    ┌────────────┐
+            ├───────────────► Irrigation │
+            │               └────────────┘
+            │
+            │      has      ┌──────┐
+            ├───────────────► Pump │
+            │               └──────┘
+            │
+            │      has      ┌─────────────┐
+            └───────────────► WaterSource │
+                            └─────────────┘</code></pre><h2 id="Crop"><a class="docs-heading-anchor" href="#Crop">Crop</a><a id="Crop-1"></a><a class="docs-heading-anchor-permalink" href="#Crop" title="Permalink"></a></h2><p>Defines economic and growth parameters (over four stages) for a given crop.</p><pre><code class="language-yaml hljs">name: irrigated_barley
+component: Crop
+crop_type: irrigated_cereal
+
+# values below are given as list of
+# nominal &quot;best guess&quot; values, min, and max 
+# plant_dates are assumed to be static across all seasons.
+# Identical values for all options are treated as constants
+plant_date: [&quot;CategoricalParameter&quot;, &quot;05-31&quot;, &quot;05-31&quot;, &quot;05-31&quot;]
+yield_per_ha: [&quot;RealParameter&quot;, 3.25, 2.5, 7.0]
+price_per_yield: [&quot;RealParameter&quot;, 200.0, 100.0, 250.0]
+variable_cost_per_ha: [&quot;RealParameter&quot;, 160.0, 120.0, 350.0]
+water_use_ML_per_ha: [&quot;RealParameter&quot;, 2.0, 1.5, 3.0]
+root_depth_m: [&quot;RealParameter&quot;, 1.0, 0.8, 1.5]
+# values below were calibrated for North-Central Victoria
+et_coef: [&quot;RealParameter&quot;, 170.0, 170.0, 170.0]
+wue_coef: [&quot;RealParameter&quot;, 11.4552, 11.4552, 11.4552]
+rainfall_threshold: [&quot;RealParameter&quot;, 466.43204, 466.43204, 466.43204]
+ssm_coef: [&quot;RealParameter&quot;, 0.4, 0.4, 0.4]
+
+# Effective root zone is roughly half to 2/3rds of root depth
+# https://www.bae.ncsu.edu/programs/extension/evans/ag452-1.html
+# http://dpipwe.tas.gov.au/Documents/Soil-water_factsheet_14_12_2011a.pdf
+effective_root_zone: [&quot;RealParameter&quot;, 0.55, 0.5, 0.66]
+growth_stages:
+  # growth stage length are given in days
+  # harvest date is the sum of all stages
+  initial: 
+    stage_length: [&quot;RealParameter&quot;, 20, 20, 20]
+    crop_coefficient: 0.3
+    depletion_fraction: 0.55
+  development: 
+    stage_length: [&quot;RealParameter&quot;, 25, 25, 25]
+    crop_coefficient: 0.3
+    depletion_fraction: 0.55
+  mid_season: 
+    stage_length: [&quot;RealParameter&quot;, 60, 60, 60]
+    crop_coefficient: 1.15
+    depletion_fraction: 0.55
+  late:
+    stage_length: [&quot;RealParameter&quot;, 30, 30, 30]
+    crop_coefficient: 0.25
+    depletion_fraction: 0.55</code></pre><h2 id="Irrigation"><a class="docs-heading-anchor" href="#Irrigation">Irrigation</a><a id="Irrigation-1"></a><a class="docs-heading-anchor-permalink" href="#Irrigation" title="Permalink"></a></h2><pre><code class="language-yaml hljs">name: gravity
+component: Irrigation
+
+# Cost to install/adopt ($ per ha)
+capital_cost: [&quot;RealParameter&quot;, 2000.0, 2000.0, 2500.0]
+
+# water application efficiency
+efficiency: [&quot;RealParameter&quot;, 0.5, 0.5, 0.9]
+
+# Assumed percentage of capital_cost 
+minor_maintenance_rate: [&quot;RealParameter&quot;, 0.05, 0.05, 0.05]
+major_maintenance_rate: [&quot;RealParameter&quot;, 0.10, 0.10, 0.10]
+
+# Assumed maintenance schedule for minor/major maintenance
+# in years, where 1 is every year, 5 is every 5 years, etc.
+minor_maintenance_schedule: [&quot;RealParameter&quot;, 1.0, 1.0, 1.0]
+major_maintenance_schedule: [&quot;RealParameter&quot;, 5.0, 5.0, 5.0]
+
+# Assumed average flow rate in ML/day
+flow_ML_day: [&quot;RealParameter&quot;, 12.0, 12.0, 12.0]
+
+# Range of required head pressure to operate irrigation
+head_pressure: [&quot;RealParameter&quot;, 10.0, 8.0, 15.0]</code></pre><h2 id="Pump"><a class="docs-heading-anchor" href="#Pump">Pump</a><a id="Pump-1"></a><a class="docs-heading-anchor-permalink" href="#Pump" title="Permalink"></a></h2><p>Defines the operational costs of a pumping system for surface water and groundwater. Specs for <code>surface_water</code> and <code>groundwater</code> must be defined.</p><pre><code class="language-yaml hljs">name: surface_water
+component: Pump
+# surface water pump representing an average mix of
+# 60% diesel and 40% electric pumps
+
+# https://publications.csiro.au/rpr/download?pid=csiro:EP1312979&amp;dsid=DS5
+
+capital_cost: [&quot;RealParameter&quot;, 18000.0, 18000.0, 70000.0]
+minor_maintenance_schedule: [&quot;RealParameter&quot;, 1, 1, 1]
+major_maintenance_schedule: [&quot;RealParameter&quot;, 1, 1, 1]
+minor_maintenance_rate: [&quot;RealParameter&quot;, 0.005, 0.005, 0.005]
+major_maintenance_rate: [&quot;RealParameter&quot;, 0.005, 0.005, 0.005]
+pump_efficiency: 0.7
+cost_per_kW: [&quot;RealParameter&quot;, 0.285, 0.285, 0.285]
+derating: 0.75</code></pre><h2 id="WaterSource"><a class="docs-heading-anchor" href="#WaterSource">WaterSource</a><a id="WaterSource-1"></a><a class="docs-heading-anchor-permalink" href="#WaterSource" title="Permalink"></a></h2><p>Defines the cost of accessing a given water source (<code>surface_water</code> and <code>groundwater</code> must be defined).</p><pre><code class="language-yaml hljs">name: groundwater
+component: WaterSource
+
+# Surface and Groundwater Account fees: http://www.g-mwater.com.au/downloads/gmw/Pricing_Table_June15.pdf
+# Supply costs taken from East Loddon (North)
+
+# Water Share/Entitlements:
+# http://waterregister.vic.gov.au/water-entitlements/entitlement-statistics
+
+# 4C Lower Campaspe, 52, 1633.5ML
+# Pricing:
+# http://www.g-mwater.com.au/customer-services/myaccount/pricingsimulator
+# http://www.g-mwater.com.au/general-information/pricingsimulator
+
+# http://www.g-mwater.com.au/downloads/gmw/Pricing_Table_June15.pdf
+
+# Definitions:
+# http://waterregister.vic.gov.au/about/water-dictionary
+
+# access_fees are sum of the below
+# in $ per service point
+# service: 100.0
+# infrastructure_access: 2714.0
+# service_point: 300
+# service_point_remote_read: 350
+# service_point_remote_operate: 400
+# surface_drainage_service: 100
+yearly_cost: 3964.0
+
+# area_fee ($/Ha): 7.95
+cost_per_ha:  7.95  # ($/ha)
+
+# access_fee: 2.04
+# resource_management_fee: 4.47
+# high_reliability_entitlement: 24.86
+# low_reliability_entitlement: 15.35
+# high_reliability_storage: 10.57
+# low_reliability_storage: 5.18
+# above_entitlement_storage: 15.35
+cost_per_ML: 77.82  # ($/ML)
+
+head: 25.0  # Initial head (in meters)
+allocation: 50.0  # Initial allocation</code></pre><h2 id="FarmZone"><a class="docs-heading-anchor" href="#FarmZone">FarmZone</a><a id="FarmZone-1"></a><a class="docs-heading-anchor-permalink" href="#FarmZone" title="Permalink"></a></h2><pre><code class="language-yaml hljs">name: Zone_1
+component: FarmZone
+
+# Paths to data, relative to where project is run
+climate_data: &quot;test/data/climate/farm_climate_data.csv&quot;
+pump_spec: &quot;test/data/pumps/&quot;
+
+fields:
+  field1:
+    name: field1
+    component: CropField
+
+    total_area_ha: 100.0
+    irrigation_spec: &quot;test/data/irrigations/gravity.yml&quot;
+
+    # Initial crop is the first one in this list
+    crop_rotation_spec: [&quot;test/data/crops/irrigated_wheat.yml&quot;, &quot;test/data/crops/irrigated_barley.yml&quot;]
+
+    # average soil total available water (mm)
+    soil_TAW: 100.0
+
+    # Initial Soil Water Deficit
+    soil_SWD: 20.0
+
+water_sources:
+  surface_water:
+    name: surface_water
+    component: WaterSource
+    # Surface and Groundwater Account fees: http://www.g-mwater.com.au/downloads/gmw/Pricing_Table_June15.pdf
+    # Supply costs taken from East Loddon (North)
+
+    # Average volume per licence for the lower Campaspe is ~407ML
+    # (56.2GL / 138 Licences)
+    # see http://www.g-mwater.com.au/downloads/gmw/Groundwater/Lower_Campaspe_Valley_WSPA/Nov_2013_-_Lower_Campaspe_Valley_WSPA_Plan_A4_FINAL-fixed_for_web.pdf
+    # esp. Section 2.2 (Groundwater Use) page 8, 
+
+    # Groundwater fees: http://www.g-mwater.com.au/downloads/gmw/Forms_Groundwater/2015/TATDOC-2264638-2015-16_Schedule_of_Fees_and_Charges_-_Groundwater_and_Bore_Construction.pdf
+
+    # Entitlement statistics from http://waterregister.vic.gov.au/water-entitlements/entitlement-statistics
+
+    # Other fees not considered:
+    # Bore Construction fee: $1440
+    # Replacement bore: $900
+    # Each Additional bore: $170
+    # licence amendment: $527 (alter number of bores, alter depth of bore, change bore site)
+    # overuse cost: $2000 / ML (we assume that farmers never over use!)
+
+    # Licence Renewal:
+    # Licence renewal occurs every 5-15 years http://www.g-mwater.com.au/downloads/gmw/Forms_Surface_Water/2015/30_Nov_2015_-_2811974-v10-APPLICATION_TO_RENEW_A_LICENCE_TO_TAKE_AND_USE_SURFACEWATER_OPERATE_WORKS.pdf
+    # Licence Renewal costs $681 (based on 2014-15 fees)
+    # $681 / 5 years, which is $136.2 a year
+
+    # In some cases, farmers may need a licence to perform on-farm MAR
+    # See under section entitled &quot;Managed Aquifer Recharge (MAR)&quot;
+    # http://www.srw.com.au/page/page.asp?page_Id=113#BM4730
+
+    # Bore Operation Licence is said to be $1414
+    # Could not find whether this is yearly or every 5 years.
+    # Assuming every 5 years
+    # $1414 / 5 is 282.8
+
+    # http://www.g-mwater.com.au/customer-services/manage-my-account/feedescriptions
+    # http://www.g-mwater.com.au/customer-services/manage-my-account/feesandcharges
+    # http://www.g-mwater.com.au/customer-services/manage-my-account/feesandcharges/yourfeesexplained
+    # yearly_cost is the sum of the below
+    # in $ per service point
+    # service,90
+    # service_point,100
+    # access_service_point,50
+    # bore_operation_licence,282.8
+    # licence_renewal,136.2
+    yearly_cost: 659.0
+
+    # No charge based on area
+    cost_per_ha: 0.0
+
+    # Total fees ($ / ML)
+    # access: 3.96
+    # resource_management: 4.33
+    cost_per_ML: 8.29
+
+    head: 0.0  # Initial head
+    allocation: 225.0  # Initial allocation
+    entitlement: 225.0  # Total entitlement
+
+  groundwater:
+    name: groundwater
+    component: WaterSource
+
+    # Surface and Groundwater Account fees: http://www.g-mwater.com.au/downloads/gmw/Pricing_Table_June15.pdf
+    # Supply costs taken from East Loddon (North)
+
+    # Water Share/Entitlements:
+    # http://waterregister.vic.gov.au/water-entitlements/entitlement-statistics
+
+    # 4C Lower Campaspe, 52, 1633.5ML
+    # Pricing:
+    # http://www.g-mwater.com.au/customer-services/myaccount/pricingsimulator
+    # http://www.g-mwater.com.au/general-information/pricingsimulator
+
+    # http://www.g-mwater.com.au/downloads/gmw/Pricing_Table_June15.pdf
+
+    # Definitions:
+    # http://waterregister.vic.gov.au/about/water-dictionary
+
+    # access_fees are sum of the below
+    # in $ per service point
+    # service: 100.0
+    # infrastructure_access: 2714.0
+    # service_point: 300
+    # service_point_remote_read: 350
+    # service_point_remote_operate: 400
+    # surface_drainage_service: 100
+    yearly_cost: 3964.0
+
+    # area_fee ($/Ha): 7.95
+    cost_per_ha:  7.95  # ($/ha)
+
+    # access_fee: 2.04
+    # resource_management_fee: 4.47
+    # high_reliability_entitlement: 24.86
+    # low_reliability_entitlement: 15.35
+    # high_reliability_storage: 10.57
+    # low_reliability_storage: 5.18
+    # above_entitlement_storage: 15.35
+    cost_per_ML: 77.82  # ($/ML)
+
+    head: 25.0  # Initial head (in meters)
+    allocation: 50.0  # Initial allocation
+    entitlement: 50.0  # Total entitlement</code></pre><h2 id="Basin"><a class="docs-heading-anchor" href="#Basin">Basin</a><a id="Basin-1"></a><a class="docs-heading-anchor-permalink" href="#Basin" title="Permalink"></a></h2><pre><code class="language-yaml hljs">name: ExampleBasin
+component: Basin
+
+# Paths to zone specs
+zone_spec: [&quot;test/data/zones/Zone_1.yml&quot;, &quot;test/data/zones/Zone_2.yml&quot;]
+</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../">« Agtor.jl</a><a class="docs-footer-nextpage" href="../getting_started/">Getting Started »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.23 on <span class="colophon-date" title="Sunday 1 January 2023 02:55">Sunday 1 January 2023</span>. Using Julia version 1.8.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
