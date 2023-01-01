@@ -2,6 +2,6 @@
 
 ```@autodocs
 Modules = [Agtor]
-Order   = [:function, :type]
+Order   = [:type, :function]
 Private = false
 ```
