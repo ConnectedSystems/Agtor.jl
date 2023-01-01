@@ -25,6 +25,29 @@ mutable struct Basin <: AgComponent
     end
 end
 
+"""
+associate_managers(managers, zones)
+
+Map a given list of managers to a list of zones.
+
+# Example
+
+```julia
+OptimizingManager = EconManager("optimizing")
+manage_zones = associate_managers([OptimizingManager], [[:Zone_1, :Zone_2]])
+```
+
+# Arguments
+- managers : list-like, of managers
+- zones : list-like of a list of zone names to associate a manager with
+
+# Returns
+Tuple of tuples of managers and the names of zones they manage
+"""
+function associate_managers(managers, zones)
+    return collect(((m, Tuple(z)) for (m, z) in zip(managers, zones)))
+end
+
 
 """
 # Example
@@ -46,7 +69,7 @@ assign_managers!(manage_zones, values(zone_specs))
 
 Raises `ArgumentError` if duplicate zone names are found.
 """
-function assign_managers!(rel::Tuple, zones)
+function assign_managers!(rel, zones)
     all_names = []
     for (mg, zone_names) in rel
         for tgt_name in zone_names

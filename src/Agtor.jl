@@ -42,7 +42,7 @@ export load_yaml, load_spec, load_climate, create
 export generate_agparams, create, reset!
 export AgComponent, AgParameter, Infrastructure, Irrigation, Pump
 export WaterSource, Crop, FarmField, CropField, FarmZone
-export Manager, EconManager, RigidManager
+export Manager, EconManager, RigidManager, associate_managers
 export Climate, Basin, run_timestep!, subtotal_costs, total_costs, update_available_water!
 export collect_results, min_max, extract_values, param_info, extract_spec, add_prefix!
 export set_params!, extract_agparams, collect_agparams!, collect_agparams, update_model!
