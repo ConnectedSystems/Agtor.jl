@@ -18,4 +18,9 @@ makedocs(
     ]
 )
 
-
+deploydocs(
+    repo="github.com/ConnectedSystems/Agtor.jl.git",
+    devbranch="main",
+    target="build",
+    push_preview=true
+)

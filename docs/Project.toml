@@ -1,4 +1,5 @@
 [deps]
+Agtor = "95dc4c25-59f6-4b9e-a920-4913b22a8444"
 Coverage = "a2441757-f6aa-5fb2-8edb-039e3f45d037"
 DocStringExtensions = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
