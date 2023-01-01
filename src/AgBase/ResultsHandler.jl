@@ -3,7 +3,9 @@ using DataFrames
 
 
 """
-Collate individually saved `.jld` files from distributed runs into a single JLD2 file.
+    collate_results!(fn_pattern::String, main_fn::String)::Nothing
+
+Collate individually saved `.jld2` files from distributed runs into a single JLD2 file.
 """
 function collate_results!(fn_pattern::String, main_fn::String)::Nothing
     all_fns = glob(fn_pattern)
@@ -21,7 +23,12 @@ end
 
 
 """
-Collate a given list of names from across scenario runs into a individual DataFrames.
+    collate_results(fn::String, group::String, target::Array{String})::DataFrame
+    collate_results(data::Dict, group::String, target::Array{String})::DataFrame
+    collate_results(fn::String, group::String, target::String)::DataFrame
+    collate_results(data::Dict, group::String, target::String)::DataFrame
+
+Collate a results from across scenario runs into an individual DataFrame.
 """
 function collate_results(fn::String, group::String, target::Array{String})::DataFrame
     @assert endswith(fn, ".jld2")
@@ -29,22 +36,12 @@ function collate_results(fn::String, group::String, target::Array{String})::Data
 
     return collate_results(x, group, target)
 end
-
-
-"""
-Collate a given result name from across scenario runs into a single DataFrame.
-"""
 function collate_results(fn::String, group::String, target::String)::DataFrame
     @assert endswith(fn, ".jld2")
     x = load(fn)
 
     return collate_results(x, group, target)
 end
-
-
-"""
-Collate a given list of names from across scenario runs into individual DataFrames.
-"""
 function collate_results(data::Dict, group::String, target::Array{String})::DataFrame
     res = Dict()
     for tgt in target
@@ -53,12 +50,6 @@ function collate_results(data::Dict, group::String, target::Array{String})::Data
 
     return res
 end
-
-
-
-"""
-Collate a given result name from across scenario runs into a single DataFrame.
-"""
 function collate_results(data::Dict, group::String, target::String)::DataFrame
 
     res = Dict()
