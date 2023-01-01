@@ -93,7 +93,6 @@ function scenario_stats(data::DataFrame, needle::String)::NamedTuple
     med = median(median.(eachrow(df)))
 
     return (total=total, mean=avg, median=med)
-
 end
 
 
