@@ -135,7 +135,12 @@ for op = (:Year, :Month, :Day)
 end
 
 
-"""Returns min/max values"""
+"""
+    min_max(p::AgParameter)
+    min_max(dataset::Dict)::Dict
+
+Returns min/max of parameter values.
+"""
 function min_max(p::AgParameter)
     if is_const(p)
         return p.value
@@ -143,9 +148,6 @@ function min_max(p::AgParameter)
 
     return p.min_val, p.max_val
 end
-
-
-"""Returns min/max values"""
 function min_max(dataset::Dict)::Dict
     mm::Dict{Union{Dict, Symbol}, Union{Dict, Any}} = Dict()
     for (k, v) in dataset
@@ -249,6 +251,33 @@ function extract_values(p::AgParameter; prefix::Union{String, Nothing}=nothing):
 end
 
 
+"""
+    collect_agparams(dataset::Dict; ignore::Union{Array, Nothing}=nothing)::DataFrame
+
+Extract parameter values from Dict specification.
+"""
+function collect_agparams(dataset::Dict; ignore::Union{Array, Nothing}=nothing)::DataFrame
+    return collect_agparams!(dataset, []; ignore=ignore)
+end
+
+
+"""
+    collect_agparams!(dataset::Union{Array, Tuple}, store::Array; ignore::Union{Array, Nothing}=nothing)::Nothing
+    collect_agparams!(dataset::Dict, store::Array; ignore::Union{Array, Nothing}=nothing)::DataFrame
+"""
+function collect_agparams!(dataset::Union{Array, Tuple}, store::Array; ignore::Union{Array, Nothing}=nothing)::Nothing
+    for v in dataset
+        if v isa AgParameter && !is_const(v)
+            if !agin(v, store)
+                push!(store, extract_values(v))
+            end
+        elseif v isa Dict || v isa Array || v isa AgComponent || v isa Tuple
+            collect_agparams!(v, store; ignore=ignore)
+        end
+    end
+
+    return nothing
+end
 function collect_agparams!(dataset::Dict, store::Array; ignore::Union{Array, Nothing}=nothing)::DataFrame
     for (k, v) in dataset
         if !isnothing(ignore) && (k in ignore)
@@ -268,33 +297,11 @@ function collect_agparams!(dataset::Dict, store::Array; ignore::Union{Array, Not
 end
 
 
-"""Extract parameter values from Dict specification."""
-function collect_agparams(dataset::Dict; ignore::Union{Array, Nothing}=nothing)::DataFrame
-    return collect_agparams!(dataset, []; ignore=ignore)
-end
-
-
-function collect_agparams!(dataset::Union{Array, Tuple}, store::Array; ignore::Union{Array, Nothing}=nothing)::Nothing
-    for v in dataset
-        if v isa AgParameter && !is_const(v)
-            if !agin(v, store)
-                push!(store, extract_values(v))
-            end
-        elseif v isa Dict || v isa Array || v isa AgComponent || v isa Tuple
-            collect_agparams!(v, store; ignore=ignore)
-        end
-    end
-
-    return nothing
-end
-
-
 """Extract parameter values from AgComponent."""
 function collect_agparams!(dataset::Union{AgComponent, AgParameter}, store::Array; ignore=nothing)::DataFrame
     match = (Array, Tuple, Dict, AgComponent, AgParameter)
 
     for fn in fieldnames(typeof(dataset))
-
         fv = getfield(dataset, fn)
         if fv isa AgParameter && !is_const(fv)
             if !agin(fv, store)
@@ -316,7 +323,11 @@ function collect_agparams!(dataset::Union{AgComponent, AgParameter}; ignore=noth
 end
 
 
-"""Extract parameter values from Dict specification and store in a common Dict."""
+"""
+    collect_agparams!(dataset::Dict, mainset::Dict)::Nothing
+
+Extract parameter values from Dict specification and store in a common Dict.
+"""
 function collect_agparams!(dataset::Dict, mainset::Dict)::Nothing
     for (k, v) in dataset
         if Symbol(v.name) in mainset
