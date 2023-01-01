@@ -4,10 +4,18 @@ using Documenter, Agtor
 
 
 makedocs(
-    sitename="Agtor.jl - a programmatic farm modeling framework",
+    format=Documenter.HTML(
+        prettyurls=get(ENV, "CI", nothing) == "true",
+        sidebar_sitename=true
+    ),
+    sitename="Agtor.jl",
     modules = [Agtor],
     pages=[
         "index.md",
+        "specs.md",
         "getting_started.md",
+        "API.md",
     ]
 )
+
+
