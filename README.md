@@ -96,5 +96,3 @@ Tentative usage examples are provided in the `examples` directory.
 Tests are found in the `test` directory and the `runtests.jl` will invoke all available tests.
 
 As Agtor is under development all current details are subject to change.
-
-Documentation is forthcoming.

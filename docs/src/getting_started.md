@@ -1,5 +1,10 @@
 # Getting Started
 
+The sections below outline basic use of Agtor.
+
+A complete runnable script can be found [here](https://github.com/ConnectedSystems/Agtor.jl/blob/main/examples/campaspe_cropping_example.jl).
+
+
 ## A note on terminology
 
 Agtor is a zonal agricultural cropping model, where a zone is defined by a collection of fields, and a basin/catchment is defined with a collection of zones.
