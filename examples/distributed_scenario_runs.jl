@@ -62,10 +62,10 @@ Run example scenarios (for a single farm area) by distributing across available 
 Results are saved to a file on completion, based on scenario id.
 """
 function test_scenario_run(data_dir::String="test/data/", result_dir::String="")::Nothing
-    z1, agparams = setup_zone(data_dir)
+    z1, agparams = setup_zone()
     z1.manager = EconManager("test")
 
-    scen_data = joinpath(data_dir, "scenarios", "sampled_params.csv")
+    scen_data = joinpath(HERE, "data", "scenarios", "sampled_params.csv")
     samples = DataFrame!(CSV.File(scen_data))
 
     # Each row represents a scenario to run.

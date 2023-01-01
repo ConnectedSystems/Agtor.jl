@@ -1,4 +1,7 @@
-"""A full basin scenario example replicating the Lower Campaspe subcatchment."""
+"""A full basin scenario example replicating the Lower Campaspe subcatchment.
+
+This example takes ~7 mins to run 50 scenarios.
+"""
 
 import Base.Filesystem: rm
 
@@ -46,6 +49,7 @@ climate_data = "examples/campaspe/climate/basin_historic_climate_data.csv"
 # Optimizes returns for the available water, given water needs and costs.
 OptimizingManager = EconManager("optimizing")
 manage_zones = ((OptimizingManager, Tuple(collect(keys(zone_specs)))), )
+
 campaspe_basin = Basin(name=basin_name, zone_spec=zone_specs, 
                        climate_data=climate_data, managers=manage_zones)
 

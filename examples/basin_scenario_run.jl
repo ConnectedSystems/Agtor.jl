@@ -89,9 +89,7 @@ end
 function scenario_run(samples, basin)::Array{Array{Float64}}
     basin_wide_res = []
     for (row_id, r) in enumerate(eachrow(samples))
-        tmp_b = deepcopy(basin)
-        
-        update_model!(tmp_b, r)
+        tmp_b = update_model!(tmp_b, r)
         push!(basin_wide_res, run_model(row_id, tmp_b))
 
         # An alternative to using a deepcopy of the basin is
