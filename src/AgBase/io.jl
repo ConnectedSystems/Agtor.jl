@@ -5,7 +5,7 @@ using Base.Threads
 import Agtor: generate_agparams
 
 
-function load_yaml(data_dir::String, ext::String=".yml")::Dict{String, Dict}
+function load_yaml(data_dir::String, ext::String=".yml")::Dict{String,Dict}
 
     if !endswith(data_dir, ext)
         if startswith(ext, ".") == false
@@ -25,8 +25,8 @@ function load_yaml(data_dir::String, ext::String=".yml")::Dict{String, Dict}
 end
 
 
-function load_yaml(file_list::Array{String})::Dict{String, Dict}
-    loaded_dataset::Dict{String, Dict} = Dict{String, Dict}()
+function load_yaml(file_list::Array{String})::Dict{String,Dict}
+    loaded_dataset::Dict{String,Dict} = Dict{String,Dict}()
     Threads.@threads for fn in file_list
         data = YAML.load(open(fn))
         loaded_dataset[data["name"]] = data
@@ -36,9 +36,9 @@ function load_yaml(file_list::Array{String})::Dict{String, Dict}
 end
 
 
-function load_spec(data_dir::String)::Dict{Symbol, Dict}
-    specs::Dict{String, Dict} = load_yaml(data_dir)
-    return Dict(Symbol(k) => generate_agparams("", v) for (k,v) in specs)
+function load_spec(data_dir::String)::Dict{Symbol,Dict}
+    specs::Dict{String,Dict} = load_yaml(data_dir)
+    return Dict(Symbol(k) => generate_agparams("", v) for (k, v) in specs)
 end
 
 
@@ -75,7 +75,7 @@ function save_state!(fn::String, obj::Any, group::String)::Nothing
 end
 
 """Save arbitrary results to JLD."""
-function save_results!(fn::String, results::Any, group::Tuple{String, String})::Nothing
+function save_results!(fn::String, results::Any, group::Tuple{String,String})::Nothing
     mode = determine_file_mode(fn)
     jldopen(fn, mode) do file
         idx, name = group
@@ -143,7 +143,7 @@ end
 
 
 """Save results for a single zone to JLD."""
-function save_results!(fn::String, idx::Union{String, Int64}, results::NamedTuple)::Nothing
+function save_results!(fn::String, idx::Union{String,Int64}, results::NamedTuple)::Nothing
     mode = determine_file_mode(fn)
 
     try
