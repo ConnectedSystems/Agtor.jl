@@ -1,7 +1,7 @@
 name = "Agtor"
 uuid = "95dc4c25-59f6-4b9e-a920-4913b22a8444"
 authors = ["ConnectedSystems"]
-version = "0.2.0"
+version = "0.2.1"
 
 [deps]
 BlackBoxOptim = "a134a8b2-14d6-55f6-9291-3336d3ab0209"
