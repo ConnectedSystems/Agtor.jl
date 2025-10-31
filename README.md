@@ -1,12 +1,9 @@
 Agtor.jl
 ========
 
-[![Build Status](https://travis-ci.com/ConnectedSystems/Agtor.jl.svg?branch=master)](https://travis-ci.com/ConnectedSystems/Agtor.jl)
-[![Codecov](https://codecov.io/gh/ConnectedSystems/Agtor.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/ConnectedSystems/Agtor.jl)
-[![docs](https://github.com/github/docs/actions/workflows/documentation.yml/badge.svg)](https://connectedsystems.github.io/Agtor.jl)
-
 Agtor - an actor-based zonal agricultural cropping/water management model.
 
+[![Documentation](https://img.shields.io/badge/docs-dev-blue)](https://connectedsystems.github.io/Agtor.jl)
 
 # Description
 
