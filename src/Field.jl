@@ -415,7 +415,7 @@ end
 
 Maintenance costs can be spread out across a number of fields if desired.
 """
-function total_costs(f::FarmField, dt::Date, water_sources::Array{WaterSource}, num_fields::Int64=1)::Float64
+function total_costs(f::FarmField, dt::Date, water_sources::Array{WaterSource}; num_fields::Int64=1)::Float64
     year_val::Int64 = year(dt)
     irrig_area::Float64 = f.irrigated_area
     h20_usage_cost::Float64 = 0.0
@@ -423,9 +423,11 @@ function total_costs(f::FarmField, dt::Date, water_sources::Array{WaterSource}, 
     for w::WaterSource in water_sources
         water_used::Float64 = volume_used_by_source(f, w.name)
         ws_cost::Float64 = subtotal_costs(w, irrig_area, water_used)
-        h20_usage_cost = h20_usage_cost + ws_cost
+        h20_usage_cost += ws_cost
 
-        pump_cost::Float64 = subtotal_costs(w.pump, year_val) / num_fields
+        # Note: operational pumping costs covered in `f._irrigation_cost`
+        # Divide by number of fields as it is assumed that pumps can serve multiple fields
+        pump_cost::Float64 = (subtotal_costs(w.pump, year_val) * f.total_area_ha) / num_fields
         maint_cost += pump_cost
     end
 
@@ -436,10 +438,10 @@ function total_costs(f::FarmField, dt::Date, water_sources::Array{WaterSource}, 
         @assert irrig_app_cost > 0.0 "If irrigation occured, costs have to be incurred!"
     end
 
-    h20_usage_cost = h20_usage_cost + irrig_app_cost
+    h20_usage_cost += irrig_app_cost
 
-    maint_cost = maint_cost + subtotal_costs(f.irrigation, year_val)
-    crop_costs::Float64 = subtotal_costs(f.crop, year_val)
+    maint_cost += subtotal_costs(f.irrigation, year_val) * f.total_area_ha
+    crop_costs::Float64 = subtotal_costs(f.crop) * f.total_area_ha
     total_costs::Float64 = h20_usage_cost + maint_cost + crop_costs
 
     return total_costs
