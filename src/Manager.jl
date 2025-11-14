@@ -51,27 +51,30 @@ function optimize_irrigated_area(m::Manager, zone::FarmZone)::OrderedDict{String
         did::String = f._fname
         f_name = Symbol(f.name)
 
-        naive_crop_income::Float64 = f.crop.naive_crop_income  # estimate_income_per_ha(f.crop)
-        naive_req_water::Float64 = f.crop.water_use_ML_per_ha
-        app_cost_per_ML::NamedTuple = ML_water_application_cost(m, zone, f, naive_req_water)
+        naive_crop_income_per_ha::Float64 = f.crop.naive_crop_income
+        naive_req_water_per_ha::Float64 = f.crop.water_use_ML_per_ha * f.irrigation.efficiency
+        app_cost_per_ML::NamedTuple = ML_water_application_cost(m, zone, f, naive_req_water_per_ha)
 
-        pos_field_area::Float64 = sum(Float64[w.allocation / naive_req_water
+        pos_field_area::Float64 = sum(Float64[w.allocation / naive_req_water_per_ha
                                               for w::WaterSource in zone_ws])
         pos_field_area = min(pos_field_area, area_to_consider)
 
         profits::Array{JuMP.GenericAffExpr{Float64,JuMP.VariableRef}} = []
         for w::WaterSource in zone_ws
-            var = @variable(model,
+            __var = @variable(model,
                 base_name = "$(did)$(w.name)",
                 lower_bound = 0.0,
-                upper_bound = min((w.allocation / naive_req_water), area_to_consider))
-            field_areas[Symbol(did, w.name)] = var
+                upper_bound = min((w.allocation / naive_req_water_per_ha), area_to_consider))
+            field_areas[Symbol(did, w.name)] = __var
 
-            push!(profits, var * (naive_crop_income - app_cost_per_ML[Symbol(w.name)]))
+            water_cost_per_ha = (app_cost_per_ML[Symbol(w.name)] * naive_req_water_per_ha)
+            push!(profits, __var * (naive_crop_income_per_ha - water_cost_per_ha))
         end
 
         append!(profit_calc, profits)
-        curr_field_areas::Array = [v for (k, v) in field_areas if occursin(string(f_name), string(k))]
+        curr_field_areas::Vector{JuMP.VariableRef} = [
+            v for (k, v) in field_areas if occursin(string(f_name), string(k))
+        ]
 
         # Total irrigated area cannot be greater than field area
         # or area possible with available water
