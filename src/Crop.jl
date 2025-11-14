@@ -131,11 +131,10 @@ function estimate_income_per_ha(c::Crop)::Float64
 end
 
 
-function subtotal_costs(c::Crop, year::Int64)::Float64
-    # cost of production is handled by factoring in
+function subtotal_costs(c::Crop)::Float64
+    # Other costs of production is handled by factoring in
     # water application costs and other maintenance costs.
-    # The variable_cost_per_ha is only used to inform estimates.
-    return 0.0
+    return c.variable_cost_per_ha
 end
 
 
