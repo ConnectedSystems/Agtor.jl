@@ -125,6 +125,7 @@ function apply_irrigation!(field::CropField,
     apply::Float64 = (water_to_apply_mm * field.irrigation.efficiency)
     field.soil_SWD::Union{Float64, AgParameter} -= max(0.0, apply)::Float64
     field.irrigated_volume = (ws.name, vol_ML)
+    field._num_irrigation_events += 1
 
     return nothing
 end
