@@ -201,18 +201,18 @@ function optimize_irrigation(m::Manager, zone::FarmZone, dt::Date)::Tuple{Ordere
         for ws::WaterSource in zone_ws
             ws_name::Symbol = Symbol(ws.name)
             w_id::Symbol = Symbol(did, ws_name)
-            var::VariableRef = @variable(
+            var_area::VariableRef = @variable(
                 model,
                 base_name = "$(did)$(ws_name)",
                 lower_bound = 0.0,
                 upper_bound = max_ws_area[ws_name]
             )
 
-            field_area[w_id] = var
-            v::Float64 = app_cost_per_ML[ws_name]
-            @set! app_cost[w_id] = v
+            field_area[w_id] = var_area
+            water_app_cost::Float64 = app_cost_per_ML[ws_name]
+            @set! app_cost[w_id] = water_app_cost
 
-            push!(profit, (crop_income_per_ha - (v * req_water_ML_ha)) * var)
+            push!(profit, (crop_income_per_ha - (water_app_cost * req_water_ML_ha)) * var_area)
         end
     end
 
@@ -226,7 +226,7 @@ function optimize_irrigation(m::Manager, zone::FarmZone, dt::Date)::Tuple{Ordere
             @constraint(model, irrig_area <= (ws.allocation / avg_req_water))
         end
     else
-        opt_vals = OrderedDict(
+        opt_vals = OrderedDict{String,Float64}(
             string(k) => 0.0
             for k in keys(field_area)
         )
@@ -244,7 +244,7 @@ function optimize_irrigation(m::Manager, zone::FarmZone, dt::Date)::Tuple{Ordere
         throw(ArgumentError("Could not optimize farm water use."))
     end
 
-    opt_vals = OrderedDict(JuMP.name(v) => value(v) for v in JuMP.all_variables(model))
+    opt_vals = OrderedDict{String,Float64}(JuMP.name(v) => value(v) for v in JuMP.all_variables(model))
 
     return opt_vals, app_cost
 end
