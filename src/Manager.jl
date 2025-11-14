@@ -156,24 +156,24 @@ function optimize_irrigation(m::Manager, zone::FarmZone, dt::Date)::Tuple{Ordere
     @inbounds for f::FarmField in zone.fields
         did::String = f._fname
 
-        # glp_simplex: column 2: lb = 0, ub = -2.14686e-14; incorrect bounds
         req_water_ML_ha::Float64 = calc_required_water(f, dt) / mm_to_ML
         max_ws_area::NamedTuple = possible_area_by_allocation(zone, f, req_water_ML_ha)
         total_pos_area::Float64 = min(sum(max_ws_area), f.irrigated_area)
 
         is_dryland = f.irrigation.name == "dryland"
-        # no_req_water = isapprox(req_water_ML_ha, 0.0; atol=1e-6)
-        # no_irrig_area = isapprox(total_pos_area, 0.0; atol=1e-6)
+        no_req_water = isapprox(req_water_ML_ha, 0.0; atol=1e-6)
+        no_irrig_area = isapprox(total_pos_area, 0.0; atol=1e-6)
 
         # If no water available or required...
-        if is_dryland || req_water_ML_ha == 0.0 || total_pos_area == 0.0
-            # if is_dryland || no_req_water || no_irrig_area
+        if is_dryland || no_req_water || no_irrig_area
             @inbounds for ws::WaterSource in zone_ws
                 ws_name = ws.name
-                field_area[Symbol(did, ws_name)] = @variable(model,
+                field_area[Symbol(did, ws_name)] = @variable(
+                    model,
                     base_name = "$(did)$(ws_name)",
                     lower_bound = 0.0,
-                    upper_bound = 0.0)
+                    upper_bound = 0.0
+                )
             end
 
             push!(req_water, 0.0)
