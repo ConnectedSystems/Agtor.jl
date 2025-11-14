@@ -91,6 +91,12 @@ end
 
 """Volume used from a water source in ML"""
 function volume_used_by_source(f::FarmField, ws_name::String)::Float64
+    # Check String entry
+    if haskey(f._irrigated_volume, ws_name)
+        return f._irrigated_volume[ws_name] / mm_to_ML
+    end
+
+    # Check Symbol entry
     if haskey(f._irrigated_volume, Symbol(ws_name))
         return f._irrigated_volume[Symbol(ws_name)] / mm_to_ML
     end
