@@ -13,7 +13,7 @@ end
 function Base.getproperty(irrig::Irrigation, v::Symbol)
     if v == :flow_rate_Lps
         # Calculate flow rate in litres per second
-        return irrig.flow_ML_day / 86400.0
+        return (irrig.flow_ML_day * 1e6) / 86400.0
     end
 
     return getfield(irrig, v)
