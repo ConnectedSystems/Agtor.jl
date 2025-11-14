@@ -17,6 +17,11 @@ function usage_costs(ws::WaterSource, water_used_ML::Float64)::Float64
     return ws.cost_per_ML * water_used_ML
 end
 
+"""
+    subtotal_costs(ws::WaterSource, area::Float64, water_used_ML::Float64)::Float64
+
+Calculate costs for irrigated area.
+"""
 function subtotal_costs(ws::WaterSource, area::Float64, water_used_ML::Float64)::Float64
     usage_fee::Float64 = usage_costs(ws, water_used_ML)
     area_fee::Float64 = ws.cost_per_ha * area
@@ -24,10 +29,11 @@ function subtotal_costs(ws::WaterSource, area::Float64, water_used_ML::Float64):
 end
 
 
-function create(ws_specs::Dict{Symbol, Dict},
-                pump_specs::Dict{Symbol, Dict};
-                id_prefix::Union{String, Nothing}=nothing)::Array{WaterSource}
-    ws::Array{WaterSource} = []
+function create(
+    ws_specs::Dict{Symbol,Dict},
+    pump_specs::Dict{Symbol,Dict}
+)::Vector{WaterSource}
+    ws::Vector{WaterSource} = WaterSource[]
     for (k, v) in ws_specs
         pump_name = v[:name]  # pump will have same name as the water_source
         v[:pump] = create(pump_specs[Symbol(pump_name)])

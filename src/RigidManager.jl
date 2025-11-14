@@ -3,7 +3,7 @@ using OrderedCollections
 
 """A rigid farm manager.
 
-Water is applied by a pre-determined quantity rather than optimal 
+Water is applied by a pre-determined quantity rather than optimal
 profitability. Uses surface water first, then groundwater.
 """
 struct RigidManager <: Manager
@@ -50,14 +50,14 @@ function run_timestep!(farmer::RigidManager, zone::FarmZone, idx::Int64, dt::Dat
                 if water_to_apply_mm > 0.0
                     vol_to_apply_ML_ha::Float64 = (water_to_apply_mm / mm_to_ML)
                     apply_irrigation!(f, ws, water_to_apply_mm, area_to_apply)
-                    
+
                     app_cost_per_ML::NamedTuple = ML_water_application_cost(farmer, zone, f, vol_to_apply_ML_ha)
                     application_cost::Float64 = app_cost_per_ML[Symbol(ws.name)]
                     log_irrigation_cost(f, (application_cost * vol_to_apply_ML_ha * area_to_apply))
                 else
                     log_irrigation_cost(f, 0.0)
                 end
-            end 
+            end
         elseif season_start
             f.sowed = true
             apply_rainfall!(zone, dt)
@@ -81,9 +81,11 @@ function run_timestep!(farmer::RigidManager, zone::FarmZone, idx::Int64, dt::Dat
                 prev_mm::Float64 = get_seasonal_rainfall(zone.climate, [prev, s_start], f_name)
                 ssm_mm::Float64 = prev_mm * f.crop.ssm_coef
 
-                income::Float64, irrigated_yield::Float64, dryland_yield::Float64 = 
-                    total_income(f, ssm_mm, gsr_mm, irrig_mm,
-                                (dt, zone.water_sources))
+                income::Float64, irrigated_yield::Float64, dryland_yield::Float64 =
+                    total_income(
+                        f, ssm_mm, gsr_mm, irrig_mm,
+                        (dt, zone.water_sources)
+                    )
 
                 seasonal_field_log!(f, dt, income, f.irrigated_volume, irrigated_yield, dryland_yield, gsr_mm)
             else

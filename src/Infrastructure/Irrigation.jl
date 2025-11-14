@@ -3,9 +3,9 @@
 @with_kw mutable struct Irrigation <: Infrastructure
     @infrastructure_fields
 
-    efficiency::Union{Float64, AgParameter}
-    flow_ML_day::Union{Float64, AgParameter}
-    head_pressure::Union{Float64, AgParameter}
+    efficiency::Union{Float64,AgParameter}
+    flow_ML_day::Union{Float64,AgParameter}
+    head_pressure::Union{Float64,AgParameter}
 
 end
 

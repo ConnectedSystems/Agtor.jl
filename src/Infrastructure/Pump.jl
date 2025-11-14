@@ -8,12 +8,12 @@ An on-farm pump to access water.
 
     @infrastructure_fields
 
-    pump_efficiency::Union{Float64, AgParameter} = 0.7  # Efficiency of pump. Defaults to 0.7 (70%)
-    cost_per_kW::Union{Float64, AgParameter} = 0.28  # cost in dollars/kW. Defaults to 0.28/kW
-    
+    pump_efficiency::Union{Float64,AgParameter} = 0.7  # Efficiency of pump. Defaults to 0.7 (70%)
+    cost_per_kW::Union{Float64,AgParameter} = 0.28  # cost in dollars/kW. Defaults to 0.28/kW
+
     # Accounts for efficiency losses between the energy required at the pump
     # shaft and the total energy required. Defaults to 0.75
-    derating::Union{Float64, AgParameter} = 0.75
+    derating::Union{Float64,AgParameter} = 0.75
 end
 
 function cost_per_ha(p::Pump, year_step::Int64, area::Float64)::Float64
@@ -62,8 +62,9 @@ See:
 # See also
 - link to [`Pump(pump_efficiency, cost_per_kW, derating)`](@ref)
 """
-function pumping_costs_per_ML(p::Pump, flow_rate_Lps::Float64, 
-                              head_pressure::Float64)::Float64
+function pumping_costs_per_ML(
+    p::Pump, flow_rate_Lps::Float64, head_pressure::Float64
+)::Float64
     if flow_rate_Lps <= 0.0
         return 0.0
     end
@@ -79,7 +80,7 @@ function pumping_costs_per_ML(p::Pump, flow_rate_Lps::Float64,
     cost_per_hour::Float64 = p.cost_per_kW * energy_required_kW
     cost_per_ML::Float64 = (cost_per_hour * hours_per_ML)
 
-    @assert cost_per_ML >= 0.0 "Pumping costs cannot be negative. 
+    @assert cost_per_ML >= 0.0 "Pumping costs cannot be negative.
     $cost_per_ML
     $flow_rate_Lps
     $head_pressure"
