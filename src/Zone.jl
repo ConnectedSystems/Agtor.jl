@@ -259,14 +259,15 @@ function aggregate_field_logs(field_logs::DataFrame)::DataFrame
         [x => sum for x in names(field_logs) if x != "Date"]...
     )
 
-    collated[:, Symbol("Dollar per ML")] = collated[!, :income_sum] ./ collated[!, :irrigated_volume_sum]
-    collated[:, Symbol("ML per Irrigated Yield")] = collated[!, :irrigated_volume_sum] ./ collated[!, :irrigated_yield_sum]
-    collated[:, Symbol("Dollar per Ha")] = collated[!, :income_sum] ./ (collated[!, :dryland_area_sum] .+ collated[!, :irrigated_area_sum])
-    collated[:, Symbol("Mean Irrigated Yield")] = collated[!, :irrigated_yield_sum] ./ collated[!, :irrigated_area_sum]
-    collated[:, Symbol("Mean Dryland Yield")] = collated[!, :dryland_yield_sum] ./ collated[!, :dryland_area_sum]
+    # Replace zero values with 1.0 to avoid zero division error
+    collated[:, Symbol("Dollar per ML")] = collated[!, :income_sum] ./ replace(collated[!, :irrigated_volume_sum], 0.0 => 1.0)
+    collated[:, Symbol("ML per Irrigated Yield")] = collated[!, :irrigated_volume_sum] ./ replace(collated[!, :irrigated_yield_sum], 0.0 => 1.0)
+    collated[:, Symbol("Dollar per Ha")] = collated[!, :income_sum] ./ replace((collated[!, :dryland_area_sum] .+ collated[!, :irrigated_area_sum]), 0.0 => 1.0)
+    collated[:, Symbol("Mean Irrigated Yield")] = collated[!, :irrigated_yield_sum] ./ replace(collated[!, :irrigated_area_sum], 0.0 => 1.0)
+    collated[:, Symbol("Mean Dryland Yield")] = collated[!, :dryland_yield_sum] ./ replace(collated[!, :dryland_area_sum], 0.0 => 1.0)
 
-    collated[isnan.(collated[!, Symbol("Mean Dryland Yield")]), Symbol("Mean Dryland Yield")] .= 0
-    collated[isnan.(collated[!, Symbol("Mean Irrigated Yield")]), Symbol("Mean Irrigated Yield")] .= 0
+    collated[isnan.(collated[!, Symbol("Mean Dryland Yield")]), Symbol("Mean Dryland Yield")] .= 0.0
+    collated[isnan.(collated[!, Symbol("Mean Irrigated Yield")]), Symbol("Mean Irrigated Yield")] .= 0.0
 
     return collated
 end
