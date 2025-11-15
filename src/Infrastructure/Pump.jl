@@ -69,16 +69,16 @@ function pumping_costs_per_ML(
         return 0.0
     end
 
-    c::Float64 = 102.0
     pe::Float64 = p.pump_efficiency
     dr::Float64 = p.derating
-    energy_required_kW::Float64 = (head_pressure * flow_rate_Lps) / ((c * pe) * dr)
 
-    # Litres / minutes in hour / seconds in minute
-    hours_per_ML::Float64 = (1e6 / flow_rate_Lps) / 60.0^2
-
-    cost_per_hour::Float64 = p.cost_per_kW * energy_required_kW
-    cost_per_ML::Float64 = (cost_per_hour * hours_per_ML)
+    # 2.725 = [constant representing gravitational acceleration] ⋅ [water density] / kWh
+    # kWh = [gravity: 9.81 m/s²] × [water density: (1000 kg/m³ * 1000 m³)] / kWh
+    # = 9.81 * 1000² / 3,600,000
+    # where 3,600,000 joules = 1 kWh
+    # = 2.725
+    kWh_per_ML = (head_pressure * 2.725) / (pe * dr)
+    cost_per_ML::Float64 = p.cost_per_kW * kWh_per_ML
 
     @assert cost_per_ML >= 0.0 "Pumping costs cannot be negative.
     $cost_per_ML
