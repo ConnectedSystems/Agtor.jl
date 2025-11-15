@@ -311,13 +311,11 @@ Water source name and cost per ML/ha
 """
 function ML_water_application_cost(m::Manager, zone::FarmZone, field::FarmField, req_water_ML_ha::Float64)::NamedTuple
     zone_ws::Array{WaterSource} = zone.water_sources
-    flow_rate::Float64 = field.irrigation.flow_rate_Lps
 
     costs = NamedTuple()
     for w::WaterSource in zone_ws
         pump_per_ML = pumping_costs_per_ML(
             w.pump,
-            flow_rate,
             w.head + field.irrigation.head_pressure
         )
         @set! costs[Symbol(w.name)] = (pump_per_ML + w.cost_per_ML) * req_water_ML_ha
