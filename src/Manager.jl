@@ -183,12 +183,6 @@ function optimize_irrigation(m::Manager, zone::FarmZone, dt::Date)::Tuple{Ordere
 
         push!(req_water, req_water_ML_ha)
 
-        # Disable this for now - estimated income includes variable costs
-        # Will always incur maintenance costs and crop costs
-        # total_pump_cost = sum([ws.pump.maintenance_cost(dt.year) for ws in zone_ws])
-        # total_irrig_cost = f.irrigation.maintenance_cost(dt.year)
-        # maintenance_cost = (total_pump_cost + total_irrig_cost)
-
         # Costs to pump needed water volume from each water source
         app_cost_per_ML::NamedTuple = ML_water_application_cost(m, zone, f, req_water_ML_ha)
 
