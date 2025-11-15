@@ -13,18 +13,18 @@ Run model for a single zone.
         Must accept a Manager, zone, int, and Date/DateTime
         `ts_func(manager, zone, idx, dt)`
         All operations must be in-place as changes will not propagate.
-- pre : Function, defines additional actions for `zone` that occur 
+- pre : Function, defines additional actions for `zone` that occur
         at end of time step `dt_i`:
         `callback_func(zone, dt_i)`
-- post : Function, defines additional actions for `zone` that occur 
+- post : Function, defines additional actions for `zone` that occur
          at end of time step `dt_i`:
          `callback_func(zone, dt_i)`
 
 # Returns
 NamedTuple : results
 """
-function run_model(zone::FarmZone; ts_func::Function=run_timestep!, pre::Union{Function, Nothing}=nothing, post::Union{Function, Nothing}=nothing)::NamedTuple
-    
+function run_model(zone::FarmZone; ts_func::Function=run_timestep!, pre::Union{Function,Nothing}=nothing, post::Union{Function,Nothing}=nothing)::NamedTuple
+
     time_sequence = zone.climate.time_steps
 
     @inbounds for (idx, dt_i) in enumerate(time_sequence)
@@ -44,7 +44,7 @@ end
 
 
 """Run timestep for all zones within a basin."""
-function run_timestep!(basin::Basin, ts_func; pre::Union{Function, Nothing}=nothing, post::Union{Function, Nothing}=nothing)
+function run_timestep!(basin::Basin, ts_func; pre::Union{Function,Nothing}=nothing, post::Union{Function,Nothing}=nothing)
     idx, dt_i = basin.current_ts
     for z in basin.zones
         if !isnothing(pre)
@@ -63,7 +63,7 @@ end
 
 
 """Run scenario for an entire basin."""
-function run_model(basin::Basin; ts_func::Function=run_timestep!, pre::Union{Function, Nothing}=nothing, post::Union{Function, Nothing}=nothing)
+function run_model(basin::Basin; ts_func::Function=run_timestep!, pre::Union{Function,Nothing}=nothing, post::Union{Function,Nothing}=nothing)
     for i in basin.climate.time_steps
         run_timestep!(basin, ts_func; pre=pre, post=post)
     end
@@ -74,7 +74,7 @@ end
 
 function advance_timestep!(basin)::Nothing
     idx::Int64, _ = basin.current_ts
-    next_idx::Int64 = idx+1
+    next_idx::Int64 = idx + 1
     dt = nothing
 
     try
@@ -90,7 +90,7 @@ function advance_timestep!(basin)::Nothing
     if isnothing(dt)
         throw(ArgumentError("datetime cannot be nothing"))
     end
-    
+
     basin.current_ts = (idx=next_idx, dt=dt)
 
     return
@@ -109,7 +109,7 @@ Dict with keys:
     - "scenario_id/field_results" = field level results
 """
 function run_scenarios!(samples::DataFrame, zone::FarmZone; ts_func::Function=run_timestep!,
-                        pre::Union{Function, Nothing}=nothing, post::Union{Function, Nothing}=nothing)::Dict
+    pre::Union{Function,Nothing}=nothing, post::Union{Function,Nothing}=nothing)::Dict
     results = @sync @distributed (hcat) for row_id in 1:nrow(samples)
         tmp_z = deepcopy(zone)
         update_model!(tmp_z, samples[row_id, :])
@@ -131,7 +131,7 @@ end
 
 
 """
-    run_scenarios!(samples::DataFrame, basin::Basin, ts_func::Function; 
+    run_scenarios!(samples::DataFrame, basin::Basin, ts_func::Function;
                    pre::Union{Function, Nothing}=nothing, post::Union{Function, Nothing}=nothing)::Dict
 
 Run basin level scenarios for a given sample set.
