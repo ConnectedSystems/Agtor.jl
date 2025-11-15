@@ -40,9 +40,7 @@ function Base.getproperty(f::FarmField, v::Symbol)
         end
 
         # Account for irrigation efficiency
-        val::Float64 = (
-            (f.irrigated_volume * f.irrigation.efficiency) / irrig_area
-        ) * ML_to_mm
+        val::Float64 = (f.irrigated_volume / irrig_area) * ML_to_mm
 
         return val
 

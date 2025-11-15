@@ -72,7 +72,8 @@ function run_timestep!(farmer::RigidManager, zone::FarmZone, idx::Int64, dt::Dat
             gsr_mm::Float64 = get_seasonal_rainfall(zone.climate, [s_start, s_end], f_name)
 
             if f.sowed
-                irrig_mm::Float64 = f.irrigated_vol_mm
+                # Account for irrigation efficiency
+                irrig_mm::Float64 = f.irrigated_vol_mm * f.irrigation.efficiency
 
                 # The French-Schultz method assumes 25-30% of previous 3 months
                 # rainfall contributed towards crop growth

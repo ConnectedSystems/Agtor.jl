@@ -443,7 +443,8 @@ function run_timestep!(farmer::EconManager, zone::FarmZone, dt_idx::Int64, dt::D
 
             if f.sowed == true
 
-                irrig_mm::Float64 = f.irrigated_vol_mm
+                # Account for irrigation efficiency
+                irrig_mm::Float64 = f.irrigated_vol_mm * f.irrigation.efficiency
 
                 # The French-Schultz method assumes 25-30% of previous 3 months
                 # rainfall contributed towards crop growth
