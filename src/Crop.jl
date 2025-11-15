@@ -79,8 +79,11 @@ import Agtor: Climate
             ssm_coef, effective_root_zone, harvest_date, harvest_offset
         )
 
-        # variable cost does not include water usage costs (added later in optimized allocation step)
-        c.naive_crop_income = (c.price_per_yield * c.yield_per_ha) - c.variable_cost_per_ha
+        # variable cost does not include water usage costs
+        # (added later in optimized allocation step)
+        c.naive_crop_income = (
+            (c.price_per_yield * c.yield_per_ha) - c.variable_cost_per_ha
+        )
 
         return c
     end
