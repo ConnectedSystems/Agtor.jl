@@ -73,10 +73,6 @@ See:
 - link to [`Pump(pump_efficiency, cost_per_kW, derating)`](@ref)
 """
 function pumping_costs_per_ML(p::Pump, head_pressure::Float64)::Float64
-    if flow_rate_Lps <= 0.0
-        return 0.0
-    end
-
     pe::Float64 = p.pump_efficiency
     dr::Float64 = p.derating
 
