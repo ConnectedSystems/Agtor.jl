@@ -292,11 +292,12 @@ function ML_water_application_cost(m::Manager, zone::FarmZone, field::FarmField,
 
     costs = NamedTuple()
     for w::WaterSource in zone_ws
-        @set! costs[Symbol(w.name)] = ((pump_cost_per_ML(w, flow_rate)
-                                        *
-                                        req_water_ML_ha)
-                                       +
-                                       (w.cost_per_ML * req_water_ML_ha))
+        pump_per_ML = pumping_costs_per_ML(
+            w.pump,
+            flow_rate,
+            w.head + field.irrigation.head_pressure
+        )
+        @set! costs[Symbol(w.name)] = (pump_per_ML + w.cost_per_ML) * req_water_ML_ha
     end
 
     return costs
