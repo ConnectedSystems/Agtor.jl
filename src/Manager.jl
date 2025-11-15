@@ -436,7 +436,8 @@ function run_timestep!(farmer::EconManager, zone::FarmZone, dt_idx::Int64, dt::D
 
                 seasonal_field_log!(f, dt, income, f.irrigated_volume, irrigated_yield, dryland_yield, gsr_mm)
             else
-                seasonal_field_log!(f, dt, 0.0, 0.0, 0.0, 0.0, gsr_mm)
+                costs = total_costs(f, dt, zone.water_sources)
+                seasonal_field_log!(f, dt, -costs, 0.0, 0.0, 0.0, gsr_mm)
             end
 
             log_irrigation_by_water_source(zone, f, dt)
