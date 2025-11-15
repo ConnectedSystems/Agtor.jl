@@ -212,7 +212,7 @@ function optimize_irrigation(m::Manager, zone::FarmZone, dt::Date)::Tuple{Ordere
             water_app_cost::Float64 = app_cost_per_ML[ws_name]
             @set! app_cost[w_id] = water_app_cost
 
-            push!(profit, (crop_income_per_ha - (water_app_cost * req_water_ML_ha)) * var_area)
+            push!(profit, (crop_income_per_ha - water_app_cost) * var_area)
         end
     end
 
