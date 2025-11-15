@@ -114,7 +114,22 @@ end
 # end
 
 
-"""Apply irrigation water to field"""
+"""
+    apply_irrigation!(
+        field::CropField,
+        ws::WaterSource,
+        water_to_apply_mm::Float64,
+        area_to_apply::Float64
+    )::Nothing
+
+Apply irrigation water to field.
+
+# Arguments
+- `field` : Field
+- `ws` : Water Source
+- `water_to_apply_mm` : Volume of water to apply (in mm) with irrigation efficiencies considered.
+- `area_to_apply`: Area irrigation occurs over
+"""
 function apply_irrigation!(
     field::CropField,
     ws::WaterSource,
@@ -125,7 +140,7 @@ function apply_irrigation!(
     vol_ML::Float64 = vol_ML_ha * area_to_apply
     use_allocation!(ws, vol_ML)
 
-    apply::Float64 = (water_to_apply_mm * field.irrigation.efficiency)
+    apply::Float64 = water_to_apply_mm
     field.soil_SWD::Union{Float64,AgParameter} -= max(0.0, apply)::Float64
     field.irrigated_volume = (ws.name, vol_ML)
     field._num_irrigation_events += 1
