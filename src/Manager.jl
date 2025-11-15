@@ -140,7 +140,7 @@ function optimize_irrigation(m::Manager, zone::FarmZone, dt::Date)::Tuple{Ordere
     model::Model = Model(m.opt)
 
     num_fields::Int64 = length(zone.fields)
-    profit::Array = []
+    profit::Vector = []
     sizehint!(profit, num_fields)
 
     app_cost::NamedTuple = NamedTuple()
@@ -151,7 +151,7 @@ function optimize_irrigation(m::Manager, zone::FarmZone, dt::Date)::Tuple{Ordere
     end
 
     field_area::LittleDict{Symbol,VariableRef} = LittleDict{Symbol,VariableRef}()
-    req_water::Array{Float64} = Float64[]
+    req_water::Vector{Float64} = Float64[]
 
     running_costs = 0.0
     @inbounds for f::FarmField in zone.fields
