@@ -152,6 +152,11 @@ function run_scenarios!(samples::DataFrame, basin::Basin; ts_func::Function=run_
         string(row_id), res
     end
 
+    # Handle case where only a single scenario was run
+    if !(results isa Matrix)
+        results = [results]
+    end
+
     # # Prep results into expected form
     transformed = OrderedDict()
     for (idx, res) in results
