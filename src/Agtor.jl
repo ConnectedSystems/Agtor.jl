@@ -29,7 +29,7 @@ include("Basin.jl")
 include("Model.jl")
 
 
-AgUnion = Union{Int64, Float64, Agtor.AgParameter}
+AgUnion = Union{Int64,Float64,Agtor.AgParameter}
 
 const component_sep = "└──"
 const component_name_sep = "-"
@@ -49,7 +49,7 @@ export set_params!, extract_agparams, collect_agparams!, collect_agparams, updat
 export water_used_by_source
 export get_data_for_timestep, aggregate_field_logs, run_model
 export run_scenarios!, save_results!, save_state!
-export collate_results, collate_results!, component_relationship
-export select_results, scenario_stats, results_df
+export collate_results, collate_results!, collate_by_scenario, collate_scenario_results
+export component_relationship, select_results, scenario_stats, results_df
 
 end # module

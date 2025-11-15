@@ -99,7 +99,7 @@ function ensure_date(c::Climate, p_start::String, p_end::String)::Tuple
 end
 
 
-"""Retrieve seasonal rainfall by matching column name. 
+"""Retrieve seasonal rainfall by matching column name.
 Columns names are expected to have 'rainfall' with some identifier.
 
 # Example
@@ -114,7 +114,7 @@ Where column names are: 'rainfall_field1', 'rainfall_field2', ...
 # Returns
 numeric, representing seasonal rainfall
 """
-function get_seasonal_rainfall(c::Climate, season_range::Array{Date}, partial_name::String)::Float64
+function get_seasonal_rainfall(c::Climate, season_range::Vector{Date}, partial_name::String)::Float64
     s::Date, e::Date = season_range
     subset::DataFrame = get_season_range(c, s, e)[!, Regex("rainfall")][!, Regex(partial_name)]
     return sum.(eachcol(subset))[1]
@@ -130,7 +130,7 @@ end
 # Returns
 numeric of seasonal rainfall
 """
-function get_seasonal_et(c::Climate, season_range::Array{Date}, partial_name::String)::DataFrame
+function get_seasonal_et(c::Climate, season_range::Vector{Date}, partial_name::String)::DataFrame
     s::Date, e::Date = season_range
     subset::DataFrame = get_season_range(c, s, e)[!, Regex("ET")][!, Regex(partial_name)]
     return sum.(eachcol(subset))[1]

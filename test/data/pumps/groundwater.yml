@@ -3,10 +3,7 @@ component: Pump
 # groundwater pump representing an average mix of
 # 60% diesel and 40% electric pumps
 
-# capital costs taken from:
-# http://www.clw.csiro.au/publications/technical2002/tr20-02.pdf
-
-capital_cost: ["RealParameter", 90000.0, 90000.0, 320000.0]  # assumed total implementation cost
+capital_cost: ["RealParameter", 20000.0, 15000.0, 25000.0]  # assumed total implementation cost
 minor_maintenance_schedule: ["RealParameter", 5, 5, 5]
 major_maintenance_schedule: ["RealParameter", 15, 15, 15]
 minor_maintenance_rate: ["RealParameter", 0.05, 0.05, 0.05]

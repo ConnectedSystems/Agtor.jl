@@ -114,17 +114,36 @@ end
 # end
 
 
-"""Apply irrigation water to field"""
-function apply_irrigation!(field::CropField,
-                          ws::WaterSource, water_to_apply_mm::Float64,
-                          area_to_apply::Float64)::Nothing
-    vol_ML_ha::Float64 = water_to_apply_mm / mm_to_ML
+"""
+    apply_irrigation!(
+        field::CropField,
+        ws::WaterSource,
+        water_to_apply_mm::Float64,
+        area_to_apply::Float64
+    )::Nothing
+
+Apply irrigation water to field.
+
+# Arguments
+- `field` : Field
+- `ws` : Water Source
+- `water_to_apply_mm` : Volume of water to apply (in mm) with irrigation efficiencies considered.
+- `area_to_apply`: Area irrigation occurs over
+"""
+function apply_irrigation!(
+    field::CropField,
+    ws::WaterSource,
+    to_apply_mm::Float64,
+    area_to_apply::Float64
+)::Nothing
+    vol_ML_ha::Float64 = to_apply_mm / mm_to_ML
     vol_ML::Float64 = vol_ML_ha * area_to_apply
     use_allocation!(ws, vol_ML)
 
-    apply::Float64 = (water_to_apply_mm * field.irrigation.efficiency)
-    field.soil_SWD::Union{Float64, AgParameter} -= max(0.0, apply)::Float64
+    effective_irrig = to_apply_mm * field.irrigation.efficiency
+    field.soil_SWD::Union{Float64,AgParameter} -= max(0.0, effective_irrig)::Float64
     field.irrigated_volume = (ws.name, vol_ML)
+    field._num_irrigation_events += 1
 
     return nothing
 end
@@ -218,8 +237,8 @@ end
 
 
 """Collate logged values, summing on identical datetimes"""
-function collate_field_logs(zone::FarmZone, sym::Symbol; last=false)::OrderedDict{Date, Float64}
-    target_log::Dict{Date, Float64} = Dict{Date, Float64}()
+function collate_field_logs(zone::FarmZone, sym::Symbol; last=false)::OrderedDict{Date,Float64}
+    target_log::Dict{Date,Float64} = Dict{Date,Float64}()
     for f::FarmField in zone.fields
         tmp = getfield(f, sym)
 
@@ -237,17 +256,18 @@ end
 function aggregate_field_logs(field_logs::DataFrame)::DataFrame
     collated::DataFrame = combine(
         groupby(field_logs, :Date),
-        [x=>sum for x in names(field_logs) if x != "Date"]...
+        [x => sum for x in names(field_logs) if x != "Date"]...
     )
 
-    collated[:, Symbol("Dollar per ML")] = collated[!, :income_sum] ./ collated[!, :irrigated_volume_sum]
-    collated[:, Symbol("ML per Irrigated Yield")] = collated[!, :irrigated_volume_sum] ./ collated[!, :irrigated_yield_sum]
-    collated[:, Symbol("Dollar per Ha")] = collated[!, :income_sum] ./ (collated[!, :dryland_area_sum] .+ collated[!, :irrigated_area_sum])
-    collated[:, Symbol("Mean Irrigated Yield")] = collated[!, :irrigated_yield_sum] ./ collated[!, :irrigated_area_sum]
-    collated[:, Symbol("Mean Dryland Yield")] = collated[!, :dryland_yield_sum] ./ collated[!, :dryland_area_sum]
+    # Replace zero values with 1.0 to avoid zero division error
+    collated[:, Symbol("Dollar per ML")] = collated[!, :income_sum] ./ replace(collated[!, :irrigated_volume_sum], 0.0 => 1.0)
+    collated[:, Symbol("ML per Irrigated Yield")] = collated[!, :irrigated_volume_sum] ./ replace(collated[!, :irrigated_yield_sum], 0.0 => 1.0)
+    collated[:, Symbol("Dollar per Ha")] = collated[!, :income_sum] ./ replace((collated[!, :dryland_area_sum] .+ collated[!, :irrigated_area_sum]), 0.0 => 1.0)
+    collated[:, Symbol("Mean Irrigated Yield")] = collated[!, :irrigated_yield_sum] ./ replace(collated[!, :irrigated_area_sum], 0.0 => 1.0)
+    collated[:, Symbol("Mean Dryland Yield")] = collated[!, :dryland_yield_sum] ./ replace(collated[!, :dryland_area_sum], 0.0 => 1.0)
 
-    collated[isnan.(collated[!,Symbol("Mean Dryland Yield")]), Symbol("Mean Dryland Yield")] .= 0
-    collated[isnan.(collated[!,Symbol("Mean Irrigated Yield")]), Symbol("Mean Irrigated Yield")] .= 0
+    collated[isnan.(collated[!, Symbol("Mean Dryland Yield")]), Symbol("Mean Dryland Yield")] .= 0.0
+    collated[isnan.(collated[!, Symbol("Mean Irrigated Yield")]), Symbol("Mean Irrigated Yield")] .= 0.0
 
     return collated
 end
@@ -289,7 +309,7 @@ function water_used_by_source(zone::FarmZone, dt)::DataFrame
     end
 
     if !isnothing(dt)
-        ws_irrig = ws_irrig[ws_irrig[:Date] .== dt, :]
+        ws_irrig = ws_irrig[ws_irrig[:Date].==dt, :]
     end
 
     if nrow(ws_irrig) == 0 && !isnothing(dt)
@@ -297,7 +317,7 @@ function water_used_by_source(zone::FarmZone, dt)::DataFrame
         return DataFrame(Date=dt, surface_water_sum=0.0, groundwater_sum=0.0)
     end
 
-    return combine(groupby(ws_irrig, :Date), [x=>sum for x in names(ws_irrig) if x != "Date"]...)
+    return combine(groupby(ws_irrig, :Date), [x => sum for x in names(ws_irrig) if x != "Date"]...)
 end
 
 
@@ -326,8 +346,8 @@ function create(data::Dict{Symbol}, climate_data::Climate)::FarmZone
     name = spec[:name]
 
     if haskey(spec, :water_sources)
-        water_specs::Dict{Symbol, Dict} = spec[:water_sources]
-        pump_specs::Dict{Symbol, Dict} = spec[:pump_spec]
+        water_specs::Dict{Symbol,Dict} = spec[:water_sources]
+        pump_specs::Dict{Symbol,Dict} = spec[:pump_spec]
         water_sources::Array{WaterSource} = create(water_specs, pump_specs)
     else
         water_sources = []
@@ -349,9 +369,9 @@ function create(data::Dict{Symbol}, climate_data::Climate)::FarmZone
         delete!(f, :crop_rotation_spec)
     end
 
-    fields = [create(v) for (k,v) in field_specs]
+    fields = [create(v) for (k, v) in field_specs]
 
-    zone_spec::Dict{Symbol, Any} = Dict(
+    zone_spec::Dict{Symbol,Any} = Dict(
         :name => name,
         :climate => climate_data,
         :fields => fields,
