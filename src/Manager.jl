@@ -153,6 +153,7 @@ function optimize_irrigation(m::Manager, zone::FarmZone, dt::Date)::Tuple{Ordere
     field_area::LittleDict{Symbol,VariableRef} = LittleDict{Symbol,VariableRef}()
     req_water::Array{Float64} = Float64[]
 
+    running_costs = 0.0
     @inbounds for f::FarmField in zone.fields
         did::String = f._fname
 
@@ -194,10 +195,13 @@ function optimize_irrigation(m::Manager, zone::FarmZone, dt::Date)::Tuple{Ordere
         crop = f.crop
         crop_income_per_ha::Float64 = crop.naive_crop_income
 
-        # estimated gross income - variable costs per ha
-        # Creating individual field area variables
+        # Account for water use costs this season (running_costs)
+        running_costs += total_costs(
+            f, dt, zone.water_sources; num_fields=length(zone.fields)
+        )
 
-        # (field_n_gw + field_n_sw) <= possible area
+        # Creating individual field area variables
+        # accounting for profit - total ongoing costs this season
         for ws::WaterSource in zone_ws
             ws_name::Symbol = Symbol(ws.name)
             w_id::Symbol = Symbol(did, ws_name)
@@ -212,12 +216,16 @@ function optimize_irrigation(m::Manager, zone::FarmZone, dt::Date)::Tuple{Ordere
             water_app_cost::Float64 = app_cost_per_ML[ws_name]
             @set! app_cost[w_id] = water_app_cost
 
-            push!(profit, (crop_income_per_ha - water_app_cost) * var_area)
+            push!(
+                profit,
+                ((crop_income_per_ha - water_app_cost) * var_area) - (running_costs / f.total_area_ha)
+            )
         end
     end
 
     # (field_1_sw + ... + field_n_sw) <= sw_irrigation_area
     # (field_1_gw + ... + field_n_gw) <= gw_irrigation_area
+    # (field_1_gw + ... + field_n_gw) <= total irrigation area
     opt_vals::OrderedDict{String,Float64} = OrderedDict()
     avg_req_water::Float64 = mean(req_water)
     if avg_req_water > 0.0
@@ -225,6 +233,9 @@ function optimize_irrigation(m::Manager, zone::FarmZone, dt::Date)::Tuple{Ordere
             @inbounds irrig_area = sum(field_area[Symbol(f._fname, ws.name)] for f::FarmField in zone.fields)
             @constraint(model, irrig_area <= (ws.allocation / avg_req_water))
         end
+
+        @constraint(model, sum(values(field_area)) <= sum(f.irrigated_area for f in zone.fields))
+        @constraint(model, sum(profit) >= 0.0)
     else
         opt_vals = OrderedDict{String,Float64}(
             string(k) => 0.0
@@ -234,17 +245,29 @@ function optimize_irrigation(m::Manager, zone::FarmZone, dt::Date)::Tuple{Ordere
         return opt_vals, app_cost
     end
 
-    @objective(model, Max, sum(profit))
+    @objective(model, Max, sum(profit))  #  - running_costs
     optimize!(model)
 
     state = termination_status(model)
     if state == MOI.TIME_LIMIT && has_values(model)
         @warn "Farm model optimization was sub-optimal"
     elseif state != MOI.OPTIMAL
-        throw(ArgumentError("Could not optimize farm water use."))
+        # Could not find solution, so do not irrigate
+        opt_vals = OrderedDict{String,Float64}(
+            JuMP.name(v) => 0.0 for v in JuMP.all_variables(model)
+        )
+
+        for w in keys(app_cost)
+            @set! app_cost[w] = 0.0
+        end
+
+        # throw(ArgumentError("Could not optimize farm water use."))
+        return opt_vals, app_cost
     end
 
-    opt_vals = OrderedDict{String,Float64}(JuMP.name(v) => value(v) for v in JuMP.all_variables(model))
+    opt_vals = OrderedDict{String,Float64}(
+        JuMP.name(v) => value(v) for v in JuMP.all_variables(model)
+    )
 
     return opt_vals, app_cost
 end
@@ -284,7 +307,7 @@ end
 Calculate water application cost/ML by each water source.
 
 # Returns
-Water source name and cost per ML
+Water source name and cost per ML/ha
 """
 function ML_water_application_cost(m::Manager, zone::FarmZone, field::FarmField, req_water_ML_ha::Float64)::NamedTuple
     zone_ws::Array{WaterSource} = zone.water_sources
@@ -396,13 +419,13 @@ function run_timestep!(farmer::EconManager, zone::FarmZone, dt_idx::Int64, dt::D
                         continue
                     end
 
-                    vol_to_apply_ML_ha::Float64 = (water_to_apply_mm / mm_to_ML)
+                    # Accounts for irrigation efficiency
                     apply_irrigation!(f, ws, water_to_apply_mm, area_to_apply)
 
-                    # tmp::Float64 = sum([v for (k, v) in cost_per_ML if occursin(f_name, string(k)) && occursin(ws_name, string(k))])
-                    tmp::Float64 = sum([v for (k, v) in pairs(cost_per_ML) if did == string(k)])
+                    cost::Float64 = sum([v for (k, v) in pairs(cost_per_ML) if did == string(k)])
 
-                    log_irrigation_cost(f, (tmp * vol_to_apply_ML_ha * area_to_apply))
+                    vol_to_apply_ML_ha::Float64 = (water_to_apply_mm / mm_to_ML)
+                    log_irrigation_cost(f, (cost * vol_to_apply_ML_ha * area_to_apply))
                 end
             elseif season_start
                 f.sowed = true
