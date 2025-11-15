@@ -441,7 +441,7 @@ function total_costs(f::FarmField, dt::Date, water_sources::Array{WaterSource}; 
     h20_usage_cost += irrig_app_cost
 
     maint_cost += subtotal_costs(f.irrigation, year_val) * f.total_area_ha
-    crop_costs::Float64 = subtotal_costs(f.crop) * f.total_area_ha
+    crop_costs::Float64 = subtotal_costs(f.crop) * f.total_area_ha * f.sowed
     total_costs::Float64 = h20_usage_cost + maint_cost + crop_costs
 
     return total_costs
