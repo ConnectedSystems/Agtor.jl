@@ -142,23 +142,23 @@ Run basin level scenarios for a given sample set.
     "scenario_id/field_results" = field level results for each zone in basin
 """
 function run_scenarios!(samples::DataFrame, basin::Basin; ts_func::Function=run_timestep!,
-                        pre::Union{Function, Nothing}=nothing, post::Union{Function, Nothing}=nothing)::Dict
+    pre::Union{Function,Nothing}=nothing, post::Union{Function,Nothing}=nothing)::Dict
     results = @showprogress 1 "Running..." @distributed (hcat) for row_id in 1:nrow(samples)
         tmp_b = deepcopy(basin)
         update_model!(tmp_b, samples[row_id, :])
         res = run_model(tmp_b; ts_func=ts_func, pre=pre, post=post)
 
-        # Return pair of scenario_id and results
+        # Return tuple of scenario_id and results
         string(row_id), res
     end
 
     # # Prep results into expected form
-    transformed = Dict()
+    transformed = OrderedDict()
     for (idx, res) in results
-        transformed["$(idx)/zone_results"] = Dict(
+        transformed["$(idx)/zone_results"] = OrderedDict(
             k => v.zone_results for (k, v) in res
         )
-        transformed["$(idx)/field_results"] = Dict(
+        transformed["$(idx)/field_results"] = OrderedDict(
             k => v.field_results for (k, v) in res
         )
     end
