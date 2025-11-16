@@ -206,7 +206,6 @@ end
 
 """Log irrigation volumes from water sources"""
 function log_irrigation_by_water_source(zone::FarmZone, f::FarmField, dt::Date)::Nothing
-
     # Construct log structure if needed
     if nrow(zone._irrigation_volume_by_source) == 0
         tmp_dict::OrderedDict = OrderedDict()

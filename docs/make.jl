@@ -9,13 +9,14 @@ makedocs(
         sidebar_sitename=true
     ),
     sitename="Agtor.jl",
-    modules = [Agtor],
+    modules=[Agtor],
     pages=[
         "index.md",
         "specs.md",
         "getting_started.md",
         "API.md",
-    ]
+    ],
+    warnonly=[:missing_docs]
 )
 
 deploydocs(

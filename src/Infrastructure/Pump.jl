@@ -84,9 +84,9 @@ function pumping_costs_per_ML(p::Pump, head_pressure::Float64)::Float64
     kWh_per_ML = (head_pressure * 2.725) / (pe * dr)
     cost_per_ML::Float64 = p.cost_per_kW * kWh_per_ML
 
-    @assert cost_per_ML >= 0.0 "Pumping costs cannot be negative.
-    $cost_per_ML
-    $head_pressure"
+    @assert cost_per_ML >= 0.0 """Pumping costs cannot be negative.
+    $(cost_per_ML)
+    $(head_pressure)"""
 
     return cost_per_ML
 end

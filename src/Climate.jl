@@ -108,8 +108,8 @@ Where column names are: 'rainfall_field1', 'rainfall_field2', ...
 `get_seasonal_rainfall(c, ['1981-01-01', '1982-06-01'], 'field1')`
 
 # Arguments
-* season_range : List-like, start and end dates, can be string or datetime object
-* partial_name : str, string to (partially) match column name identifier on
+- `season_range` : List-like, start and end dates, can be string or datetime object
+- `partial_name` : str, string to (partially) match column name identifier on
 
 # Returns
 numeric, representing seasonal rainfall
@@ -124,8 +124,8 @@ end
 """Retrieve seasonal evapotranspiration.
 
 # Arguments
-* season_range : List-like, start and end dates, can be string or datetime object
-* partial_name : str, string to (partially) match column name identifier on
+- `season_range` : List-like, start and end dates, can be string or datetime object
+- `partial_name` : str, string to (partially) match column name identifier on
 
 # Returns
 numeric of seasonal rainfall

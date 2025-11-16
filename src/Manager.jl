@@ -140,7 +140,7 @@ function optimize_irrigation(m::Manager, zone::FarmZone, dt::Date)::Tuple{Ordere
     model::Model = Model(m.opt)
 
     num_fields::Int64 = length(zone.fields)
-    profit::Array = []
+    profit::Vector = []
     sizehint!(profit, num_fields)
 
     app_cost::NamedTuple = NamedTuple()
@@ -151,7 +151,7 @@ function optimize_irrigation(m::Manager, zone::FarmZone, dt::Date)::Tuple{Ordere
     end
 
     field_area::LittleDict{Symbol,VariableRef} = LittleDict{Symbol,VariableRef}()
-    req_water::Array{Float64} = Float64[]
+    req_water::Vector{Float64} = Float64[]
 
     running_costs = 0.0
     @inbounds for f::FarmField in zone.fields
@@ -182,12 +182,6 @@ function optimize_irrigation(m::Manager, zone::FarmZone, dt::Date)::Tuple{Ordere
         end
 
         push!(req_water, req_water_ML_ha)
-
-        # Disable this for now - estimated income includes variable costs
-        # Will always incur maintenance costs and crop costs
-        # total_pump_cost = sum([ws.pump.maintenance_cost(dt.year) for ws in zone_ws])
-        # total_irrig_cost = f.irrigation.maintenance_cost(dt.year)
-        # maintenance_cost = (total_pump_cost + total_irrig_cost)
 
         # Costs to pump needed water volume from each water source
         app_cost_per_ML::NamedTuple = ML_water_application_cost(m, zone, f, req_water_ML_ha)
